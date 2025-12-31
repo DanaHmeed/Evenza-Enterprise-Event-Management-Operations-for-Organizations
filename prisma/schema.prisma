@@ -6,8 +6,7 @@
 
 generator client {
   provider = "prisma-client"
-    output   = "../lib/generated/prisma"
-
+  output   = "../lib/generated/prisma"
 }
 
 datasource db {
@@ -15,33 +14,66 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
+  id        String   @id // Clerk userId
   email     String   @unique
   name      String
   password  String
   role      Role     @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  events    Event[]  @relation("OrganizerEvents")
-
+  events    Event[]  @relation("UserEvents")
 }
+
 model Event {
-  id          String   @id @default(uuid())
+  id          String @id @default(cuid())
   title       String
   description String
-  location    String
-  date        DateTime
-  isPublished Boolean  @default(false)
+  category    String
 
+  // Time
+  startDate DateTime
+  endDate   DateTime
+  timezone  String
+
+  // Location
+  isOnline  Boolean
+  venueName String?
+  address   String?
+  city      String?
+
+  // Capacity
+  capacity       Int
+  seatsRemaining Int
+
+  // Pricing
+  eventType EventType
+  price     Float?
+  currency  String?
+
+  status EventStatus @default(DRAFT)
+
+  // Relations
   organizerId String
-  organizer   User     @relation("OrganizerEvents", fields: [organizerId], references: [id])
+  organizer   User   @relation("UserEvents", fields: [organizerId], references: [id])
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum Role {
   USER
   ORGANIZER
   ADMIN
+}
+
+enum EventType {
+  FREE
+  PAID
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
 }

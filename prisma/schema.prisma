@@ -4,6 +4,7 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
+
 generator client {
   provider = "prisma-client"
   output   = "../lib/generated/prisma"
@@ -13,6 +14,7 @@ datasource db {
   provider = "postgresql"
 }
 
+//user model representing a Clerk user
 model User {
   id        String   @id // Clerk userId
   email     String   @unique
@@ -21,7 +23,11 @@ model User {
   role      Role     @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Relations
   events    Event[]  @relation("UserEvents")
+  tickets   Ticket[]
+  orders    Order[]
 }
 
 model Event {
@@ -54,12 +60,16 @@ model Event {
 
   // Relations
   organizerId String
-  organizer   User   @relation("UserEvents", fields: [organizerId], references: [id])
+  organizer   User     @relation("UserEvents", fields: [organizerId], references: [id])
+
+  tickets Ticket[]
+  orders  Order[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
+// User roles
 enum Role {
   USER
   ORGANIZER
@@ -77,3 +87,55 @@ enum EventStatus {
   CANCELLED
   COMPLETED
 }
+// Ticket model
+model Ticket {
+  id        String   @id @default(cuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id])
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  price     Float
+  currency  String
+  status    TicketStatus @default(RESERVED)
+
+  createdAt DateTime @default(now())
+}
+
+enum TicketStatus {
+  RESERVED
+  PAID
+  CANCELLED
+}
+
+// Order model to handle purchases
+model Order {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+
+  eventId       String
+  event         Event    @relation(fields: [eventId], references: [id])
+
+  amount        Float
+  currency      String
+  paymentMethod PaymentMethod
+  paymentStatus PaymentStatus @default(PENDING)
+
+  stripeSessionId String?
+
+  createdAt DateTime @default(now())
+}
+
+enum PaymentMethod {
+  STRIPE
+  CASH
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+

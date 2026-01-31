@@ -99,6 +99,10 @@ model Ticket {
   currency  String
   status    TicketStatus @default(RESERVED)
 
+   // Entry control
+  isUsed    Boolean  @default(false)
+  usedAt    DateTime?
+
   createdAt DateTime @default(now())
 }
 

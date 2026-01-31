@@ -19,7 +19,6 @@ model User {
   id        String   @id // Clerk userId
   email     String   @unique
   name      String
-  password  String
   role      Role     @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -131,6 +130,8 @@ model Order {
 enum PaymentMethod {
   STRIPE
   CASH
+  BANK_TRANSFER
+  JAWWAL_PAY
 }
 
 enum PaymentStatus {

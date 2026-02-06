@@ -4,7 +4,6 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
-
 generator client {
   provider = "prisma-client"
   output   = "../lib/generated/prisma"
@@ -24,9 +23,11 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  events    Event[]  @relation("UserEvents")
-  tickets   Ticket[]
-  orders    Order[]
+  events        Event[]        @relation("UserEvents")
+  tickets       Ticket[]
+  orders        Order[]
+  feedbacks     Feedback[]
+  registrations Registration[]
 }
 
 model Event {
@@ -36,36 +37,89 @@ model Event {
   category    String
 
   // Time
-  startDate DateTime
-  endDate   DateTime
-  timezone  String
+  startDate            DateTime
+  endDate              DateTime
+  timezone             String
+  registrationDeadline DateTime
 
   // Location
-  isOnline  Boolean
-  venueName String?
-  address   String?
-  city      String?
+  isOnline    Boolean @default(false)
+  venueName   String?
+  address     String?
+  city        String?
+  country     String?
+  meetingLink String?
 
   // Capacity
-  capacity       Int
-  seatsRemaining Int
+  capacity         Int
+  seatsRemaining   Int
+  approvalRequired Boolean @default(false)
 
   // Pricing
-  eventType EventType
-  price     Float?
-  currency  String?
+  eventType EventType @default(FREE)
+  price     Float?    @default(0)
+  currency  String?   @default("USD")
 
+  // Media
+  banner String?
+
+  // Status
   status EventStatus @default(DRAFT)
 
   // Relations
-  organizerId String
-  organizer   User     @relation("UserEvents", fields: [organizerId], references: [id])
-
-  tickets Ticket[]
-  orders  Order[]
+  organizerId   String
+  organizer     User           @relation("UserEvents", fields: [organizerId], references: [id])
+  registrations Registration[]
+  tickets       Ticket[]
+  feedback      Feedback[]
+  orders        Order[]        @relation("EventOrders") // ← Add this
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([startDate])
+  @@index([city])
+  @@index([eventType])
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id])
+  rating    Int      @default(5)
+  comment   String?
+  approved  Boolean  @default(false) // ← ADD: For admin approval
+  createdAt DateTime @default(now())
+}
+
+model Registration {
+  id        String             @id @default(cuid())
+  userId    String
+  user      User               @relation(fields: [userId], references: [id])
+  eventId   String
+  event     Event              @relation(fields: [eventId], references: [id])
+  ticketId  String?            @unique // ← ADD: Link to ticket if paid
+  ticket    Ticket?            @relation(fields: [ticketId], references: [id])
+  status    RegistrationStatus @default(PENDING) // ← ADD: For approval workflow
+  createdAt DateTime           @default(now())
+
+  @@unique([userId, eventId])
+}
+
+enum RegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 // User roles
@@ -80,55 +134,48 @@ enum EventType {
   PAID
 }
 
-enum EventStatus {
-  DRAFT
-  PUBLISHED
-  CANCELLED
-  COMPLETED
-}
 // Ticket model
 model Ticket {
-  id        String   @id @default(cuid())
-  eventId   String
-  event     Event    @relation(fields: [eventId], references: [id])
+  id              String       @id @default(cuid())
+  ticketNumber    String       @unique //  Unique ticket code
+  eventId         String
+  event           Event        @relation(fields: [eventId], references: [id])
+  userId          String
+  user            User         @relation(fields: [userId], references: [id])
+  paymentIntentId String? // Stripe payment ID
+  price           Float
+  currency        String
+  validatedAt     DateTime? // For check-in
+  status          TicketStatus @default(RESERVED)
 
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-
-  price     Float
-  currency  String
-  status    TicketStatus @default(RESERVED)
-
-   // Entry control
-  isUsed    Boolean  @default(false)
-  usedAt    DateTime?
-
-  createdAt DateTime @default(now())
+  // Entry control
+  isUsed       Boolean       @default(false)
+  usedAt       DateTime?
+  registration Registration?
+  createdAt    DateTime      @default(now())
 }
 
 enum TicketStatus {
   RESERVED
+  PENDING
   PAID
   CANCELLED
 }
 
 // Order model to handle purchases
 model Order {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id])
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
-  eventId       String
-  event         Event    @relation(fields: [eventId], references: [id])
-
-  amount        Float
-  currency      String
-  paymentMethod PaymentMethod
-  paymentStatus PaymentStatus @default(PENDING)
-
+  eventId         String
+  event           Event         @relation("EventOrders", fields: [eventId], references: [id])
+  amount          Float
+  currency        String
+  paymentMethod   PaymentMethod
+  paymentStatus   PaymentStatus @default(PENDING)
   stripeSessionId String?
-
-  createdAt DateTime @default(now())
+  createdAt       DateTime      @default(now())
 }
 
 enum PaymentMethod {
@@ -143,4 +190,3 @@ enum PaymentStatus {
   PAID
   FAILED
 }
-

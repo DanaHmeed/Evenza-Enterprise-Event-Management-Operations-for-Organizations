@@ -9,48 +9,217 @@ export async function purchaseTicket({
 }: {
   userId: string;
   eventId: string;
-  paymentMethod:PaymentMethod;
-  paymentRef: string;
+  paymentMethod: PaymentMethod;
+  paymentRef?: string; // Optional - only for bank transfers
 }) {
-
   return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const event = (await tx.event.findUnique({
+    // 1. Get event details
+    const event = await tx.event.findUnique({
       where: { id: eventId },
-    })) as Prisma.EventGetPayload<{}>;
-
-    if (!event) throw new Error("Event not found");
-    if (event.seatsRemaining <= 0) throw new Error("Sold out");
-
-    // Decrease seats
-    await tx.event.update({
-      where: { id: eventId },
-      data: { seatsRemaining: { decrement: 1 } },
+      include: {
+        _count: {
+          select: { registrations: true },
+        },
+      },
     });
 
-    // Create order
+    if (!event) {
+      throw new Error("Event not found");
+    }
+
+    // 2. Validate event status
+    if (event.status !== "PUBLISHED") {
+      throw new Error("Event is not available for purchase");
+    }
+
+    if (event.eventType !== "PAID") {
+      throw new Error("This is a free event");
+    }
+
+    if (!event.price || event.price <= 0) {
+      throw new Error("Invalid event price");
+    }
+
+    // 3. Check deadlines
+    const now = new Date();
+    
+    if (now > new Date(event.registrationDeadline)) {
+      throw new Error("Registration deadline has passed");
+    }
+
+    if (now > new Date(event.startDate)) {
+      throw new Error("Event has already started");
+    }
+
+    // 4. Check capacity
+    if (event.seatsRemaining <= 0) {
+      throw new Error("Event is sold out");
+    }
+
+    // 5. Check for duplicate purchase/registration
+    const existingRegistration = await tx.registration.findUnique({
+      where: {
+        userId_eventId: {
+          userId,
+          eventId,
+        },
+      },
+    });
+
+    if (existingRegistration) {
+      throw new Error("You have already purchased a ticket for this event");
+    }
+
+    // 6. Generate unique ticket number
+    const ticketNumber = `EVZ-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2, 9)
+      .toUpperCase()}`;
+
+    // 7. Determine payment status based on method
+    // Cash and Bank Transfer need admin verification
+    const paymentStatus = 
+      paymentMethod === "CASH" || paymentMethod === "BANK_TRANSFER" 
+        ? "PENDING" 
+        : "PAID";
+
+    const ticketStatus = 
+      paymentMethod === "CASH" || paymentMethod === "BANK_TRANSFER"
+        ? "PENDING"
+        : "PAID";
+
+    // 8. Create ticket
+    const ticket = await tx.ticket.create({
+      data: {
+        ticketNumber,
+        userId,
+        eventId,
+        price: event.price,
+        currency: event.currency || "USD",
+        status: ticketStatus,
+        paymentIntentId: paymentRef || null, // Store payment reference if provided
+      },
+    });
+
+    // 9. Create order
     const order = await tx.order.create({
       data: {
         userId,
         eventId,
-        amount: event.price ?? 0,
-        currency: event.currency ?? "ILS",
+        amount: event.price,
+        currency: event.currency || "USD",
         paymentMethod,
-        paymentStatus: "PAID",
-        stripeSessionId: paymentRef,
+        paymentStatus,
+        // Only use stripeSessionId for Stripe payments
+        stripeSessionId: paymentMethod === "STRIPE" ? paymentRef : null,
       },
     });
 
-    // Create ticket
-    const ticket = await tx.ticket.create({
+    // 10. Create registration (only if payment is confirmed or pending approval)
+    const registration = await tx.registration.create({
       data: {
         userId,
         eventId,
-        price: event.price ?? 0,
-        currency: event.currency ?? "ILS",
-        status: "PAID",
+        ticketId: ticket.id,
+        // Auto-approve only if payment is already confirmed
+        status: paymentStatus === "PAID" ? "APPROVED" : "PENDING",
       },
     });
 
-    return { order, ticket };
+    // 11. Decrease available seats (reserve the seat even for pending payments)
+    await tx.event.update({
+      where: { id: eventId },
+      data: {
+        seatsRemaining: { decrement: 1 },
+      },
+    });
+
+    return {
+      order,
+      ticket,
+      registration,
+      message:
+        paymentStatus === "PENDING"
+          ? "Payment pending verification. Your ticket will be confirmed once payment is verified."
+          : "Ticket purchased successfully!",
+    };
+  });
+}
+
+// Helper function to verify and approve manual payments (for admin)
+export async function approveManualPayment(ticketId: string) {
+  return prisma.$transaction(async (tx) => {
+    // Update ticket status
+    const ticket = await tx.ticket.update({
+      where: { id: ticketId },
+      data: { status: "PAID" },
+      include: {
+        registration: true,
+      },
+    });
+
+    if (!ticket.registration) {
+      throw new Error("No registration found for this ticket");
+    }
+
+    // Update registration status
+    await tx.registration.update({
+      where: { id: ticket.registration.id },
+      data: { status: "APPROVED" },
+    });
+
+    // Update order status
+    await tx.order.updateMany({
+      where: {
+        userId: ticket.userId,
+        eventId: ticket.eventId,
+      },
+      data: { paymentStatus: "PAID" },
+    });
+
+    return ticket;
+  });
+}
+
+// Helper function to reject manual payment (for admin)
+export async function rejectManualPayment(ticketId: string) {
+  return prisma.$transaction(async (tx) => {
+    const ticket = await tx.ticket.update({
+      where: { id: ticketId },
+      data: { status: "CANCELLED" },
+      include: {
+        registration: true,
+        event: true,
+      },
+    });
+
+    if (!ticket.registration) {
+      throw new Error("No registration found for this ticket");
+    }
+
+    // Update registration status
+    await tx.registration.update({
+      where: { id: ticket.registration.id },
+      data: { status: "REJECTED" },
+    });
+
+    // Update order status
+    await tx.order.updateMany({
+      where: {
+        userId: ticket.userId,
+        eventId: ticket.eventId,
+      },
+      data: { paymentStatus: "FAILED" },
+    });
+
+    // Return the seat to available pool
+    await tx.event.update({
+      where: { id: ticket.eventId },
+      data: {
+        seatsRemaining: { increment: 1 },
+      },
+    });
+
+    return ticket;
   });
 }

@@ -174,7 +174,7 @@ model Order {
   currency        String
   paymentMethod   PaymentMethod
   paymentStatus   PaymentStatus @default(PENDING)
-  stripeSessionId String?
+  stripeSessionId String?       @unique
   createdAt       DateTime      @default(now())
 }
 

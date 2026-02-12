@@ -1,109 +1,88 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db/prisma";
+import prisma from "@/lib/db/prisma";
+import { requireAdmin, isAuthError } from "@/lib/auth/require-role";
+import { moderateFeedbackSchema } from "@/lib/validations/feedback.schema";
+import { ZodError } from "zod";
 
-// PATCH - Approve or reject feedback (admin only)
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { feedbackId: string } }
-) {
+type Params = { params: Promise<{ feedbackId: string }> };
+
+// PATCH - Approve/Reject feedback (admin only)
+export async function PATCH(request: NextRequest, { params }: Params) {
   try {
-    const { userId } = await auth();
-
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check if user is admin
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true },
-    });
-
-    if (user?.role !== "ADMIN") {
-      return NextResponse.json(
-        { error: "Only admins can moderate feedback" },
-        { status: 403 }
-      );
-    }
+    const { feedbackId } = await params;
+    const authResult = await requireAdmin();
+    if (isAuthError(authResult)) return authResult;
 
     const body = await request.json();
-    const { approved } = body;
+    const validatedData = moderateFeedbackSchema.parse(body);
 
-    if (typeof approved !== "boolean") {
-      return NextResponse.json(
-        { error: "Approved field must be a boolean" },
-        { status: 400 }
-      );
+    const feedback = await prisma.feedback.findUnique({
+      where: { id: feedbackId },
+    });
+
+    if (!feedback) {
+      return NextResponse.json({ error: "Feedback not found" }, { status: 404 });
     }
 
-    const feedback = await prisma.feedback.update({
-      where: { id: params.feedbackId },
-      data: { approved },
+    const updatedFeedback = await prisma.feedback.update({
+      where: { id: feedbackId },
+      data: {
+        status: validatedData.status,
+        rejectReason: validatedData.rejectReason,
+        moderatedBy: authResult.userId,
+        moderatedAt: new Date(),
+      },
       include: {
-        user: {
-          select: {
-            name: true,
-          },
-        },
-        event: {
-          select: {
-            title: true,
-          },
-        },
+        user: { select: { id: true, name: true } },
+        event: { select: { id: true, title: true } },
+      },
+    });
+
+    // Notify user
+    await prisma.notification.create({
+      data: {
+        userId: updatedFeedback.userId,
+        type: validatedData.status === "APPROVED" ? "FEEDBACK_APPROVED" : "FEEDBACK_REJECTED",
+        title: validatedData.status === "APPROVED" ? "Feedback Published!" : "Feedback Not Published",
+        message: validatedData.status === "APPROVED"
+          ? `Your review for "${updatedFeedback.event.title}" is now public.`
+          : `Your review for "${updatedFeedback.event.title}" was not approved.${validatedData.rejectReason ? ` Reason: ${validatedData.rejectReason}` : ""}`,
+        link: `/events/${updatedFeedback.eventId}`,
       },
     });
 
     return NextResponse.json({
-      message: approved ? "Feedback approved" : "Feedback rejected",
-      feedback,
+      success: true,
+      message: `Feedback ${validatedData.status.toLowerCase()} successfully`,
+      data: updatedFeedback,
     });
   } catch (error) {
-    console.error("Error updating feedback:", error);
-    return NextResponse.json(
-      { error: "Failed to update feedback" },
-      { status: 500 }
-    );
+    console.error("[FEEDBACK_MODERATE]", error);
+    if (error instanceof ZodError) {
+      return NextResponse.json({ error: "Validation failed", details: error.issues }, { status: 400 });
+    }
+    return NextResponse.json({ error: "Failed to moderate feedback" }, { status: 500 });
   }
 }
 
 // DELETE - Delete feedback (admin only)
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { feedbackId: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: Params) {
   try {
-    const { userId } = await auth();
+    const { feedbackId } = await params;
+    const authResult = await requireAdmin();
+    if (isAuthError(authResult)) return authResult;
 
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const feedback = await prisma.feedback.findUnique({ where: { id: feedbackId } });
+
+    if (!feedback) {
+      return NextResponse.json({ error: "Feedback not found" }, { status: 404 });
     }
 
-    // Check if user is admin
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true },
-    });
+    await prisma.feedback.delete({ where: { id: feedbackId } });
 
-    if (user?.role !== "ADMIN") {
-      return NextResponse.json(
-        { error: "Only admins can delete feedback" },
-        { status: 403 }
-      );
-    }
-
-    await prisma.feedback.delete({
-      where: { id: params.feedbackId },
-    });
-
-    return NextResponse.json({
-      message: "Feedback deleted successfully",
-    });
+    return NextResponse.json({ success: true, message: "Feedback deleted" });
   } catch (error) {
-    console.error("Error deleting feedback:", error);
-    return NextResponse.json(
-      { error: "Failed to delete feedback" },
-      { status: 500 }
-    );
+    console.error("[FEEDBACK_DELETE]", error);
+    return NextResponse.json({ error: "Failed to delete feedback" }, { status: 500 });
   }
 }

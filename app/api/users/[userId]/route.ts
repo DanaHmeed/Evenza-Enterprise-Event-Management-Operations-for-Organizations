@@ -1,38 +1,36 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db/prisma";
+import prisma from "@/lib/db/prisma";
+import {
+  getCurrentUser,
+  requireAdmin,
+  isAuthError,
+} from "@/lib/auth/require-role";
+
+type Params = { params: Promise<{ userId: string }> };
 
 // GET - Get single user details
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { userId: string } }
-) {
+export async function GET(request: NextRequest, { params }: Params) {
   try {
-    const { userId: currentUserId } = await auth();
+    const { userId } = await params;
+    const currentUser = await getCurrentUser();
 
-    if (!currentUserId) {
+    if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if requesting own profile or if user is admin
-    const currentUser = await prisma.user.findUnique({
-      where: { id: currentUserId },
-      select: { role: true },
-    });
-
-    if (currentUserId !== params.userId && currentUser?.role !== "ADMIN") {
+    if (currentUser.userId !== userId && currentUser.role !== "ADMIN") {
       return NextResponse.json(
         { error: "You can only view your own profile" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: params.userId },
+      where: { id: userId },
       include: {
         _count: {
           select: {
-            events: true,
+            organizedEvents: true,
             registrations: true,
             tickets: true,
             orders: true,
@@ -46,133 +44,154 @@ export async function GET(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json(user);
+    return NextResponse.json({ success: true, data: user });
   } catch (error) {
-    console.error("Error fetching user:", error);
+    console.error("[USER_GET]", error);
     return NextResponse.json(
       { error: "Failed to fetch user" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
-// PATCH - Update user (admin only - for role changes)
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { userId: string } }
-) {
+// PATCH - Update user role or deactivate (admin only)
+export async function PATCH(request: NextRequest, { params }: Params) {
   try {
-    const { userId: currentUserId } = await auth();
-
-    if (!currentUserId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check if user is admin
-    const currentUser = await prisma.user.findUnique({
-      where: { id: currentUserId },
-      select: { role: true },
-    });
-
-    if (currentUser?.role !== "ADMIN") {
-      return NextResponse.json(
-        { error: "Only admins can update user roles" },
-        { status: 403 }
-      );
-    }
+    const { userId } = await params;
+    const authResult = await requireAdmin();
+    if (isAuthError(authResult)) return authResult;
 
     const body = await request.json();
-    const { role } = body;
+    const { role, isActive } = body;
 
-    if (!role || !["USER", "ORGANIZER", "ADMIN"].includes(role)) {
+    const updateData: Record<string, unknown> = {};
+
+    if (role) {
+      if (!["USER", "ORGANIZER", "ADMIN"].includes(role)) {
+        return NextResponse.json(
+          { error: "Invalid role. Must be USER, ORGANIZER, or ADMIN" },
+          { status: 400 },
+        );
+      }
+      updateData.role = role;
+    }
+
+    if (typeof isActive === "boolean") {
+      updateData.isActive = isActive;
+    }
+
+    if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
-        { error: "Invalid role. Must be USER, ORGANIZER, or ADMIN" },
-        { status: 400 }
+        { error: "No valid fields to update" },
+        { status: 400 },
       );
     }
 
     const updatedUser = await prisma.user.update({
-      where: { id: params.userId },
-      data: { role },
+      where: { id: userId },
+      data: updateData,
+      select: { id: true, name: true, email: true, role: true, isActive: true },
+    });
+
+    // Audit log
+    await prisma.auditLog.create({
+      data: {
+        actorId: authResult.userId,
+        action: role ? "user.role_changed" : "user.status_changed",
+        entity: "User",
+        entityId: userId,
+        metadata: JSON.parse(JSON.stringify(updateData)),
+      },
     });
 
     return NextResponse.json({
-      message: "User role updated successfully",
-      user: updatedUser,
+      success: true,
+      message: "User updated successfully",
+      data: updatedUser,
     });
   } catch (error) {
-    console.error("Error updating user:", error);
+    console.error("[USER_PATCH]", error);
     return NextResponse.json(
       { error: "Failed to update user" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 // DELETE - Delete user (admin only)
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { userId: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: Params) {
   try {
-    const { userId: currentUserId } = await auth();
+    const { userId } = await params;
+    const authResult = await requireAdmin();
+    if (isAuthError(authResult)) return authResult;
 
-    if (!currentUserId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check if user is admin
-    const currentUser = await prisma.user.findUnique({
-      where: { id: currentUserId },
-      select: { role: true },
-    });
-
-    if (currentUser?.role !== "ADMIN") {
-      return NextResponse.json(
-        { error: "Only admins can delete users" },
-        { status: 403 }
-      );
-    }
-
-    // Prevent deleting yourself
-    if (currentUserId === params.userId) {
+    // Prevent self-deletion
+    if (authResult.userId === userId) {
       return NextResponse.json(
         { error: "You cannot delete your own account" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // Check if user has active events
     const user = await prisma.user.findUnique({
-      where: { id: params.userId },
+      where: { id: userId },
       include: {
-        events: {
-          where: {
-            status: "PUBLISHED",
-          },
+        organizedEvents: {
+          where: { status: "PUBLISHED" },
+          select: { id: true },
         },
       },
     });
 
-    if (user?.events && user.events.length > 0) {
-      return NextResponse.json(
-        { error: "Cannot delete user with active published events" },
-        { status: 400 }
-      );
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    await prisma.user.delete({
-      where: { id: params.userId },
+    // If user has active events, deactivate instead of delete
+    if (user.organizedEvents.length > 0) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { isActive: false },
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          actorId: authResult.userId,
+          action: "user.deactivated",
+          entity: "User",
+          entityId: userId,
+          metadata: { reason: "Had active published events" },
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message:
+          "User deactivated (has active events). Events were not deleted.",
+      });
+    }
+
+    await prisma.user.delete({ where: { id: userId } });
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: authResult.userId,
+        action: "user.deleted",
+        entity: "User",
+        entityId: userId,
+        metadata: { email: user.email, name: user.name },
+      },
     });
 
     return NextResponse.json({
+      success: true,
       message: "User deleted successfully",
     });
   } catch (error) {
-    console.error("Error deleting user:", error);
+    console.error("[USER_DELETE]", error);
     return NextResponse.json(
       { error: "Failed to delete user" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

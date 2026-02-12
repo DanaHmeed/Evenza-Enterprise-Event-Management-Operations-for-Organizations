@@ -6,12 +6,14 @@ const isPublicRoute = createRouteMatcher([
   "/",
   "/sign-in(.*)",
   "/sign-up(.*)",
-  "/api/webhooks(.*)",
   "/events",
   "/events/(.*)",
   "/about",
   "/contact",
   "/terms-of-service",
+  "/api/auth/webhook",
+  "/api/uploadthing(.*)",
+  "/api/stripe/webhook(.*)",
 ]);
 
 // Define API routes (don't redirect, just return 401)
@@ -23,15 +25,12 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.next();
   }
 
-  // For API routes, don't use auth.protect() 
+  // For API routes, don't use auth.protect()
   // (it tries to redirect which doesn't work for APIs)
   if (isApiRoute(req)) {
     const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     return NextResponse.next();
   }

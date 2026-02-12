@@ -1,230 +1,213 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db/prisma";
+import prisma from "@/lib/db/prisma";
+import { requireAuth, isAuthError } from "@/lib/auth/require-role";
+import { generateTicketNumber, generateQRData } from "@/lib/utils/helpers";
+
+type Params = { params: Promise<{ eventId: string }> };
 
 // POST - Register for a FREE event
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { eventId: string } }
-) {
+export async function POST(request: NextRequest, { params }: Params) {
   try {
-    const { userId } = await auth();
+    const { eventId } = await params;
+    const authResult = await requireAuth();
+    if (isAuthError(authResult)) return authResult;
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    // Get the event
     const event = await prisma.event.findUnique({
-      where: { id: params.eventId },
-      include: {
-        _count: {
-          select: { registrations: true },
-        },
-      },
+      where: { id: eventId },
     });
 
     if (!event) {
-      return NextResponse.json(
-        { error: "Event not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    // Check if event is published
     if (event.status !== "PUBLISHED") {
-      return NextResponse.json(
-        { error: "Event is not available for registration" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Event is not available for registration" }, { status: 400 });
     }
 
-    // Check if event is free
     if (event.eventType !== "FREE") {
-      return NextResponse.json(
-        { error: "This is a paid event. Please use the purchase endpoint." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "This is a paid event. Please use the purchase endpoint." }, { status: 400 });
     }
 
-    // Check registration deadline
     if (new Date() > new Date(event.registrationDeadline)) {
-      return NextResponse.json(
-        { error: "Registration deadline has passed" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Registration deadline has passed" }, { status: 400 });
     }
 
-    // Check if event has already started
     if (new Date() > new Date(event.startDate)) {
-      return NextResponse.json(
-        { error: "Event has already started" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Event has already started" }, { status: 400 });
     }
 
-    // Check capacity
     if (event.seatsRemaining <= 0) {
-      return NextResponse.json(
-        { error: "Event is full" },
-        { status: 400 }
-      );
+      // Check if waitlist is enabled
+      if (event.waitlistEnabled) {
+        const waitlistCount = await prisma.waitlistEntry.count({
+          where: { eventId },
+        });
+
+        await prisma.waitlistEntry.create({
+          data: {
+            userId: authResult.userId,
+            eventId,
+            position: waitlistCount + 1,
+            status: "WAITING",
+          },
+        });
+
+        return NextResponse.json(
+          { success: true, message: "Event is full. You have been added to the waitlist.", waitlistPosition: waitlistCount + 1 },
+          { status: 201 }
+        );
+      }
+
+      return NextResponse.json({ error: "Event is full" }, { status: 400 });
     }
 
     // Check if already registered
     const existingRegistration = await prisma.registration.findUnique({
-      where: {
-        userId_eventId: {
-          userId,
-          eventId: params.eventId,
-        },
-      },
+      where: { userId_eventId: { userId: authResult.userId, eventId } },
     });
 
     if (existingRegistration) {
-      return NextResponse.json(
-        { error: "You are already registered for this event" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "You are already registered for this event" }, { status: 400 });
     }
 
-    // Create registration
-    const registration = await prisma.$transaction(async (tx) => {
-      // Create the registration
-      const newRegistration = await tx.registration.create({
+    // Create registration + ticket + update seats in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      const registrationStatus = event.approvalRequired ? "PENDING" : "APPROVED";
+
+      const registration = await tx.registration.create({
         data: {
-          userId,
-          eventId: params.eventId,
-          status: event.approvalRequired ? "PENDING" : "APPROVED",
-        },
-        include: {
-          event: {
-            select: {
-              title: true,
-              startDate: true,
-              endDate: true,
-              address: true,
-              city: true,
-              country: true,
-              isOnline: true,
-              meetingLink: true,
-            },
-          },
-          user: {
-            select: {
-              name: true,
-              email: true,
-            },
-          },
+          userId: authResult.userId,
+          eventId,
+          status: registrationStatus,
         },
       });
 
-      // Update seats remaining
+      // Generate ticket if auto-approved (free event)
+      let ticket = null;
+      if (registrationStatus === "APPROVED") {
+        const ticketNumber = generateTicketNumber();
+        ticket = await tx.ticket.create({
+          data: {
+            ticketNumber,
+            qrCode: generateQRData(registration.id, eventId),
+            eventId,
+            userId: authResult.userId,
+            registrationId: registration.id,
+            price: 0,
+            currency: event.currency || "USD",
+            status: "PAID", // Free events are instantly "paid"
+          },
+        });
+      }
+
+      // Decrement seats
       await tx.event.update({
-        where: { id: params.eventId },
+        where: { id: eventId },
+        data: { seatsRemaining: { decrement: 1 } },
+      });
+
+      // Create notification
+      await tx.notification.create({
         data: {
-          seatsRemaining: {
-            decrement: 1,
-          },
+          userId: authResult.userId,
+          type: registrationStatus === "APPROVED"
+            ? "REGISTRATION_CONFIRMED"
+            : "REGISTRATION_APPROVED",
+          title: registrationStatus === "APPROVED"
+            ? "Registration Confirmed!"
+            : "Registration Pending",
+          message: registrationStatus === "APPROVED"
+            ? `You are registered for "${event.title}".`
+            : `Your registration for "${event.title}" is pending approval.`,
+          link: `/events/${eventId}`,
         },
       });
 
-      return newRegistration;
+      return { registration, ticket };
     });
 
     return NextResponse.json(
       {
+        success: true,
         message: event.approvalRequired
           ? "Registration submitted for approval"
           : "Successfully registered for event",
-        registration,
+        data: result,
       },
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error registering for event:", error);
-    return NextResponse.json(
-      { error: "Failed to register for event" },
-      { status: 500 }
-    );
+    console.error("[REGISTER_POST]", error);
+    return NextResponse.json({ error: "Failed to register for event" }, { status: 500 });
   }
 }
 
 // DELETE - Cancel registration
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { eventId: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: Params) {
   try {
-    const { userId } = await auth();
+    const { eventId } = await params;
+    const authResult = await requireAuth();
+    if (isAuthError(authResult)) return authResult;
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    // Find the registration
     const registration = await prisma.registration.findUnique({
-      where: {
-        userId_eventId: {
-          userId,
-          eventId: params.eventId,
-        },
-      },
-      include: {
-        event: true,
-      },
+      where: { userId_eventId: { userId: authResult.userId, eventId } },
+      include: { event: true, ticket: true },
     });
 
     if (!registration) {
-      return NextResponse.json(
-        { error: "Registration not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Registration not found" }, { status: 404 });
     }
 
-    // Check if event has already started
     if (new Date() > new Date(registration.event.startDate)) {
-      return NextResponse.json(
-        { error: "Cannot cancel registration after event has started" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Cannot cancel after event has started" }, { status: 400 });
     }
 
-    // Delete registration and update seats
     await prisma.$transaction(async (tx) => {
+      // Delete ticket if exists
+      if (registration.ticket) {
+        await tx.ticket.delete({ where: { id: registration.ticket.id } });
+      }
+
+      // Delete registration
       await tx.registration.delete({
-        where: {
-          userId_eventId: {
-            userId,
-            eventId: params.eventId,
-          },
-        },
+        where: { userId_eventId: { userId: authResult.userId, eventId } },
       });
 
+      // Restore seat
       await tx.event.update({
-        where: { id: params.eventId },
-        data: {
-          seatsRemaining: {
-            increment: 1,
-          },
-        },
+        where: { id: eventId },
+        data: { seatsRemaining: { increment: 1 } },
       });
+
+      // Promote from waitlist if someone is waiting
+      if (registration.event.waitlistEnabled) {
+        const nextInLine = await tx.waitlistEntry.findFirst({
+          where: { eventId, status: "WAITING" },
+          orderBy: { position: "asc" },
+        });
+
+        if (nextInLine) {
+          await tx.waitlistEntry.update({
+            where: { id: nextInLine.id },
+            data: { status: "NOTIFIED", notifiedAt: new Date() },
+          });
+
+          await tx.notification.create({
+            data: {
+              userId: nextInLine.userId,
+              type: "WAITLIST_SPOT_AVAILABLE",
+              title: "A spot opened up!",
+              message: `A spot is now available for "${registration.event.title}". Register now before it's taken!`,
+              link: `/events/${eventId}`,
+            },
+          });
+        }
+      }
     });
 
-    return NextResponse.json({
-      message: "Registration cancelled successfully",
-    });
+    return NextResponse.json({ success: true, message: "Registration cancelled successfully" });
   } catch (error) {
-    console.error("Error cancelling registration:", error);
-    return NextResponse.json(
-      { error: "Failed to cancel registration" },
-      { status: 500 }
-    );
+    console.error("[REGISTER_DELETE]", error);
+    return NextResponse.json({ error: "Failed to cancel registration" }, { status: 500 });
   }
 }

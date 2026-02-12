@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import Stripe from "stripe";
-import { prisma } from "@/lib/db/prisma";
+import prisma from "@/lib/db/prisma";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -11,10 +11,7 @@ export async function POST(req: NextRequest) {
   const signature = headersList.get("stripe-signature");
 
   if (!signature) {
-    return NextResponse.json(
-      { error: "No signature" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "No signature" }, { status: 400 });
   }
 
   let event: Stripe.Event;
@@ -27,11 +24,8 @@ export async function POST(req: NextRequest) {
     );
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
-    console.error("Webhook signature verification failed:", errorMessage);
-    return NextResponse.json(
-      { error: "Invalid signature" },
-      { status: 400 }
-    );
+    console.error("[STRIPE_WEBHOOK] Signature verification failed:", errorMessage);
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
   // Handle successful payment
@@ -39,15 +33,15 @@ export async function POST(req: NextRequest) {
     const session = event.data.object as Stripe.Checkout.Session;
 
     try {
-      const { userId, eventId, ticketId, orderId } = session.metadata || {};
+      const { userId, eventId, ticketId, orderId, registrationId } =
+        session.metadata || {};
 
-      if (!userId || !eventId || !ticketId || !orderId) {
+      if (!userId || !eventId || !ticketId || !orderId || !registrationId) {
         throw new Error("Missing metadata");
       }
 
-      // Use transaction to ensure all updates succeed together
       await prisma.$transaction(async (tx) => {
-        // Update ticket to PAID
+        // 1. Update ticket to PAID
         await tx.ticket.update({
           where: { id: ticketId },
           data: {
@@ -56,7 +50,7 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        // Update order to PAID
+        // 2. Update order to PAID
         await tx.order.update({
           where: { id: orderId },
           data: {
@@ -64,68 +58,75 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        // Create registration with ticket
-        await tx.registration.create({
-          data: {
-            userId,
-            eventId,
-            ticketId,
-            status: "APPROVED", // Auto-approve paid registrations
-          },
+        // 3. Approve registration
+        await tx.registration.update({
+          where: { id: registrationId },
+          data: { status: "APPROVED" },
         });
 
-        // Decrease available seats
-        await tx.event.update({
-          where: { id: eventId },
+        // 4. Notify user
+        await tx.notification.create({
           data: {
-            seatsRemaining: {
-              decrement: 1,
-            },
+            userId,
+            type: "PAYMENT_RECEIVED",
+            title: "Payment Confirmed!",
+            message: "Your payment was successful and your ticket is ready.",
+            link: `/events/${eventId}`,
           },
         });
       });
 
-      console.log("✅ Payment successful and ticket created:", session.id);
+      console.log("✅ Payment successful:", session.id);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      console.error("Error processing successful payment:", errorMessage);
-      return NextResponse.json(
-        { error: "Database update failed" },
-        { status: 500 }
-      );
+      console.error("[STRIPE_WEBHOOK] Error processing payment:", errorMessage);
+      return NextResponse.json({ error: "Database update failed" }, { status: 500 });
     }
   }
 
   // Handle failed payment
-  if (event.type === "payment_intent.payment_failed") {
-    const paymentIntent = event.data.object as Stripe.PaymentIntent;
-
-    console.log("❌ Payment failed:", paymentIntent.id);
+  if (event.type === "checkout.session.expired" || event.type === "payment_intent.payment_failed") {
+    const session = event.data.object as Stripe.Checkout.Session;
 
     try {
-      // Update order to FAILED
-      await prisma.order.updateMany({
-        where: {
-          stripeSessionId: paymentIntent.id,
-        },
-        data: {
-          paymentStatus: "FAILED",
-        },
+      const { ticketId, orderId, registrationId, eventId } =
+        session.metadata || {};
+
+      if (!ticketId || !orderId || !registrationId || !eventId) {
+        console.error("[STRIPE_WEBHOOK] Missing metadata on failed payment");
+        return NextResponse.json({ received: true });
+      }
+
+      await prisma.$transaction(async (tx) => {
+        // 1. Cancel ticket
+        await tx.ticket.update({
+          where: { id: ticketId },
+          data: { status: "CANCELLED" },
+        });
+
+        // 2. Fail order
+        await tx.order.update({
+          where: { id: orderId },
+          data: { paymentStatus: "FAILED" },
+        });
+
+        // 3. Cancel registration
+        await tx.registration.update({
+          where: { id: registrationId },
+          data: { status: "CANCELLED" },
+        });
+
+        // 4. Restore seat
+        await tx.event.update({
+          where: { id: eventId },
+          data: { seatsRemaining: { increment: 1 } },
+        });
       });
 
-      // Release the reserved ticket
-      await prisma.ticket.updateMany({
-        where: {
-          paymentIntentId: paymentIntent.id,
-          status: "RESERVED",
-        },
-        data: {
-          status: "CANCELLED",
-        },
-      });
+      console.log("❌ Payment failed/expired, resources released:", session.id);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      console.error("Error processing failed payment:", errorMessage);
+      console.error("[STRIPE_WEBHOOK] Error handling failed payment:", errorMessage);
     }
   }
 

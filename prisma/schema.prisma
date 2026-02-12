@@ -1,11 +1,10 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// ============================================================================
+// EVENZA — Graduation Project
+// Prisma Schema | Next.js 15 • PostgreSQL • Clerk • Stripe
+// ============================================================================
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../lib/generated/prisma"
 }
 
@@ -13,116 +12,360 @@ datasource db {
   provider = "postgresql"
 }
 
-//user model representing a Clerk user
+// ============================================================================
+// 1. USER
+// ============================================================================
 model User {
-  id        String   @id // Clerk userId
+  id        String   @id // Clerk userId (synced from Clerk webhook)
   email     String   @unique
   name      String
+  avatar    String? // Profile picture URL
+  phone     String?
+  bio       String?
   role      Role     @default(USER)
+  isActive  Boolean  @default(true) // Admin can deactivate accounts
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
-  events        Event[]        @relation("UserEvents")
-  tickets       Ticket[]
-  orders        Order[]
-  feedbacks     Feedback[]
-  registrations Registration[]
+  // — Relations —
+  organizedEvents Event[]          @relation("OrganizerEvents")
+  registrations   Registration[]
+  tickets         Ticket[]
+  orders          Order[]
+  feedbacks       Feedback[]
+  notifications   Notification[]
+  waitlistEntries WaitlistEntry[]
+
+  @@index([email])
+  @@index([role])
 }
 
+// ============================================================================
+// 2. EVENT
+// ============================================================================
 model Event {
   id          String @id @default(cuid())
   title       String
-  description String
-  category    String
+  slug        String @unique // URL-friendly slug for SEO: /events/my-cool-event
+  description String @db.Text // Long rich-text descriptions
+  summary     String? // Short summary for cards (max ~200 chars)
 
-  // Time
+  // — Categorization —
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+  tags       Tag[]    @relation("EventTags")
+
+  // — Time —
   startDate            DateTime
   endDate              DateTime
-  timezone             String
+  timezone             String   @default("Asia/Hebron")
   registrationDeadline DateTime
 
-  // Location
+  // — Location —
   isOnline    Boolean @default(false)
   venueName   String?
   address     String?
   city        String?
   country     String?
-  meetingLink String?
+  latitude    Float? // For map integration
+  longitude   Float? // For map integration
+  meetingLink String? // Zoom/Google Meet/Teams link (only if online)
 
-  // Capacity
+  // — Capacity —
   capacity         Int
   seatsRemaining   Int
-  approvalRequired Boolean @default(false)
+  waitlistEnabled  Boolean @default(false)
+  approvalRequired Boolean @default(false) // Organizer manually approves attendees
 
-  // Pricing
+  // — Pricing —
   eventType EventType @default(FREE)
   price     Float?    @default(0)
   currency  String?   @default("USD")
 
-  // Media
-  banner String?
+  // — Media —
+  banner   String? // Main banner image URL
+  gallery  String[] // Array of additional image URLs
+  videoUrl String? // Promo/trailer video link
 
-  // Status
-  status EventStatus @default(DRAFT)
+  // — Status & Visibility —
+  status       EventStatus @default(DRAFT)
+  isFeatured   Boolean     @default(false) // Admin can feature events on homepage
+  viewCount    Int         @default(0) // Track event page views
+  publishedAt  DateTime? // When the event was first published
+  cancelledAt  DateTime? // When the event was cancelled
+  cancelReason String? // Reason for cancellation
 
-  // Relations
-  organizerId   String
-  organizer     User           @relation("UserEvents", fields: [organizerId], references: [id])
-  registrations Registration[]
-  tickets       Ticket[]
-  feedback      Feedback[]
-  orders        Order[]        @relation("EventOrders") // ← Add this
+  // — Organizer —
+  organizerId String
+  organizer   User   @relation("OrganizerEvents", fields: [organizerId], references: [id])
+
+  // — Related Records —
+  registrations   Registration[]
+  tickets         Ticket[]
+  feedbacks       Feedback[]
+  orders          Order[]
+  waitlistEntries WaitlistEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([category])
+  @@index([slug])
+  @@index([categoryId])
   @@index([startDate])
   @@index([city])
   @@index([eventType])
+  @@index([status])
+  @@index([organizerId])
+  @@index([isFeatured])
 }
 
-enum EventStatus {
-  DRAFT
-  PUBLISHED
-  CANCELLED
-  COMPLETED
-}
+// ============================================================================
+// 3. CATEGORY — Normalized event categories
+// ============================================================================
+model Category {
+  id          String  @id @default(cuid())
+  name        String  @unique // Technology,Education...
+  slug        String  @unique
+  description String?
+  icon        String? // Icon name or URL
+  color       String? // Hex color for UI badges
 
-model Feedback {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  eventId   String
-  event     Event    @relation(fields: [eventId], references: [id])
-  rating    Int      @default(5)
-  comment   String?
-  approved  Boolean  @default(false) // ← ADD: For admin approval
+  events Event[]
+
   createdAt DateTime @default(now())
 }
 
+// ============================================================================
+// 4. TAG — Flexible event tagging
+// ============================================================================
+model Tag {
+  id   String @id @default(cuid())
+  name String @unique // "AI", "Networking", "Workshop", etc.
+  slug String @unique
+
+  events Event[] @relation("EventTags")
+
+  createdAt DateTime @default(now())
+}
+
+// ============================================================================
+// 5. REGISTRATION
+// ============================================================================
 model Registration {
-  id        String             @id @default(cuid())
-  userId    String
-  user      User               @relation(fields: [userId], references: [id])
-  eventId   String
-  event     Event              @relation(fields: [eventId], references: [id])
-  ticketId  String?            @unique // ← ADD: Link to ticket if paid
-  ticket    Ticket?            @relation(fields: [ticketId], references: [id])
-  status    RegistrationStatus @default(PENDING) // ← ADD: For approval workflow
-  createdAt DateTime           @default(now())
+  id      String @id @default(cuid())
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  status     RegistrationStatus @default(PENDING)
+  source     String?            @default("web") // "web", "mobile", "admin"
+  notes      String? // Admin/organizer notes on this registration
+  checkedIn  Boolean            @default(false)
+  checkedInAt DateTime?
+
+  // — Ticket link (generated after approval/payment) —
+  ticket Ticket?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, eventId]) // One registration per user per event
+  @@index([eventId])
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================================================
+// 6. TICKET — QR-code based entry passes
+// ============================================================================
+model Ticket {
+  id           String @id @default(cuid())
+  ticketNumber String @unique // Unique code: "EVZ-XXXX-XXXX"
+  qrCode       String @unique // QR code data string for scanning
+
+  // — Links —
+  eventId        String
+  event          Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  registrationId String       @unique
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  // — Payment —
+  price           Float
+  currency        String         @default("USD")
+  paymentIntentId String? // Stripe Payment Intent ID
+  status          TicketStatus   @default(RESERVED)
+
+  // — Entry Control —
+  isUsed      Boolean   @default(false)
+  usedAt      DateTime? // Timestamp of check-in scan
+  validatedBy String? // ID of the organizer/admin who scanned
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+  @@index([userId])
+  @@index([status])
+  @@index([ticketNumber])
+}
+
+// ============================================================================
+// 7. ORDER — Payment records
+// ============================================================================
+model Order {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  // — Payment Details —
+  amount          Float
+  currency        String        @default("USD")
+  paymentMethod   PaymentMethod
+  paymentStatus   PaymentStatus @default(PENDING)
+  stripeSessionId String?       @unique // Stripe Checkout Session ID
+  receiptUrl      String? // Link to Stripe receipt
+  refundedAt      DateTime? // If refunded
+  refundAmount    Float? // Partial or full refund
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([eventId])
+  @@index([paymentStatus])
+  @@index([stripeSessionId])
+}
+
+// ============================================================================
+// 8. FEEDBACK — Post-event reviews with admin moderation
+// ============================================================================
+model Feedback {
+  id      String @id @default(cuid())
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  rating  Int     @default(5) // 1-5 star rating
+  title   String? // Short review title
+  comment String? @db.Text // Detailed review text
+
+  // — Moderation —
+  status       FeedbackStatus @default(PENDING)
+  moderatedBy  String? // Admin user ID who moderated
+  moderatedAt  DateTime?
+  rejectReason String? // Why feedback was rejected
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, eventId]) // One feedback per user per event
+  @@index([eventId])
+  @@index([status])
+}
+
+// ============================================================================
+// 9. WAITLIST — For full-capacity events
+// ============================================================================
+model WaitlistEntry {
+  id      String @id @default(cuid())
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  position   Int // Queue position (1, 2, 3...)
+  notifiedAt DateTime? // When they were notified a spot opened
+  expiredAt  DateTime? // If they didn't respond in time
+  status     WaitlistStatus @default(WAITING)
+
+  createdAt DateTime @default(now())
 
   @@unique([userId, eventId])
+  @@index([eventId, position])
 }
 
-enum RegistrationStatus {
-  PENDING
-  APPROVED
-  REJECTED
+// ============================================================================
+// 10. NOTIFICATION — In-app notification system
+// ============================================================================
+model Notification {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type    NotificationType
+  title   String
+  message String
+  link    String? // Deep link: "/events/abc123"
+  isRead  Boolean @default(false)
+  readAt  DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@index([createdAt])
 }
 
-// User roles
+// ============================================================================
+// 11. CONTACT MESSAGE — From the contact page
+// ============================================================================
+model ContactMessage {
+  id      String @id @default(cuid())
+  name    String
+  email   String
+  subject String
+  message String @db.Text
+
+  isRead     Boolean  @default(false)
+  repliedAt  DateTime?
+  repliedBy  String? // Admin who replied
+
+  createdAt DateTime @default(now())
+
+  @@index([isRead])
+}
+
+// ============================================================================
+// 12. PLATFORM SETTINGS — Admin-configurable settings (key-value)
+// ============================================================================
+model PlatformSetting {
+  id    String @id @default(cuid())
+  key   String @unique // "terms_of_service", "about_content", "max_events_per_organizer"
+  value String @db.Text // JSON or plain text
+  type  String @default("text") // "text", "html", "json", "number"
+
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================================
+// 13. AUDIT LOG — Track important admin/system actions
+// ============================================================================
+model AuditLog {
+  id        String @id @default(cuid())
+  actorId   String? // User who performed the action (null = system)
+  action    String // "event.published", "user.banned", "feedback.approved"
+  entity    String // "Event", "User", "Feedback"
+  entityId  String // ID of the affected record
+  metadata  Json? // Additional context as JSON
+  ipAddress String?
+
+  createdAt DateTime @default(now())
+
+  @@index([actorId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
 enum Role {
   USER
   ORGANIZER
@@ -134,48 +377,26 @@ enum EventType {
   PAID
 }
 
-// Ticket model
-model Ticket {
-  id              String       @id @default(cuid())
-  ticketNumber    String       @unique //  Unique ticket code
-  eventId         String
-  event           Event        @relation(fields: [eventId], references: [id])
-  userId          String
-  user            User         @relation(fields: [userId], references: [id])
-  paymentIntentId String? // Stripe payment ID
-  price           Float
-  currency        String
-  validatedAt     DateTime? // For check-in
-  status          TicketStatus @default(RESERVED)
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
 
-  // Entry control
-  isUsed       Boolean       @default(false)
-  usedAt       DateTime?
-  registration Registration?
-  createdAt    DateTime      @default(now())
+enum RegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED // User cancels their own registration
 }
 
 enum TicketStatus {
-  RESERVED
-  PENDING
+  RESERVED // Held during payment
   PAID
   CANCELLED
-}
-
-// Order model to handle purchases
-model Order {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
-  eventId         String
-  event           Event         @relation("EventOrders", fields: [eventId], references: [id])
-  amount          Float
-  currency        String
-  paymentMethod   PaymentMethod
-  paymentStatus   PaymentStatus @default(PENDING)
-  stripeSessionId String?       @unique
-  createdAt       DateTime      @default(now())
+  REFUNDED
+  EXPIRED // Payment not completed in time
 }
 
 enum PaymentMethod {
@@ -189,4 +410,34 @@ enum PaymentStatus {
   PENDING
   PAID
   FAILED
+  REFUNDED
 }
+
+enum FeedbackStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum WaitlistStatus {
+  WAITING
+  NOTIFIED // Spot opened, user was notified
+  EXPIRED // User didn't respond in time
+  CONVERTED // User got the spot and registered
+}
+
+enum NotificationType {
+  REGISTRATION_CONFIRMED
+  REGISTRATION_APPROVED
+  REGISTRATION_REJECTED
+  EVENT_REMINDER
+  EVENT_CANCELLED
+  EVENT_UPDATED
+  WAITLIST_SPOT_AVAILABLE
+  FEEDBACK_APPROVED
+  FEEDBACK_REJECTED
+  TICKET_ISSUED
+  PAYMENT_RECEIVED
+  SYSTEM_ANNOUNCEMENT
+}
+

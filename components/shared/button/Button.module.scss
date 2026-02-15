@@ -1,9 +1,8 @@
-.button {
+/*.button {
   padding: 7.5px 18;
   border: 0;
   border-radius: 100px;
-  background-color: orange;
-  color: rgb(64, 63, 63);
+  background-color: #f97316;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -12,7 +11,7 @@
 
 .button:hover {
   background-color: #fff;
-  box-shadow: 0 0 20px orange;
+  box-shadow: 0 0 20px #f97316;
   transform: scale(1.1);
 }
 
@@ -20,5 +19,49 @@
   background-color: rgb(215, 141, 2);
   transition: all 0.25s;
   box-shadow: none;
-  transform: scale(0.98);
+  transform: scale(0.8);
+}*/
+/* From Uiverse.io by gharsh11032000 */ 
+.button {
+  cursor: pointer;
+  position: relative;
+  padding: 6.5px 16px;
+  font-size: 14px;
+  color: rgb(28, 28, 27);
+  border: 1px solid #f97316;
+  border-radius: 34px;
+  background-color: transparent;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+  overflow: hidden;
 }
+
+.button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 50px;
+  height: 50px;
+  border-radius: inherit;
+  scale: 0;
+  z-index: -1;
+  background-color: #ec6e14;
+  transition: all 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+}
+
+.button:hover::before {
+  scale: 3;
+}
+
+.button:hover {
+  color: #212121;
+  scale: 1.1;
+  box-shadow: #f97316;
+}
+
+.button:active {
+  scale: 1;
+}
+
+

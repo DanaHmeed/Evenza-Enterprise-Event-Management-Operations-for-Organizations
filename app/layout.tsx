@@ -1,9 +1,22 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import "@/styles/globals.css";
+
 export const metadata: Metadata = {
-  title: "Evenza",
-  description: "Event management and ticketing platform",
+  title: {
+    default: "Evenza — Event Management Platform",
+    template: "%s | Evenza",
+  },
+  description:
+    "Discover, create, and manage extraordinary events. Evenza is the all-in-one platform for organizers and attendees.",
+  keywords: [
+    "events",
+    "event management",
+    "tickets",
+    "conferences",
+    "meetups",
+    "organizer",
+  ],
 };
 
 export default function RootLayout({
@@ -12,10 +25,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ClerkProvider>
-      <html>
-        <body>
-          {children}</body>
+    <ClerkProvider
+      appearance={{
+        variables: {
+          colorPrimary: "#f97316",
+          borderRadius: "0.75rem",
+        },
+      }}
+    >
+      <html lang="en">
+        <body>{children}</body>
       </html>
     </ClerkProvider>
   );

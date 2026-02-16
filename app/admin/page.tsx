@@ -1,185 +1,316 @@
-import { prisma } from "@/lib/db/prisma";
+// app/admin/page.tsx
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import {
+  Users,
+  CalendarDays,
+  DollarSign,
+  Ticket,
+  TrendingUp,
+  TrendingDown,
+  ArrowRight,
+  Loader2,
+  UserPlus,
+  CalendarPlus,
+  ShieldCheck,
+  Activity,
+  Star,
+  MessageSquare,
+} from "lucide-react";
 
-export default async function AdminDashboard() {
-  // Fetch statistics
-  const [
-    totalUsers,
-    totalEvents,
-    publishedEvents,
-    pendingFeedback,
-    totalRevenue,
-    recentUsers,
-    recentEvents,
-  ] = await Promise.all([
-    prisma.user.count(),
-    prisma.event.count(),
-    prisma.event.count({ where: { status: "PUBLISHED" } }),
-    prisma.feedback.count({ where: { approved: false } }),
-    prisma.order.aggregate({
-      where: { paymentStatus: "PAID" },
-      _sum: { amount: true },
-    }),
-    prisma.user.findMany({
-      take: 5,
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-      },
-    }),
-    prisma.event.findMany({
-      take: 5,
-      orderBy: { createdAt: "desc" },
-      include: {
-        organizer: {
-          select: { name: true },
-        },
-      },
-    }),
-  ]);
+interface PlatformStats {
+  totalUsers: number;
+  totalOrganizers: number;
+  totalEvents: number;
+  publishedEvents: number;
+  totalRevenue: number;
+  totalTickets: number;
+  totalFeedbacks: number;
+  pendingFeedbacks: number;
+}
 
-  const stats = [
+interface RecentUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  createdAt: string;
+}
+
+interface RecentEvent {
+  id: string;
+  title: string;
+  status: string;
+  organizer: { name: string };
+  createdAt: string;
+}
+
+export default function AdminDashboardPage() {
+  const [stats, setStats] = useState<PlatformStats | null>(null);
+  const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
+  const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch users for stats
+        const usersRes = await fetch("/api/users?pageSize=5");
+        if (usersRes.ok) {
+          const usersData = await usersRes.json();
+          const allUsers = usersData.data || [];
+          setRecentUsers(allUsers.slice(0, 5));
+
+          // Derive basic stats from users list
+          const usersPagination = usersData.pagination || {};
+          const totalUsersCount = usersPagination.total || allUsers.length;
+
+          // Fetch events
+          const eventsRes = await fetch("/api/events?pageSize=5&sortBy=createdAt&sortOrder=desc");
+          let eventsData: any = { data: [], pagination: {} };
+          if (eventsRes.ok) {
+            eventsData = await eventsRes.json();
+            setRecentEvents(eventsData.data || []);
+          }
+
+          // Fetch feedback count
+          const feedbackRes = await fetch("/api/feedback?pageSize=1");
+          let feedbackTotal = 0;
+          let pendingCount = 0;
+          if (feedbackRes.ok) {
+            const fbData = await feedbackRes.json();
+            feedbackTotal = fbData.pagination?.total || 0;
+          }
+          const pendingRes = await fetch("/api/feedback?pageSize=1&status=PENDING");
+          if (pendingRes.ok) {
+            const pData = await pendingRes.json();
+            pendingCount = pData.pagination?.total || 0;
+          }
+
+          setStats({
+            totalUsers: totalUsersCount,
+            totalOrganizers: allUsers.filter((u: any) => u.role === "ORGANIZER").length,
+            totalEvents: eventsData.pagination?.total || 0,
+            publishedEvents: (eventsData.data || []).filter((e: any) => e.status === "PUBLISHED").length,
+            totalRevenue: 0, // Would need a dedicated endpoint
+            totalTickets: 0,
+            totalFeedbacks: feedbackTotal,
+            pendingFeedbacks: pendingCount,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load admin data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <Loader2 className="w-7 h-7 text-orange-500 animate-spin" />
+      </div>
+    );
+  }
+
+  const statCards = [
     {
-      title: "Total Users",
-      value: totalUsers,
-      icon: "👥",
-      link: "/admin/users",
-      color: "bg-blue-500",
+      label: "Total Users",
+      value: stats?.totalUsers || 0,
+      icon: <Users className="w-5 h-5" />,
+      bg: "bg-blue-50",
+      iconBg: "bg-blue-100",
+      color: "text-blue-600",
+      href: "/admin/users",
     },
     {
-      title: "Total Events",
-      value: totalEvents,
-      icon: "📅",
-      link: "/admin/events",
-      color: "bg-green-500",
+      label: "Organizers",
+      value: stats?.totalOrganizers || 0,
+      icon: <ShieldCheck className="w-5 h-5" />,
+      bg: "bg-purple-50",
+      iconBg: "bg-purple-100",
+      color: "text-purple-600",
+      href: "/admin/users?role=ORGANIZER",
     },
     {
-      title: "Published Events",
-      value: publishedEvents,
-      icon: "✅",
-      link: "/admin/events",
-      color: "bg-purple-500",
+      label: "Total Events",
+      value: stats?.totalEvents || 0,
+      icon: <CalendarDays className="w-5 h-5" />,
+      bg: "bg-orange-50",
+      iconBg: "bg-orange-100",
+      color: "text-orange-600",
+      href: "/admin/events",
     },
     {
-      title: "Pending Feedback",
-      value: pendingFeedback,
-      icon: "💬",
-      link: "/admin/feedback",
-      color: "bg-yellow-500",
+      label: "Total Revenue",
+      value: `$${(stats?.totalRevenue || 0).toLocaleString()}`,
+      icon: <DollarSign className="w-5 h-5" />,
+      bg: "bg-green-50",
+      iconBg: "bg-green-100",
+      color: "text-green-600",
+      href: "/admin/orders",
     },
     {
-      title: "Total Revenue",
-      value: `$${totalRevenue._sum.amount || 0}`,
-      icon: "💰",
-      link: "/admin/statistics",
-      color: "bg-emerald-500",
+      label: "Feedbacks",
+      value: stats?.totalFeedbacks || 0,
+      icon: <MessageSquare className="w-5 h-5" />,
+      bg: "bg-amber-50",
+      iconBg: "bg-amber-100",
+      color: "text-amber-600",
+      href: "/admin/feedback",
+    },
+    {
+      label: "Pending Reviews",
+      value: stats?.pendingFeedbacks || 0,
+      icon: <Star className="w-5 h-5" />,
+      bg: "bg-red-50",
+      iconBg: "bg-red-100",
+      color: "text-red-600",
+      href: "/admin/feedback?status=PENDING",
     },
   ];
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
+  const getRoleBadge = (role: string) => {
+    const map: Record<string, string> = {
+      ADMIN: "bg-red-100 text-red-700",
+      ORGANIZER: "bg-purple-100 text-purple-700",
+      USER: "bg-gray-100 text-gray-600",
+    };
+    return map[role] || map.USER;
+  };
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-        {stats.map((stat, index) => (
+  const getStatusBadge = (status: string) => {
+    const map: Record<string, string> = {
+      PUBLISHED: "bg-green-100 text-green-700",
+      DRAFT: "bg-gray-100 text-gray-600",
+      CANCELLED: "bg-red-100 text-red-600",
+    };
+    return map[status] || map.DRAFT;
+  };
+
+  const formatDate = (d: string) =>
+    new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+        <p className="text-sm text-gray-500 mt-1">Platform overview and management.</p>
+      </div>
+
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+        {statCards.map((card, i) => (
           <Link
-            key={index}
-            href={stat.link}
-            className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
+            key={i}
+            href={card.href}
+            className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md hover:border-gray-300 transition-all group"
           >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-3xl">{stat.icon}</span>
-              <span
-                className={`${stat.color} text-white text-xs px-2 py-1 rounded`}
-              >
-                View
-              </span>
+            <div className={`w-10 h-10 rounded-xl ${card.iconBg} flex items-center justify-center ${card.color} mb-3`}>
+              {card.icon}
             </div>
-            <p className="text-2xl font-bold">{stat.value}</p>
-            <p className="text-sm text-gray-600">{stat.title}</p>
+            <p className="text-2xl font-bold text-gray-900">{card.value}</p>
+            <p className="text-xs text-gray-500 mt-0.5 group-hover:text-orange-600 transition-colors">{card.label}</p>
           </Link>
         ))}
       </div>
 
-      {/* Recent Activity */}
-      <div className="grid md:grid-cols-2 gap-6">
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+        {[
+          { label: "Manage Users", href: "/admin/users", icon: <Users className="w-4 h-4" /> },
+          { label: "Manage Events", href: "/admin/events", icon: <CalendarDays className="w-4 h-4" /> },
+          { label: "Moderate Feedback", href: "/admin/feedback", icon: <MessageSquare className="w-4 h-4" /> },
+          { label: "Categories", href: "/admin/categories", icon: <Activity className="w-4 h-4" /> },
+        ].map((a, i) => (
+          <Link
+            key={i}
+            href={a.href}
+            className="flex items-center gap-3 bg-white rounded-xl border border-gray-200 px-4 py-3 hover:border-orange-200 hover:shadow-sm transition-all group"
+          >
+            <div className="w-8 h-8 rounded-lg bg-gray-100 group-hover:bg-orange-100 flex items-center justify-center text-gray-500 group-hover:text-orange-600 transition-colors">
+              {a.icon}
+            </div>
+            <span className="text-sm font-semibold text-gray-700 group-hover:text-orange-600 transition-colors">{a.label}</span>
+          </Link>
+        ))}
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6">
         {/* Recent Users */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">Recent Users</h2>
-            <Link
-              href="/admin/users"
-              className="text-sm text-blue-600 hover:text-blue-700"
-            >
-              View All →
+        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-lg font-bold text-gray-900">Recent Users</h2>
+            <Link href="/admin/users" className="text-sm text-orange-600 font-semibold hover:text-orange-700 flex items-center gap-1">
+              View All <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
-          <div className="space-y-3">
-            {recentUsers.map((user) => (
-              <div
-                key={user.id}
-                className="flex justify-between items-center p-3 bg-gray-50 rounded"
-              >
-                <div>
-                  <p className="font-semibold">{user.name}</p>
-                  <p className="text-sm text-gray-600">{user.email}</p>
-                </div>
-                <span
-                  className={`text-xs px-2 py-1 rounded ${
-                    user.role === "ADMIN"
-                      ? "bg-red-100 text-red-800"
-                      : user.role === "ORGANIZER"
-                      ? "bg-blue-100 text-blue-800"
-                      : "bg-gray-100 text-gray-800"
-                  }`}
+          {recentUsers.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-8">No users yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {recentUsers.map((u) => (
+                <Link
+                  key={u.id}
+                  href={`/admin/users/${u.id}`}
+                  className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors"
                 >
-                  {user.role}
-                </span>
-              </div>
-            ))}
-          </div>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-semibold text-xs flex-shrink-0">
+                      {u.name?.charAt(0) || "?"}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{u.name}</p>
+                      <p className="text-xs text-gray-500 truncate">{u.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getRoleBadge(u.role)}`}>
+                      {u.role}
+                    </span>
+                    <span className="text-xs text-gray-400">{formatDate(u.createdAt)}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Recent Events */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">Recent Events</h2>
-            <Link
-              href="/admin/events"
-              className="text-sm text-blue-600 hover:text-blue-700"
-            >
-              View All →
+        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-lg font-bold text-gray-900">Recent Events</h2>
+            <Link href="/admin/events" className="text-sm text-orange-600 font-semibold hover:text-orange-700 flex items-center gap-1">
+              View All <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
-          <div className="space-y-3">
-            {recentEvents.map((event) => (
-              <div
-                key={event.id}
-                className="flex justify-between items-center p-3 bg-gray-50 rounded"
-              >
-                <div>
-                  <p className="font-semibold">{event.title}</p>
-                  <p className="text-sm text-gray-600">
-                    by {event.organizer.name}
-                  </p>
-                </div>
-                <span
-                  className={`text-xs px-2 py-1 rounded ${
-                    event.status === "PUBLISHED"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-yellow-100 text-yellow-800"
-                  }`}
+          {recentEvents.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-8">No events yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {recentEvents.map((e) => (
+                <Link
+                  key={e.id}
+                  href={`/admin/events`}
+                  className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors"
                 >
-                  {event.status}
-                </span>
-              </div>
-            ))}
-          </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{e.title}</p>
+                    <p className="text-xs text-gray-500">by {e.organizer?.name || "Unknown"}</p>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getStatusBadge(e.status)}`}>
+                    {e.status}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

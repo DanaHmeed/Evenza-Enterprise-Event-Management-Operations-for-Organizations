@@ -80,7 +80,13 @@ export default function Navbar() {
               whileTap={{ scale: 0.95 }}
               className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent"
             >
-              EVENZA
+              <img
+                src="/icons/logo.png"
+                alt="Evenza logo"
+                width={140}
+                height={40}
+                priority
+              />
             </motion.span>
           </Link>
 
@@ -110,7 +116,7 @@ export default function Navbar() {
             ) : !isSignedIn ? (
               <>
                 <Link href="/sign-in">
-                  <Button >Sign In</Button>
+                  <Button>Sign In</Button>
                 </Link>
                 <Link href="/sign-up">
                   <Button>Get Started</Button>
@@ -165,22 +171,52 @@ export default function Navbar() {
                       </div>
 
                       <div className="py-1">
-                        <DropdownLink href="/profile" icon={<UserCircle size={18} />} label="My Profile" onClick={() => setAccountOpen(false)} />
-                        <DropdownLink href="/my-tickets" icon={<Ticket size={18} />} label="My Tickets" onClick={() => setAccountOpen(false)} />
-                        <DropdownLink href="/my-events" icon={<Heart size={18} />} label="My Registrations" onClick={() => setAccountOpen(false)} />
+                        <DropdownLink
+                          href="/profile"
+                          icon={<UserCircle size={18} />}
+                          label="My Profile"
+                          onClick={() => setAccountOpen(false)}
+                        />
+                        <DropdownLink
+                          href="/my-tickets"
+                          icon={<Ticket size={18} />}
+                          label="My Tickets"
+                          onClick={() => setAccountOpen(false)}
+                        />
+                        <DropdownLink
+                          href="/my-events"
+                          icon={<Heart size={18} />}
+                          label="My Registrations"
+                          onClick={() => setAccountOpen(false)}
+                        />
 
                         {isOrganizer && (
                           <>
                             <div className="border-t border-gray-100 my-1" />
-                            <DropdownLink href="/dashboard" icon={<LayoutDashboard size={18} />} label="Organizer Dashboard" onClick={() => setAccountOpen(false)} />
-                            <DropdownLink href="/dashboard/events/create" icon={<Calendar size={18} />} label="Create Event" onClick={() => setAccountOpen(false)} />
+                            <DropdownLink
+                              href="/dashboard"
+                              icon={<LayoutDashboard size={18} />}
+                              label="Organizer Dashboard"
+                              onClick={() => setAccountOpen(false)}
+                            />
+                            <DropdownLink
+                              href="/dashboard/events/create"
+                              icon={<Calendar size={18} />}
+                              label="Create Event"
+                              onClick={() => setAccountOpen(false)}
+                            />
                           </>
                         )}
 
                         {isAdmin && (
                           <>
                             <div className="border-t border-gray-100 my-1" />
-                            <DropdownLink href="/admin" icon={<Settings size={18} />} label="Admin Panel" onClick={() => setAccountOpen(false)} />
+                            <DropdownLink
+                              href="/admin"
+                              icon={<Settings size={18} />}
+                              label="Admin Panel"
+                              onClick={() => setAccountOpen(false)}
+                            />
                           </>
                         )}
 
@@ -221,29 +257,79 @@ export default function Navbar() {
               className="lg:hidden pb-4 border-t border-gray-200 pt-4 overflow-hidden"
             >
               <div className="flex flex-col gap-1">
-                <MobileNavLink href="/events" onClick={() => setMobileMenuOpen(false)}>Discover Events</MobileNavLink>
-                <MobileNavLink href="/about" onClick={() => setMobileMenuOpen(false)}>About</MobileNavLink>
-                <MobileNavLink href="/contact" onClick={() => setMobileMenuOpen(false)}>Contact</MobileNavLink>
-                {isOrganizer && <MobileNavLink href="/dashboard" onClick={() => setMobileMenuOpen(false)}>Dashboard</MobileNavLink>}
-                {isAdmin && <MobileNavLink href="/admin" onClick={() => setMobileMenuOpen(false)}>Admin Panel</MobileNavLink>}
+                <MobileNavLink
+                  href="/events"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Discover Events
+                </MobileNavLink>
+                <MobileNavLink
+                  href="/about"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  About
+                </MobileNavLink>
+                <MobileNavLink
+                  href="/contact"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Contact
+                </MobileNavLink>
+                {isOrganizer && (
+                  <MobileNavLink
+                    href="/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Dashboard
+                  </MobileNavLink>
+                )}
+                {isAdmin && (
+                  <MobileNavLink
+                    href="/admin"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Admin Panel
+                  </MobileNavLink>
+                )}
 
                 <div className="h-px bg-gray-200 my-3" />
 
                 {!isSignedIn ? (
                   <div className="flex flex-col gap-2">
-                    <Link href="/sign-in" onClick={() => setMobileMenuOpen(false)} className="px-5 py-2.5 rounded-full border border-gray-300 text-gray-700 font-medium text-center hover:bg-gray-50 transition-all">
+                    <Link
+                      href="/sign-in"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="px-5 py-2.5 rounded-full border border-gray-300 text-gray-700 font-medium text-center hover:bg-gray-50 transition-all"
+                    >
                       Sign In
                     </Link>
-                    <Link href="/sign-up" onClick={() => setMobileMenuOpen(false)} className="px-5 py-2.5 rounded-full bg-orange-500 text-white font-medium text-center hover:bg-orange-600 transition-all">
+                    <Link
+                      href="/sign-up"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="px-5 py-2.5 rounded-full bg-orange-500 text-white font-medium text-center hover:bg-orange-600 transition-all"
+                    >
                       Get Started
                     </Link>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-1">
-                    <MobileNavLink href="/profile" onClick={() => setMobileMenuOpen(false)}>My Profile</MobileNavLink>
-                    <MobileNavLink href="/my-tickets" onClick={() => setMobileMenuOpen(false)}>My Tickets</MobileNavLink>
+                    <MobileNavLink
+                      href="/profile"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      My Profile
+                    </MobileNavLink>
+                    <MobileNavLink
+                      href="/my-tickets"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      My Tickets
+                    </MobileNavLink>
                     <SignOutButton redirectUrl="/">
-                      <button onClick={() => setMobileMenuOpen(false)} className="w-full text-left text-red-600 hover:bg-red-50 font-medium px-4 py-3 rounded-lg transition-all">
+                      <button
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="w-full text-left text-red-600 hover:bg-red-50 font-medium px-4 py-3 rounded-lg transition-all"
+                      >
                         Log Out
                       </button>
                     </SignOutButton>
@@ -258,26 +344,61 @@ export default function Navbar() {
   );
 }
 
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+function NavLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
   return (
-    <Link href={href} className="relative text-gray-600 hover:text-gray-900 transition-colors font-medium text-sm group">
+    <Link
+      href={href}
+      className="relative text-gray-600 hover:text-gray-900 transition-colors font-medium text-sm group"
+    >
       {children}
       <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-orange-500 group-hover:w-full transition-all duration-300" />
     </Link>
   );
 }
 
-function MobileNavLink({ href, children, onClick }: { href: string; children: React.ReactNode; onClick?: () => void }) {
+function MobileNavLink({
+  href,
+  children,
+  onClick,
+}: {
+  href: string;
+  children: React.ReactNode;
+  onClick?: () => void;
+}) {
   return (
-    <Link href={href} onClick={onClick} className="text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-all font-medium px-4 py-3 rounded-lg">
+    <Link
+      href={href}
+      onClick={onClick}
+      className="text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-all font-medium px-4 py-3 rounded-lg"
+    >
       {children}
     </Link>
   );
 }
 
-function DropdownLink({ href, label, icon, onClick }: { href: string; label: string; icon: React.ReactNode; onClick: () => void }) {
+function DropdownLink({
+  href,
+  label,
+  icon,
+  onClick,
+}: {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+}) {
   return (
-    <Link href={href} onClick={onClick} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-all">
+    <Link
+      href={href}
+      onClick={onClick}
+      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-all"
+    >
       {icon}
       {label}
     </Link>

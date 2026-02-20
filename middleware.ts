@@ -1,42 +1,23 @@
+// middleware.ts (root of project)
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
 
-// Define public routes that don't require authentication
+// Public routes — accessible without login
 const isPublicRoute = createRouteMatcher([
   "/",
-  "/sign-in(.*)",
-  "/sign-up(.*)",
-  "/events",
-  "/events/(.*)",
+  "/events(.*)",
   "/about",
   "/contact",
-  "/terms-of-service",
-  "/api/auth/webhook",
-  "/api/uploadthing(.*)",
-  "/api/stripe/webhook(.*)",
+  "/sign-in(.*)",
+  "/sign-up(.*)",
+  "/api/events(.*)",
+  "/api/categories(.*)",
+  "/api/webhooks(.*)",
 ]);
 
-// Define API routes (don't redirect, just return 401)
-const isApiRoute = createRouteMatcher(["/api(.*)"]);
-
 export default clerkMiddleware(async (auth, req) => {
-  // Allow public routes without authentication
-  if (isPublicRoute(req)) {
-    return NextResponse.next();
+  if (!isPublicRoute(req)) {
+    await auth.protect();
   }
-
-  // For API routes, don't use auth.protect()
-  // (it tries to redirect which doesn't work for APIs)
-  if (isApiRoute(req)) {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    return NextResponse.next();
-  }
-
-  // For protected pages, use auth.protect()
-  await auth.protect();
 });
 
 export const config = {

@@ -1,153 +1,120 @@
+// app/api/users/[userId]/stats/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/db/prisma";
-import { getCurrentUser } from "@/lib/auth/require-role";
+import { PaymentStatus } from "@/lib/generated/prisma"; 
 
-type Params = { params: Promise<{ userId: string }> };
-
-// GET - Get user statistics
-export async function GET(request: NextRequest, { params }: Params) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ userId: string }> },
+) {
   try {
+    const { userId: clerkId } = await auth();
     const { userId } = await params;
-    const currentUser = await getCurrentUser();
 
-    if (!currentUser) {
+    if (!clerkId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (currentUser.userId !== userId && currentUser.role !== "ADMIN") {
-      return NextResponse.json(
-        { error: "You can only view your own statistics" },
-        { status: 403 }
-      );
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true },
+    const currentUser = await prisma.user.findUnique({
+      where: { id: clerkId },
+      select: { id: true, role: true },
     });
 
-    if (!user) {
+    if (!currentUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    if (user.role === "ORGANIZER" || user.role === "ADMIN") {
-      // ── Organizer/Admin Stats ──
-      const [
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!targetUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    if (currentUser.id !== targetUser.id && currentUser.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const now = new Date();
+
+    // Count events by status
+    const [
+      totalEvents,
+      publishedEvents,
+      draftEvents,
+      cancelledEvents,
+      upcomingEvents,
+    ] = await Promise.all([
+      prisma.event.count({ where: { organizerId: targetUser.id } }),
+      prisma.event.count({
+        where: { organizerId: targetUser.id, status: "PUBLISHED" },
+      }),
+      prisma.event.count({
+        where: { organizerId: targetUser.id, status: "DRAFT" },
+      }),
+      prisma.event.count({
+        where: { organizerId: targetUser.id, status: "CANCELLED" },
+      }),
+      prisma.event.count({
+        where: {
+          organizerId: targetUser.id,
+          startDate: { gt: now },
+          status: "PUBLISHED",
+        },
+      }),
+    ]);
+
+    // Total attendees across all organizer's events
+    const totalAttendees = await prisma.registration.count({
+      where: {
+        event: { organizerId: targetUser.id },
+        status: "APPROVED",
+      },
+    });
+
+    // Total revenue from paid orders
+    const revenueAgg = await prisma.order.aggregate({
+      where: {
+        event: { organizerId: targetUser.id },
+        paymentStatus: PaymentStatus.PAID,
+      },
+      _sum: { amount: true },
+    });
+    const totalRevenue =
+      revenueAgg._sum.amount ??0;
+
+    // Average rating from feedback
+    const ratingAgg = await prisma.feedback.aggregate({
+      where: {
+        event: { organizerId: targetUser.id },
+        status: "APPROVED",
+      },
+      _avg: { rating: true },
+    });
+    const averageRating = ratingAgg._avg.rating
+      ? Math.round(ratingAgg._avg.rating * 10) / 10
+      : 0;
+
+    return NextResponse.json({
+      success: true,
+      data: {
         totalEvents,
         publishedEvents,
+        draftEvents,
         cancelledEvents,
-        totalRevenue,
         upcomingEvents,
         totalAttendees,
+        totalRevenue,
         averageRating,
-      ] = await Promise.all([
-        prisma.event.count({
-          where: { organizerId: userId },
-        }),
-        prisma.event.count({
-          where: { organizerId: userId, status: "PUBLISHED" },
-        }),
-        prisma.event.count({
-          where: { organizerId: userId, status: "CANCELLED" },
-        }),
-        prisma.order.aggregate({
-          where: {
-            event: { organizerId: userId },
-            paymentStatus: "PAID",
-          },
-          _sum: { amount: true },
-        }),
-        prisma.event.count({
-          where: {
-            organizerId: userId,
-            status: "PUBLISHED",
-            startDate: { gte: new Date() },
-          },
-        }),
-        prisma.registration.count({
-          where: {
-            event: { organizerId: userId },
-            status: "APPROVED",
-          },
-        }),
-        prisma.feedback.aggregate({
-          where: {
-            event: { organizerId: userId },
-            status: "APPROVED",
-          },
-          _avg: { rating: true },
-        }),
-      ]);
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          totalEvents,
-          publishedEvents,
-          draftEvents: totalEvents - publishedEvents - cancelledEvents,
-          cancelledEvents,
-          upcomingEvents,
-          totalRevenue: totalRevenue._sum.amount || 0,
-          totalAttendees,
-          averageRating: Math.round((averageRating._avg.rating || 0) * 10) / 10,
-        },
-      });
-    } else {
-      // ── Regular User Stats ──
-      const [
-        totalRegistrations,
-        totalTickets,
-        upcomingEvents,
-        attendedEvents,
-        feedbacksGiven,
-        totalSpent,
-      ] = await Promise.all([
-        prisma.registration.count({
-          where: { userId, status: "APPROVED" },
-        }),
-        prisma.ticket.count({
-          where: { userId, status: "PAID" },
-        }),
-        prisma.registration.count({
-          where: {
-            userId,
-            status: "APPROVED",
-            event: { startDate: { gte: new Date() } },
-          },
-        }),
-        prisma.registration.count({
-          where: {
-            userId,
-            status: "APPROVED",
-            event: { endDate: { lt: new Date() } },
-          },
-        }),
-        prisma.feedback.count({
-          where: { userId },
-        }),
-        prisma.order.aggregate({
-          where: { userId, paymentStatus: "PAID" },
-          _sum: { amount: true },
-        }),
-      ]);
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          totalRegistrations,
-          totalTickets,
-          upcomingEvents,
-          attendedEvents,
-          feedbacksGiven,
-          totalSpent: totalSpent._sum.amount || 0,
-        },
-      });
-    }
+      },
+    });
   } catch (error) {
-    console.error("[USER_STATS]", error);
+    console.error("[USER_STATS_GET]", error);
     return NextResponse.json(
-      { error: "Failed to fetch user statistics" },
-      { status: 500 }
+      { error: "Failed to fetch stats" },
+      { status: 500 },
     );
   }
 }

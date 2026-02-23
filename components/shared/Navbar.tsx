@@ -85,7 +85,6 @@ export default function Navbar() {
                 alt="Evenza logo"
                 width={140}
                 height={40}
-                priority
               />
             </motion.span>
           </Link>

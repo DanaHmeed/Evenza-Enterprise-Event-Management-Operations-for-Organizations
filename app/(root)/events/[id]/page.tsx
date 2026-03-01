@@ -22,7 +22,7 @@ import {
   CreditCard,
   User,
 } from "lucide-react";
-import EvenzaButton from "@/components/shared/button/EvenzaButton"
+import EvenzaButton from "@/components/shared/button/EvenzaButton";
 
 // ─── Types ───
 interface EventData {
@@ -88,10 +88,9 @@ interface FeedbackData {
 // ─── Main Component ───
 export default function EventDetailPage() {
   const params = useParams();
+  const eventId = params.id as string;
   const router = useRouter();
   const { user, isSignedIn } = useUser();
-
-  const eventId = params.eventId as string;
 
   const [event, setEvent] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -100,7 +99,9 @@ export default function EventDetailPage() {
   // Registration state
   const [registering, setRegistering] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
-  const [registrationStatus, setRegistrationStatus] = useState<string | null>(null);
+  const [registrationStatus, setRegistrationStatus] = useState<string | null>(
+    null,
+  );
   const [actionMessage, setActionMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -108,7 +109,10 @@ export default function EventDetailPage() {
 
   // Feedback state
   const [feedbacks, setFeedbacks] = useState<FeedbackData[]>([]);
-  const [feedbackStats, setFeedbackStats] = useState({ count: 0, averageRating: 0 });
+  const [feedbackStats, setFeedbackStats] = useState({
+    count: 0,
+    averageRating: 0,
+  });
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackTitle, setFeedbackTitle] = useState("");
@@ -133,32 +137,47 @@ export default function EventDetailPage() {
     if (eventId) fetchEvent();
   }, [eventId]);
 
+  // Handle payment redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const payment = params.get("payment");
+    if (payment === "success") {
+      setActionMessage({
+        type: "success",
+        text: "Payment successful! Your ticket has been confirmed. Check your email for details.",
+      });
+      setIsRegistered(true);
+      setRegistrationStatus("APPROVED");
+      // Clean URL
+      window.history.replaceState({}, "", `/events/${eventId}`);
+    } else if (payment === "cancelled") {
+      setActionMessage({
+        type: "error",
+        text: "Payment was cancelled. You can try again anytime.",
+      });
+      window.history.replaceState({}, "", `/events/${eventId}`);
+    }
+  }, [eventId]);
+
   // Check if user is already registered
   useEffect(() => {
-    if (!isSignedIn || !user || !event) return;
+    if (!isSignedIn || !eventId) return;
     const checkRegistration = async () => {
       try {
-        const res = await fetch(`/api/events/${eventId}/attendees?status=all`, {
-          headers: { "Content-Type": "application/json" },
-        });
+        const res = await fetch(`/api/events/${eventId}/registration-status`);
         if (res.ok) {
           const data = await res.json();
-          const attendees = data.data?.attendees || data.attendees || [];
-          const myReg = attendees.find(
-            (a: { user: { id: string }; status: string }) => a.user.id === user.id
-          );
-          if (myReg) {
+          if (data.registered) {
             setIsRegistered(true);
-            setRegistrationStatus(myReg.status);
+            setRegistrationStatus(data.status);
           }
         }
       } catch {
-        // User might not be organizer, so attendees endpoint may 403
-        // Try a simpler check - this is fine for now
+        // Non-critical
       }
     };
     checkRegistration();
-  }, [isSignedIn, user, event, eventId]);
+  }, [isSignedIn, eventId]);
 
   // Fetch feedback
   useEffect(() => {
@@ -193,12 +212,16 @@ export default function EventDetailPage() {
       const data = await res.json();
       if (res.ok) {
         setIsRegistered(true);
-        setRegistrationStatus(
-          data.data?.registration?.status || "APPROVED"
-        );
-        setActionMessage({ type: "success", text: data.message || "Registered successfully!" });
+        setRegistrationStatus(data.data?.registration?.status || "APPROVED");
+        setActionMessage({
+          type: "success",
+          text: data.message || "Registered successfully!",
+        });
       } else {
-        setActionMessage({ type: "error", text: data.error || "Registration failed" });
+        setActionMessage({
+          type: "error",
+          text: data.error || "Registration failed",
+        });
       }
     } catch {
       setActionMessage({ type: "error", text: "Something went wrong" });
@@ -252,7 +275,10 @@ export default function EventDetailPage() {
           text: "Registration cancelled successfully.",
         });
       } else {
-        setActionMessage({ type: "error", text: data.error || "Failed to cancel" });
+        setActionMessage({
+          type: "error",
+          text: data.error || "Failed to cancel",
+        });
       }
     } catch {
       setActionMessage({ type: "error", text: "Something went wrong" });
@@ -287,7 +313,10 @@ export default function EventDetailPage() {
           text: "Feedback submitted! It will appear after admin approval.",
         });
       } else {
-        setActionMessage({ type: "error", text: data.error || "Failed to submit feedback" });
+        setActionMessage({
+          type: "error",
+          text: data.error || "Failed to submit feedback",
+        });
       }
     } catch {
       setActionMessage({ type: "error", text: "Something went wrong" });
@@ -334,7 +363,7 @@ export default function EventDetailPage() {
 
   if (error || !event) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className=" bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
@@ -343,7 +372,7 @@ export default function EventDetailPage() {
           <p className="text-gray-500 mb-6">{error}</p>
           <Link
             href="/events"
-            className="inline-flex items-center gap-2 text-orange-600 font-semibold hover:text-orange-700"
+            className="inline-flex items-center gap-2 text-black-600 font-semibold hover:text-black-700"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Events
@@ -490,8 +519,8 @@ export default function EventDetailPage() {
                   className="w-10 h-10 rounded-full object-cover"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-                  <User className="w-5 h-5 text-orange-500" />
+                <div className="w-10 h-10 rounded-full flex items-center justify-center">
+                  <User className="w-5 h-5 text-black-500" />
                 </div>
               )}
               <div>
@@ -756,7 +785,10 @@ export default function EventDetailPage() {
                     <p className="text-sm font-semibold text-gray-900">
                       {event.isOnline
                         ? "Virtual Event (via Zoom)"
-                        : event.venueName || event.address || event.city || "TBA"}
+                        : event.venueName ||
+                          event.address ||
+                          event.city ||
+                          "TBA"}
                     </p>
                     {!event.isOnline && event.city && event.venueName && (
                       <p className="text-xs text-gray-500 mt-0.5">
@@ -791,8 +823,8 @@ export default function EventDetailPage() {
                 <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
                   <span className="flex items-center gap-1">
                     <Users className="w-3.5 h-3.5" />
-                    {event.capacity - event.seatsRemaining} /{" "}
-                    {event.capacity} registered
+                    {event.capacity - event.seatsRemaining} / {event.capacity}{" "}
+                    registered
                   </span>
                   <span>
                     {event.seatsRemaining > 0
@@ -925,9 +957,8 @@ export default function EventDetailPage() {
             {event.approvalRequired && !isRegistered && !isPast && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                 <p className="text-xs text-amber-700">
-                  <strong>Note:</strong> This event requires organizer
-                  approval. Your registration will be reviewed before
-                  confirmation.
+                  <strong>Note:</strong> This event requires organizer approval.
+                  Your registration will be reviewed before confirmation.
                 </p>
               </div>
             )}

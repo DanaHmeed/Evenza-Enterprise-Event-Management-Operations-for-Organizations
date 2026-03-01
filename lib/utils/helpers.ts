@@ -2,6 +2,7 @@
  * Generate a URL-friendly slug from a title.
  * "My Cool Event!" → "my-cool-event-a3x9"
  */
+// lib/utils/helpers.ts
 export function generateSlug(title: string): string {
   const base = title
     .toLowerCase()

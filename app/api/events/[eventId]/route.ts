@@ -1,3 +1,4 @@
+// app/api/events/[eventId]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db/prisma";
 import { getCurrentUser } from "@/lib/auth/require-role";
@@ -7,7 +8,7 @@ import { ZodError } from "zod";
 type Params = { params: Promise<{ eventId: string }> };
 
 // GET - Fetch single event (public)
-export async function GET(request: NextRequest, { params }: Params) {
+export async function GET(req: NextRequest, { params }: Params) {
   try {
     const { eventId } = await params;
 
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest, { params }: Params) {
       where: { id: eventId },
       include: {
         organizer: {
-          select: { id: true, name: true, avatar: true, bio: true },
+          select: { id: true, name: true, avatar: true },
         },
         category: {
           select: { id: true, name: true, slug: true, color: true },
@@ -23,16 +24,18 @@ export async function GET(request: NextRequest, { params }: Params) {
         tags: {
           select: { id: true, name: true, slug: true },
         },
-        _count: {
-          select: { registrations: true, feedbacks: true },
-        },
         feedbacks: {
           where: { status: "APPROVED" },
           include: {
-            user: { select: { id: true, name: true, avatar: true } },
+            user: {
+              select: { id: true, name: true, avatar: true },
+            },
           },
           orderBy: { createdAt: "desc" },
-          take: 10,
+          take: 20,
+        },
+        _count: {
+          select: { registrations: true, feedbacks: true },
         },
       },
     });
@@ -42,10 +45,12 @@ export async function GET(request: NextRequest, { params }: Params) {
     }
 
     // Increment view count (non-blocking)
-    prisma.event.update({
-      where: { id: eventId },
-      data: { viewCount: { increment: 1 } },
-    }).catch(() => {});
+    prisma.event
+      .update({
+        where: { id: eventId },
+        data: { viewCount: { increment: 1 } },
+      })
+      .catch(() => {});
 
     return NextResponse.json({ success: true, data: event });
   } catch (error) {
@@ -53,6 +58,7 @@ export async function GET(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Failed to fetch event" }, { status: 500 });
   }
 }
+
 
 // PATCH - Update event (organizer who owns it, or admin)
 export async function PATCH(request: NextRequest, { params }: Params) {

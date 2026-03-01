@@ -1,3 +1,4 @@
+// app/api/events/[eventId]/register/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db/prisma";
 import { requireAuth, isAuthError } from "@/lib/auth/require-role";

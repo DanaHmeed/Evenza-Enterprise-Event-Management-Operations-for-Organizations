@@ -31,7 +31,7 @@ export default function RootLayout({
       appearance={{
         variables: {
           colorPrimary: "#f97316",
-          borderRadius: "0.75rem",
+          borderRadius: "1rem",
         },
       }}
     >

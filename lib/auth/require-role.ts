@@ -1,3 +1,4 @@
+// lib/auth/require-role.ts
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/db/prisma";
 import { Role } from "@/lib/generated/prisma/enums";

@@ -2,37 +2,48 @@
 "use client";
 
 import Link from "next/link";
-import { Twitter, Linkedin, Instagram, Github, Mail, MapPin } from "lucide-react";
+import {
+  Twitter,
+  Linkedin,
+  Instagram,
+  Github,
+  Mail,
+  MapPin,
+} from "lucide-react";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-[#0a0e1a] text-white border-t border-white/10">
-      <div className="max-w-6xl mx-auto px-6 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
+    <footer className="w-full flex justify-center">
+      <div className="w-full max-w-7xl px-6 lg:px-12 py-28">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-9 mb-12">
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link href="/" className="inline-block mb-4">
-              <span className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-                EVENZA
+              <span className="mt-4 mb-24">
+                <img
+                  src="/icons/logo.png"
+                  alt="Evenza Logo"
+                  className="w-30 h-30 inline-block mr-2"
+                />
               </span>
             </Link>
-            <p className="text-gray-400 text-sm leading-relaxed mb-6 max-w-xs">
+            <p className="text-gray-700 text-sm leading-relaxed mb-6">
+              {" "}
               The all-in-one platform for creating, managing, and attending
               professional events. Built for organizers, loved by attendees.
             </p>
             <div className="space-y-2 mb-6">
-              <div className="flex items-center gap-2 text-sm text-gray-400">
+              <div className="flex items-center gap-2 text-sm text-gray-700">
                 <Mail size={14} />
                 <span>support@evenza.com</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-400">
+              <div className="flex items-center gap-2 text-sm text-gray-700">
                 <MapPin size={14} />
-                <span>Nablus, Palestine</span>
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 justify-start">
               <SocialLink href="#" icon={<Twitter size={16} />} />
               <SocialLink href="#" icon={<Linkedin size={16} />} />
               <SocialLink href="#" icon={<Instagram size={16} />} />
@@ -42,7 +53,9 @@ export default function Footer() {
 
           {/* Platform */}
           <div>
-            <h3 className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">Platform</h3>
+            <h3 className="font-semibold text-gray-700 mb-4 text-sm uppercase tracking-wider">
+              Platform
+            </h3>
             <ul className="space-y-3">
               <FooterLink href="/events">Browse Events</FooterLink>
               <FooterLink href="/sign-up">Create an Event</FooterLink>
@@ -54,7 +67,9 @@ export default function Footer() {
 
           {/* Company */}
           <div>
-            <h3 className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">Company</h3>
+            <h3 className="font-semibold text-gray-700 mb-4 text-sm uppercase tracking-wider">
+              Company
+            </h3>
             <ul className="space-y-3">
               <FooterLink href="/about">About Us</FooterLink>
               <FooterLink href="/contact">Contact</FooterLink>
@@ -65,7 +80,9 @@ export default function Footer() {
 
           {/* Support */}
           <div>
-            <h3 className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">Support</h3>
+            <h3 className="font-semibold text-gray-700 mb-4 text-sm uppercase tracking-wider">
+              Support
+            </h3>
             <ul className="space-y-3">
               <FooterLink href="/contact">Help Center</FooterLink>
               <FooterLink href="/contact">Report an Issue</FooterLink>
@@ -80,15 +97,23 @@ export default function Footer() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div>
               <h4 className="font-semibold text-white mb-1">Stay Updated</h4>
-              <p className="text-sm text-gray-400">Get notified about the latest events and platform updates.</p>
+              <p className="text-sm text-gray-700">
+                Get notified about the latest events and platform updates.
+              </p>
             </div>
-            <form onSubmit={(e) => e.preventDefault()} className="flex gap-2 w-full md:w-auto">
+            <form
+              onSubmit={(e) => e.preventDefault()}
+              className="flex gap-2 w-full md:w-auto"
+            >
               <input
                 type="email"
                 placeholder="Enter your email"
-                className="px-4 py-2.5 rounded-full bg-white/5 border border-white/10 text-white placeholder:text-gray-500 text-sm focus:outline-none focus:border-orange-500 w-full md:w-64 transition-colors"
+                className="px-4 py-2.5 rounded-full bg-white/5 border border-gray text-white placeholder:text-gray-700 text-sm focus:outline-none focus:border-orange-500 w-full md:w-64 transition-colors"
               />
-              <button type="submit" className="px-6 py-2.5 rounded-full bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-colors whitespace-nowrap">
+              <button
+                type="submit"
+                className="px-6 py-2.5 rounded-full bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-colors whitespace-nowrap"
+              >
                 Subscribe
               </button>
             </form>
@@ -98,12 +123,23 @@ export default function Footer() {
         {/* Bottom */}
         <div className="pt-8 border-t border-white/10">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-gray-500 text-sm">
-              © {currentYear} Evenza. All rights reserved. Built as a graduation project.
+            <p className="text-gray-700 text-sm">
+              © {currentYear} Evenza. All rights reserved. Built as a graduation
+              project.
             </p>
             <div className="flex gap-6 text-sm">
-              <Link href="/privacy" className="text-gray-500 hover:text-white transition-colors">Privacy</Link>
-              <Link href="/terms-of-service" className="text-gray-500 hover:text-white transition-colors">Terms</Link>
+              <Link
+                href="/privacy"
+                className="text-gray-700 hover:text-white transition-colors"
+              >
+                Privacy
+              </Link>
+              <Link
+                href="/terms-of-service"
+                className="text-gray-700 hover:text-white transition-colors"
+              >
+                Terms
+              </Link>
             </div>
           </div>
         </div>
@@ -112,17 +148,33 @@ export default function Footer() {
   );
 }
 
-function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
+function FooterLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
   return (
     <li>
-      <Link href={href} className="text-gray-400 hover:text-orange-400 transition-colors text-sm">{children}</Link>
+      <Link
+        href={href}
+        className="text-gray-700 hover:text-orange-400 transition-colors text-sm"
+      >
+        {children}
+      </Link>
     </li>
   );
 }
 
 function SocialLink({ href, icon }: { href: string; icon: React.ReactNode }) {
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-lg bg-white/5 hover:bg-orange-500/20 border border-white/10 hover:border-orange-500/50 flex items-center justify-center text-gray-400 hover:text-orange-400 transition-all">
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="w-9 h-9 rounded-lg bg-white/5 hover:bg-orange-500/20 border border-white/10 hover:border-orange-500/50 flex items-center justify-center text-gray-400 hover:text-orange-400 transition-all"
+    >
       {icon}
     </a>
   );

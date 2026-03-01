@@ -31,29 +31,22 @@ interface EventCardProps {
 }
 
 export default function EventCard({ event }: EventCardProps) {
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("en-US", {
+  const formatDate = (dateStr: string) =>
+    new Date(dateStr).toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
       day: "numeric",
       year: "numeric",
     });
-  };
 
-  const formatTime = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleTimeString("en-US", {
+  const formatTime = (dateStr: string) =>
+    new Date(dateStr).toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
     });
-  };
 
-  const priceLabel =
-    event.eventType === "FREE"
-      ? "Free"
-      : `$${event.price ?? 0}`;
+  const priceLabel = event.eventType === "FREE" ? "Free" : `$${event.price ?? 0}`;
 
   const locationLabel = event.isOnline
     ? "Via Zoom"
@@ -61,49 +54,47 @@ export default function EventCard({ event }: EventCardProps) {
 
   const isPast = new Date(event.endDate) < new Date();
 
+  const statusBadge =
+    event.status === "CANCELLED"
+      ? { label: "Cancelled", className: "bg-red-500/90" }
+      : isPast
+      ? { label: "Ended", className: "bg-gray-900/70" }
+      : null;
+
   return (
     <Link
       href={`/events/${event.id}`}
-      className="group block bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-xl hover:shadow-gray-200/50 hover:border-gray-300 transition-all duration-300"
+      className="group block w-full max-w-sm overflow-hidden rounded-xl border border-gray-100 bg-white transition-all duration-300 hover:border-gray-300 hover:shadow-xl hover:shadow-gray-200/50 "
     >
-      {/* Banner Image */}
-      <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
+      {/* Banner */}
+      <div className="relative aspect-[18/10] overflow-hidden bg-gray-100">
         {event.banner ? (
           <img
             src={event.banner}
             alt={event.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-orange-100 to-amber-50 flex items-center justify-center">
-            <Calendar className="w-10 h-10 text-orange-300" />
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-orange-100 to-amber-50">
+            <Calendar className="h-10 w-10 text-orange-300" />
           </div>
         )}
 
-        {/* Status badge for past/cancelled */}
-        {isPast && (
-          <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-gray-900/70 text-white text-[11px] font-semibold backdrop-blur-sm">
-            Ended
-          </div>
-        )}
-        {event.status === "CANCELLED" && (
-          <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-red-500/90 text-white text-[11px] font-semibold backdrop-blur-sm">
-            Cancelled
+        {statusBadge && (
+          <div
+            className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm ${statusBadge.className}`}
+          >
+            {statusBadge.label}
           </div>
         )}
       </div>
 
-      {/* Card Content */}
-      <div className="p-4">
-        {/* Price & Category row */}
-        <div className="flex items-center gap-2 mb-2">
-          <span
-            className={`text-xs font-bold ${
-              event.eventType === "FREE" ? "text-green-600" : "text-orange-600"
-            }`}
-          >
-            {priceLabel}
-          </span>
+      {/* Content */}
+      <div className="p-6">
+        {/* Meta row */}
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-gray-600">{priceLabel}</span>
+
           {event.category && (
             <>
               <span className="text-gray-300">|</span>
@@ -115,24 +106,24 @@ export default function EventCard({ event }: EventCardProps) {
         </div>
 
         {/* Title */}
-        <h3 className="text-[15px] font-bold text-gray-900 mb-2 leading-snug line-clamp-2 group-hover:text-orange-600 transition-colors">
+        <h3 className="mb-4 line-clamp-2 text-[15px] font-semibold leading-snug text-gray-900">
           {event.title}
         </h3>
 
-        {/* Date & Time */}
-        <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1.5">
-          <Calendar className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+        {/* Date */}
+        <div className="mb-2 flex items-center gap-2 text-xs text-gray-500">
+          <Calendar className="h-4 w-4 flex-shrink-0 text-gray-400" />
           <span>
             {formatDate(event.startDate)}, {formatTime(event.startDate)}
           </span>
         </div>
 
         {/* Location */}
-        <div className="flex items-center gap-1.5 text-xs text-gray-500">
+        <div className="flex items-center gap-2 text-xs text-gray-500">
           {event.isOnline ? (
-            <Globe className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+            <Globe className="h-4 w-4 flex-shrink-0 text-gray-400" />
           ) : (
-            <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+            <MapPin className="h-4 w-4 flex-shrink-0 text-gray-400" />
           )}
           <span className="truncate">{locationLabel}</span>
         </div>

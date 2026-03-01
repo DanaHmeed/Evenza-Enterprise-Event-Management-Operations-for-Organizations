@@ -6,7 +6,7 @@ import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
 import Link from "next/link";
 import Image from "next/image";
-import { Video } from "lucide-react";
+import { Link2, Video } from "lucide-react";
 import { useScroll, useTransform, motion } from "framer-motion";
 import { useRef, useState } from "react";
 import {
@@ -17,7 +17,6 @@ import {
   CreditCard,
   ScanLine,
   ArrowRight,
-  Sparkles,
   TrendingUp,
   Globe,
   BarChart3,
@@ -37,7 +36,7 @@ import {
   MessageSquare,
   Eye,
 } from "lucide-react";
-import { styleText } from "util";
+import { styleText } from "node:util";
 
 // Stagger container variants for feature cards
 const staggerContainer = {
@@ -67,9 +66,9 @@ export default function LandingPage() {
           <PricingPreviewSection />
           <FAQSection />
           <CTASection />
+          <Footer />
         </div>
       </main>
-      <Footer />
     </>
   );
 }
@@ -214,7 +213,7 @@ const features = [
       "Host online events with meeting link integration. Attendees receive instant QR code tickets for seamless access.",
     glow: "rgba(249,115,22,0.15)",
     bg: "/images/card2.png",
-    icon: <Video size={26} strokeWidth={2} />,
+    icon: <Video size={26} strokeWidth={2} />,    
   },
   {
     title: "HYBRID EVENTS",
@@ -222,7 +221,7 @@ const features = [
       "Combine physical and virtual elements. Manage registrations, ticketing, and check-ins for both audiences in one place.",
     glow: "rgba(249,115,22,0.15)",
     bg: "/images/card3.png",
-    icon: <Globe size={26} strokeWidth={2} />,
+    icon: <Link2 size={26} strokeWidth={2} />,
   },
 ];
 
@@ -246,11 +245,9 @@ export function FeaturesShowcase() {
   return (
     <section className="relative bg-[#0a0a0f] overflow-hidden min-h-[100svh] flex items-center justify-center">
       {/* Top gradient border */}
-      <div className="absolute top-0 left-2 right-2 h-[9px] bg-gradient-to-r from-transparent via-orange-500 to-transparent" />
-
       {/* Background glow */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-orange-500/[0.03] rounded-full blur-[120px]" />
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full blur-[120px]" />
         <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-purple-500/[0.03] rounded-full blur-[100px]" />
       </div>
 
@@ -266,7 +263,7 @@ export function FeaturesShowcase() {
           <p className="text-xs font-bold tracking-[0.3em] text-orange-400 uppercase mb-4">
             PLATFORM FEATURES
           </p>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight font-[Quicksand]">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight font-quicksand">
             Everything you need to run
             <br />
             <span className="text-[#f97316]">world-class events</span>
@@ -275,7 +272,7 @@ export function FeaturesShowcase() {
 
         {/* Cards */}
         <motion.div
-          className="features-grid"
+          className="features-grid font-[quicksand]"
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
@@ -283,7 +280,7 @@ export function FeaturesShowcase() {
         >
           {features.map((feature, i) => (
             <motion.div key={i} variants={cardVariants} className="feat-card">
-              <div className="feat-card__inner">
+              <div className="feat-card__inner font-[Quicksand]">
                 {/* Background image */}
                 <div
                   className="feat-card__bg"
@@ -298,7 +295,7 @@ export function FeaturesShowcase() {
                   {/* Icon + Title */}
                   <div className="feat-card__head">
                     <div className="feat-card__icon">{feature.icon}</div>
-                    <h3 className="feat-card__title">{feature.title}</h3>
+                    <h3 className="feat-card__title font-quicksand">{feature.title}</h3>
                   </div>
 
                   {/* Gold divider */}
@@ -429,11 +426,6 @@ function FeaturesSection() {
       desc: "Rich descriptions, media uploads, draft/publish workflow, categories, tags, and SEO-friendly slugs.",
     },
     {
-      icon: <Ticket className="w-6 h-6" />,
-      title: "Smart Ticketing & QR Codes",
-      desc: "Auto-generated QR tickets on registration. Unique codes per attendee for secure, paperless entry.",
-    },
-    {
       icon: <ScanLine className="w-6 h-6" />,
       title: "Live Check-In Scanner",
       desc: "Organizers scan QR codes at the door. Real-time check-in tracking with duplicate detection.",
@@ -452,16 +444,6 @@ function FeaturesSection() {
       icon: <ShieldCheck className="w-6 h-6" />,
       title: "Admin Control Center",
       desc: "Moderate events & feedback, manage users & roles, view audit logs, and edit platform settings.",
-    },
-    {
-      icon: <BarChart3 className="w-6 h-6" />,
-      title: "Real-Time Analytics",
-      desc: "Track registrations, revenue, check-in rates, and feedback scores on live dashboards.",
-    },
-    {
-      icon: <Bell className="w-6 h-6" />,
-      title: "In-App Notifications",
-      desc: "12 notification types: registration confirmations, approvals, event updates, waitlist alerts, and more.",
     },
     {
       icon: <Star className="w-6 h-6" />,
@@ -497,12 +479,6 @@ function FeaturesSection() {
             viewport={{ once: true, margin: "-100px" }}
             className="text-center mb-16"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-50 border border-orange-100 mb-9">
-              <TrendingUp className="w-4 h-4 text-orange-600" />
-              <span className="text-sm font-semibold text-orange-600 tracking-wide mb-3">
-                POWERFUL FEATURES
-              </span>
-            </div>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-5">
               Everything You Need to{" "}
               <span className="text-orange-600">Run Events</span>
@@ -514,7 +490,7 @@ function FeaturesSection() {
             whileInView="visible"
             viewport={{ once: true, margin: "-50px" }}
             variants={staggerContainer}
-            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3"
           >
             {features.map((f, i) => (
               <motion.div key={i} custom={i}>
@@ -542,13 +518,13 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <div className="group relative rounded-2xl border border-gray-200 bg-white p-7 hover:border-orange-200 hover:shadow-xl hover:shadow-orange-500/5 transition-all duration-500 h-full">
-      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-orange-50/0 to-orange-50/0 group-hover:from-orange-50/50 group-hover:to-transparent transition-all duration-500" />
+    <div className="group relative bg-white p-7 transition-all duration-500 h-full">
+      <div className="absolute inset-0 rounded-2xl group-hover:to-transparent transition-all duration-500" />
       <div className="relative">
-        <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 text-white mb-5 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-orange-500/20">
+        <div className="w-10 h-10 flex items-center justify-center rounded-xl text-white mb-5 group-hover:scale-110 transition-transform duration-300">
           {icon}
         </div>
-        <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors">
+        <h3 className="text-lg font-bold text-gray-900 mb-2 transition-colors">
           {title}
         </h3>
         <p className="text-gray-600 text-sm leading-relaxed">{description}</p>
@@ -589,7 +565,7 @@ function HowItWorksSection() {
   ];
 
   return (
-    <section className="py-28 bg-white">
+    <section className="py-28">
       <div className="w-full flex justify-center">
         <div className="w-full max-w-7xl px-6">
           {" "}
@@ -702,7 +678,7 @@ function PlatformShowcaseSection() {
   const active = tabs[activeTab];
 
   return (
-    <section className="py-28 bg-gray-50">
+    <section className="py-28">
       <div className="w-full flex justify-center">
         <div className="w-full max-w-7xl px-6">
           <motion.div
@@ -940,7 +916,7 @@ function StatsSection() {
   ];
 
   return (
-    <section className="py-20 bg-[#0a0e1a] text-white relative overflow-hidden">
+    <section className="py-20 bg-white text-gray relative overflow-hidden">
       <div className="absolute inset-0">
         <div className="absolute top-0 left-1/4 w-[400px] h-[400px] bg-orange-500/5 rounded-full blur-[100px]" />
         <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-orange-500/5 rounded-full blur-[100px]" />
@@ -961,7 +937,7 @@ function StatsSection() {
                 <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400">
                   {s.icon}
                 </div>
-                <div className="text-3xl font-bold text-white mb-1">
+                <div className="text-3xl font-bold text-gray mb-1">
                   {s.value}
                 </div>
                 <div className="text-sm text-gray-400">{s.label}</div>
@@ -1272,7 +1248,7 @@ function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <section className="py-28 bg-white">
+    <section className="py-28">
       <div className="w-full flex justify-center">
         <div className="w-full max-w-7xl px-6">
           {" "}
@@ -1347,10 +1323,10 @@ function FAQSection() {
 // ════════════════════════════════════════════════════════════
 function CTASection() {
   return (
-    <section className="relative py-32 bg-gradient-to-br from-[#0a0e1a] via-[#0f1629] to-[#0a0e1a] text-white overflow-hidden">
+    <section className="relative py-32 text-gray-700 overflow-hidden">
       <div className="absolute inset-0">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-orange-500/10 rounded-full blur-[120px]" />
-        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-orange-500/30 to-transparent" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[120px]" />
+        <div className="absolute top-0 left-0 w-full h-px" />
       </div>
 
       <motion.div
@@ -1359,45 +1335,20 @@ function CTASection() {
         viewport={{ once: true }}
         className="w-full flex justify-center"
       >
-        <div className="w-full max-w-7xl px-6">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20 backdrop-blur-sm mb-8">
-            <Sparkles className="w-4 h-4 text-orange-400" />
-            <span className="text-sm font-medium text-orange-300 tracking-wide">
-              JOIN EVENZA TODAY
-            </span>
-          </div>
-
-          <h2 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+        <div className=" w-full max-w-4xl px-6">
+          {" "}
+          <h2 className="text-2xl md:text-4xl font-bold mb-6 leading-tight">
             Ready to Create Your
-            <br />
-            <span className="bg-gradient-to-r from-orange-400 to-amber-400 bg-clip-text text-transparent">
+            <span className=" text-orange">
               Next Great Event?
             </span>
           </h2>
-
-          <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-12 leading-relaxed">
+          <p className="text-xl text-gray-700 max-w-2xl mx-auto mb-12 leading-relaxed">
             Whether you&apos;re hosting or attending, your next unforgettable
             experience starts here. Get started in minutes — completely free.
           </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/sign-up"
-              className="group inline-flex items-center gap-3 px-10 py-5 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold text-lg hover:scale-105 hover:shadow-[0_0_40px_rgba(249,115,22,0.5)] transition-all"
-            >
-              Get Started Free
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <Link
-              href="/events"
-              className="inline-flex items-center gap-3 px-10 py-5 rounded-full border-2 border-white/20 text-white font-semibold text-lg hover:bg-white/5 hover:border-white/40 transition-all"
-            >
-              Browse Events
-            </Link>
-          </div>
-
           {/* Mini trust bar */}
-          <div className="mt-16 flex flex-wrap justify-center gap-8 text-sm text-gray-400">
+          <div className="mt-16 flex flex-wrap justify-center gap-8 text-sm text-gray-700">
             <span className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-orange-400" />
               Free to start

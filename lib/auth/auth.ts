@@ -1,6 +1,6 @@
+// lib/auth/auth.ts
 import { prisma } from "@/lib/db/prisma";
 import { hashPassword, verifyPassword } from "./password";
-
 export async function registerUser(
   name: string,
   email: string,

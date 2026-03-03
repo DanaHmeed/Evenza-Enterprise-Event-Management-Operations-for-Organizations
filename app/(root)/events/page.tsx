@@ -1,4 +1,3 @@
-// app/(root)/events/page.tsx
 import { Suspense } from "react";
 import prisma from "@/lib/db/prisma";
 import EventsClient from "./EventsClient";
@@ -14,7 +13,6 @@ export default async function EventsPage({ searchParams }: PageProps) {
   const page = parseInt(params.page || "1");
   const pageSize = 12;
 
-  // Build where clause
   const where: Record<string, unknown> = { status: "PUBLISHED" };
 
   if (search) {
@@ -27,12 +25,13 @@ export default async function EventsPage({ searchParams }: PageProps) {
   }
   if (categoryId) where.categoryId = categoryId;
 
-  // Parallel data fetching on server
   const [events, total, categories] = await Promise.all([
     prisma.event.findMany({
       where,
       include: {
-        category: { select: { id: true, name: true, slug: true, color: true } },
+        category: {
+          select: { id: true, name: true, slug: true, color: true },
+        },
         _count: { select: { registrations: true } },
       },
       orderBy: { startDate: "asc" },
@@ -46,7 +45,6 @@ export default async function EventsPage({ searchParams }: PageProps) {
     }),
   ]);
 
-  // Serialize dates for client
   const serializedEvents = events.map((e) => ({
     id: e.id,
     title: e.title,
@@ -86,25 +84,110 @@ export default async function EventsPage({ searchParams }: PageProps) {
 
 function EventsLoadingSkeleton() {
   return (
-    <section className="min-h-screen bg-white pt-30 mt-10">
-      <div className="border-b border-gray-100">
-        <div className="max-w-8xl px-6 pt-20 pb-12">
-          <div className="text-center">
-            <div className="h-10 w-64 bg-gray-100 rounded-lg mx-auto mb-2 animate-pulse" />
-            <div className="h-5 w-80 bg-gray-50 rounded mx-auto animate-pulse" />
+    <section
+      style={{
+        minHeight: "100vh",
+        background: "#fafaf8",
+        fontFamily: "'DM Sans', sans-serif",
+      }}
+    >
+      <div style={{ background: "#fff", borderBottom: "1px solid #eee" }}>
+        <div
+          style={{
+            maxWidth: "1400px",
+            margin: "0 auto",
+            padding: "80px 48px 48px",
+          }}
+        >
+          <div
+            className="flex items-center"
+            style={{ gap: "12px", marginBottom: "24px" }}
+          >
+            <div
+              className="animate-pulse"
+              style={{ width: "32px", height: "2px", background: "#f0f0ec" }}
+            />
+            <div
+              className="animate-pulse"
+              style={{
+                width: "60px",
+                height: "10px",
+                background: "#f0f0ec",
+                borderRadius: "2px",
+              }}
+            />
           </div>
+          <div
+            className="animate-pulse"
+            style={{
+              height: "40px",
+              width: "280px",
+              background: "#f0f0ec",
+              borderRadius: "4px",
+              marginBottom: "12px",
+            }}
+          />
+          <div
+            className="animate-pulse"
+            style={{
+              height: "16px",
+              width: "360px",
+              background: "#f5f5f0",
+              borderRadius: "3px",
+            }}
+          />
+          <div
+            className="animate-pulse"
+            style={{
+              marginTop: "40px",
+              height: "44px",
+              width: "420px",
+              maxWidth: "100%",
+              background: "#f5f5f0",
+              borderRadius: "4px",
+              border: "1px solid #eee",
+            }}
+          />
         </div>
       </div>
-      <div className="max-w-7xl mx-auto px-20 py-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div
+        style={{
+          maxWidth: "1400px",
+          margin: "0 auto",
+          padding: "48px 48px 96px",
+        }}
+      >
+        <div
+          className="grid"
+          style={{
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: "48px 32px",
+          }}
+        >
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="rounded-xl border border-gray-100 bg-white overflow-hidden">
-              <div className="aspect-[18/10] bg-gray-100 animate-pulse" />
-              <div className="p-6 space-y-3">
-                <div className="h-3 w-20 bg-gray-100 rounded animate-pulse" />
-                <div className="h-4 w-full bg-gray-100 rounded animate-pulse" />
-                <div className="h-3 w-32 bg-gray-50 rounded animate-pulse" />
-                <div className="h-3 w-24 bg-gray-50 rounded animate-pulse" />
+            <div key={i}>
+              <div
+                className="animate-pulse"
+                style={{
+                  aspectRatio: "16 / 10",
+                  background: "#efefe8",
+                  borderRadius: "6px",
+                  marginBottom: "16px",
+                }}
+              />
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                <div
+                  className="animate-pulse"
+                  style={{ height: "10px", width: "80px", background: "#efefe8", borderRadius: "2px" }}
+                />
+                <div
+                  className="animate-pulse"
+                  style={{ height: "14px", width: "85%", background: "#efefe8", borderRadius: "2px" }}
+                />
+                <div
+                  className="animate-pulse"
+                  style={{ height: "10px", width: "60%", background: "#f5f5f0", borderRadius: "2px" }}
+                />
               </div>
             </div>
           ))}

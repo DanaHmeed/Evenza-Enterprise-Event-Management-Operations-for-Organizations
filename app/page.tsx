@@ -420,55 +420,55 @@ export function IntelligentWorkflow() {
 // ════════════════════════════════════════════════════════════
 function FeaturesSection() {
   const features = [
-    {
-      icon: <CalendarCheck className="w-6 h-6" />,
-      title: "Advanced Event Creation",
-      desc: "Rich descriptions, media uploads, draft/publish workflow, categories, tags, and SEO-friendly slugs.",
-    },
-    {
-      icon: <ScanLine className="w-6 h-6" />,
-      title: "Live Check-In Scanner",
-      desc: "Organizers scan QR codes at the door. Real-time check-in tracking with duplicate detection.",
-    },
-    {
-      icon: <CreditCard className="w-6 h-6" />,
-      title: "Flexible Payments",
-      desc: "Stripe for card payments. Bank transfers, cash, and JawwalPay for local markets. Free events too.",
-    },
-    {
-      icon: <Users className="w-6 h-6" />,
-      title: "Role-Based Access Control",
-      desc: "Three roles: Attendees discover & register, Organizers manage events, Admins oversee the platform.",
-    },
-    {
-      icon: <ShieldCheck className="w-6 h-6" />,
-      title: "Admin Control Center",
-      desc: "Moderate events & feedback, manage users & roles, view audit logs, and edit platform settings.",
-    },
-    {
-      icon: <Star className="w-6 h-6" />,
-      title: "Feedback & Reviews",
-      desc: "Post-event ratings with title, comment, and stars. Admin moderation before public display.",
-    },
-    {
-      icon: <Search className="w-6 h-6" />,
-      title: "Smart Discovery & Filters",
-      desc: "Search by keyword. Filter by category, date, price, location, event type. Pagination built-in.",
-    },
-    {
-      icon: <MapPin className="w-6 h-6" />,
-      title: "Online & In-Person Events",
-      desc: "Physical venues with addresses, maps, and coordinates. Virtual events with meeting link integration.",
-    },
-    {
-      icon: <Clock className="w-6 h-6" />,
-      title: "Waitlist Management",
-      desc: "Automatic waitlist when events fill up. Attendees get notified instantly when spots open.",
-    },
-  ];
+  {
+    icon: <CalendarCheck className="w-8 h-8" strokeWidth={1.2} />,
+    title: "Advanced Event Creation",
+    desc: "Rich descriptions, media uploads, draft/publish workflow, categories, tags, and SEO-friendly slugs.",
+  },
+  {
+    icon: <ScanLine className="w-8 h-8" strokeWidth={1.2} />,
+    title: "Live Check-In Scanner",
+    desc: "Organizers scan QR codes at the door. Real-time check-in tracking with duplicate detection.",
+  },
+  {
+    icon: <CreditCard className="w-8 h-8" strokeWidth={1.2} />,
+    title: "Flexible Payments",
+    desc: "Stripe for card payments. Bank transfers, cash, and JawwalPay for local markets. Free events too.",
+  },
+  {
+    icon: <Users className="w-8 h-8" strokeWidth={1.2} />,
+    title: "Role-Based Access Control",
+    desc: "Three roles: Attendees discover & register, Organizers manage events, Admins oversee the platform.",
+  },
+  {
+    icon: <ShieldCheck className="w-8 h-8" strokeWidth={1.2} />,
+    title: "Admin Control Center",
+    desc: "Moderate events & feedback, manage users & roles, view audit logs, and edit platform settings.",
+  },
+  {
+    icon: <Star className="w-8 h-8" strokeWidth={1.2} />,
+    title: "Feedback & Reviews",
+    desc: "Post-event ratings with title, comment, and stars. Admin moderation before public display.",
+  },
+  {
+    icon: <Search className="w-8 h-8" strokeWidth={1.2} />,
+    title: "Smart Discovery & Filters",
+    desc: "Search by keyword. Filter by category, date, price, location, event type. Pagination built-in.",
+  },
+  {
+    icon: <MapPin className="w-8 h-8" strokeWidth={1.2} />,
+    title: "Online & In-Person Events",
+    desc: "Physical venues with addresses, maps, and coordinates. Virtual events with meeting link integration.",
+  },
+  {
+    icon: <Clock className="w-8 h-8" strokeWidth={1.2} />,
+    title: "Waitlist Management",
+    desc: "Automatic waitlist when events fill up. Attendees get notified instantly when spots open.",
+  },
+];
 
   return (
-    <section className="py-28 bg-gradient-to-b from-white to-gray-50 relative">
+    <section className="py-28 bg-white relative">
       <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-orange-500/20 to-transparent" />
 
       <div className="w-full flex justify-center">
@@ -479,10 +479,12 @@ function FeaturesSection() {
             viewport={{ once: true, margin: "-100px" }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-5">
+            <br></br> 
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-20">
               Everything You Need to{" "}
               <span className="text-orange-600">Run Events</span>
             </h2>
+           <br></br> 
           </motion.div>
 
           <motion.div

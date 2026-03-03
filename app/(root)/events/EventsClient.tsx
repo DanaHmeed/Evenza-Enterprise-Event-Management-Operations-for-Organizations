@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Search, Loader2, CalendarX, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Search, Loader2, X } from "lucide-react";
 import EventCard from "@/app/(root)/events/EventCard";
 
 interface Category {
@@ -66,14 +66,13 @@ export default function EventsClient({
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
+  const [searchFocused, setSearchFocused] = useState(false);
 
-  // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // When filters change, update URL (server component re-fetches)
   useEffect(() => {
     const params = new URLSearchParams();
     if (debouncedSearch) params.set("search", debouncedSearch);
@@ -82,13 +81,11 @@ export default function EventsClient({
     router.push(`/events${query ? `?${query}` : ""}`, { scroll: false });
   }, [debouncedSearch, selectedCategory, router]);
 
-  // Update state when props change (from server re-render)
   useEffect(() => {
     setEvents(initialEvents);
     setPagination(initialPagination);
   }, [initialEvents, initialPagination]);
 
-  // Load more (client-side append)
   const handleShowMore = useCallback(async () => {
     if (pagination.page >= pagination.totalPages) return;
     setLoadingMore(true);
@@ -114,100 +111,255 @@ export default function EventsClient({
   }, [pagination, debouncedSearch, selectedCategory]);
 
   const hasMore = pagination.page < pagination.totalPages;
+  const hasFilters = !!(debouncedSearch || selectedCategory);
 
   return (
-    <section className="min-h-screen bg-white pt-30 mt-10">
-      {/* Header area */}
-      <div className="border-b border-gray-100">
-        <div className="max-w-8xl px-6 pt-20 pb-12">
-          {/* Title & Description */}
-          <div className="text-center">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+    <>
+      <section
+        className="w-full"
+        style={{
+          background: "#fafaf8",
+          fontFamily: "'DM Sans', sans-serif",
+          minHeight: "100vh",
+        }}
+      >
+        {/* ════════════════════════════════════════════════
+            HEADER
+            ════════════════════════════════════════════════ */}
+        <div
+          style={{
+            width: "100%",
+            background: "#fff",
+            borderBottom: "1px solid #eee",
+          }}
+        >
+          <div
+            style={{
+              maxWidth: "1400px",
+              margin: "0 auto",
+              padding: "80px 48px 48px",
+            }}
+          >
+            {/* Eyebrow accent */}
+            <div
+              className="flex items-center"
+              style={{ gap: "12px", marginBottom: "24px" }}
+            >
+              <div
+                style={{
+                  width: "32px",
+                  height: "2px",
+                  background: "#e63946",
+                }}
+              />
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.2em",
+                  color: "#e63946",
+                }}
+              >
+                Events
+              </span>
+            </div>
+
+            {/* Page title */}
+            <h1
+              style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontSize: "clamp(2rem, 4vw, 3.25rem)",
+                fontWeight: 600,
+                color: "#1a1a1a",
+                lineHeight: 1.15,
+                letterSpacing: "-0.02em",
+                margin: "0 0 16px 0",
+              }}
+            >
               Discover Events
             </h1>
-            <p className="text-gray-500">
+            <p
+              style={{
+                fontSize: "16px",
+                color: "#888",
+                maxWidth: "480px",
+                lineHeight: 1.6,
+                margin: 0,
+              }}
+            >
               Find upcoming events and experiences that inspire you.
             </p>
-          </div>
 
-          {/* Search bar */}
-          <div className="max-w-xl mx-auto mt-16 mb-16">
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search events..."
-                className="w-full pl-6 pr-14 py-4 rounded-full border border-gray-200 bg-white text-base text-gray-900 placeholder:text-gray-400 focus:outline-none shadow-sm"
-              />
-              <div className="absolute right-5 top-1/2 -translate-y-1/2">
-                <Search className="w-5 h-5 text-gray-400" />
+            {/* ── Search + Category Row ── */}
+            <div
+              className="flex flex-col lg:flex-row lg:items-center"
+              style={{ marginTop: "40px", gap: "20px" }}
+            >
+              {/* Search */}
+              <div className="relative" style={{ maxWidth: "420px", width: "100%" }}>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setSearchFocused(false)}
+                  placeholder="Search events..."
+                  style={{
+                    width: "100%",
+                    padding: "12px 44px 12px 16px",
+                    fontSize: "14px",
+                    color: "#1a1a1a",
+                    background: "#fafaf8",
+                    border: searchFocused
+                      ? "1px solid #1a1a1a"
+                      : "1px solid #e5e5e0",
+                    borderRadius: "4px",
+                    outline: "none",
+                    fontFamily: "'DM Sans', sans-serif",
+                    transition: "border-color 0.25s ease",
+                  }}
+                />
+                <Search
+                  className="absolute top-1/2 -translate-y-1/2"
+                  style={{
+                    right: "14px",
+                    width: "16px",
+                    height: "16px",
+                    color: "#aaa",
+                    pointerEvents: "none",
+                  }}
+                />
+              </div>
+
+              {/* Category pills */}
+              <div className="flex flex-wrap items-center" style={{ gap: "6px" }}>
+                <button
+                  onClick={() => setSelectedCategory("")}
+                  style={{
+                    padding: "8px 18px",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    fontFamily: "'DM Sans', sans-serif",
+                    borderRadius: "3px",
+                    border: "none",
+                    cursor: "pointer",
+                    background: !selectedCategory ? "#1a1a1a" : "transparent",
+                    color: !selectedCategory ? "#fff" : "#666",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  All
+                </button>
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() =>
+                      setSelectedCategory(
+                        selectedCategory === cat.id ? "" : cat.id
+                      )
+                    }
+                    style={{
+                      padding: "8px 18px",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      fontFamily: "'DM Sans', sans-serif",
+                      borderRadius: "3px",
+                      border: "none",
+                      cursor: "pointer",
+                      background:
+                        selectedCategory === cat.id ? "#1a1a1a" : "transparent",
+                      color: selectedCategory === cat.id ? "#fff" : "#666",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
-
-          {/* Category pills */}
-          <div className="flex flex-wrap justify-center gap-2 mt-4">
-            <button
-              onClick={() => setSelectedCategory("")}
-              className={`px-5 py-2.5 rounded-full text-sm font-medium border transition-all ${
-                !selectedCategory
-                  ? "bg-gray-900 text-white border-gray-900"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-gray-400 shadow-sm"
-              }`}
-            >
-              All Events
-            </button>
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() =>
-                  setSelectedCategory(
-                    selectedCategory === cat.id ? "" : cat.id,
-                  )
-                }
-                className={`px-5 py-2.5 rounded-full text-sm font-medium border transition-all ${
-                  selectedCategory === cat.id
-                    ? "bg-gray-900 text-white border-gray-900"
-                    : "bg-white text-gray-600 border-gray-200 hover:border-gray-400 shadow-sm"
-                }`}
-              >
-                {cat.name}
-              </button>
-            ))}
-          </div>
         </div>
-      </div>
 
-      {/* Events grid area */}
-      <div className="w-full flex justify-center">
-        <div className="max-w-7xl mx-auto px-20 py-10">
-          {/* Active filters */}
-          {(debouncedSearch || selectedCategory) && (
-            <div className="flex items-center gap-3 mb-6">
-              <span className="text-sm text-gray-500">
+        {/* ════════════════════════════════════════════════
+            EVENTS GRID
+            ════════════════════════════════════════════════ */}
+        <div
+          style={{
+            maxWidth: "1400px",
+            margin: "0 auto",
+            padding: "48px 48px 96px",
+          }}
+        >
+          {/* Active filter chips */}
+          {hasFilters && (
+            <div
+              className="flex items-center flex-wrap"
+              style={{ gap: "12px", marginBottom: "32px" }}
+            >
+              <span style={{ fontSize: "13px", color: "#999" }}>
                 {pagination.total} result
                 {pagination.total !== 1 ? "s" : ""}
               </span>
+
               {debouncedSearch && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100 text-sm text-gray-700">
-                  &quot;{debouncedSearch}&quot;
+                <span
+                  className="inline-flex items-center"
+                  style={{
+                    gap: "6px",
+                    padding: "4px 12px",
+                    fontSize: "12px",
+                    color: "#555",
+                    background: "#fff",
+                    border: "1px solid #e5e5e0",
+                    borderRadius: "3px",
+                  }}
+                >
+                  &ldquo;{debouncedSearch}&rdquo;
                   <button
                     onClick={() => setSearchQuery("")}
-                    className="hover:text-gray-900"
+                    style={{
+                      display: "flex",
+                      cursor: "pointer",
+                      border: "none",
+                      background: "none",
+                      padding: 0,
+                    }}
                   >
-                    <X className="w-3 h-3" />
+                    <X
+                      style={{ width: "12px", height: "12px", color: "#999" }}
+                    />
                   </button>
                 </span>
               )}
+
               {selectedCategory && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100 text-sm text-gray-700">
+                <span
+                  className="inline-flex items-center"
+                  style={{
+                    gap: "6px",
+                    padding: "4px 12px",
+                    fontSize: "12px",
+                    color: "#555",
+                    background: "#fff",
+                    border: "1px solid #e5e5e0",
+                    borderRadius: "3px",
+                  }}
+                >
                   {categories.find((c) => c.id === selectedCategory)?.name}
                   <button
                     onClick={() => setSelectedCategory("")}
-                    className="hover:text-gray-900"
+                    style={{
+                      display: "flex",
+                      cursor: "pointer",
+                      border: "none",
+                      background: "none",
+                      padding: 0,
+                    }}
                   >
-                    <X className="w-3 h-3" />
+                    <X
+                      style={{ width: "12px", height: "12px", color: "#999" }}
+                    />
                   </button>
                 </span>
               )}
@@ -215,23 +367,64 @@ export default function EventsClient({
           )}
 
           {events.length === 0 ? (
-            <div className="text-center py-24">
-              <CalendarX className="w-14 h-14 text-gray-200 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            /* ── Empty State ── */
+            <div style={{ textAlign: "center", padding: "100px 0" }}>
+              <div
+                style={{
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "50%",
+                  background: "#f0f0ec",
+                  margin: "0 auto 20px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Search
+                  style={{ width: "18px", height: "18px", color: "#bbb" }}
+                />
+              </div>
+              <h3
+                style={{
+                  fontFamily: "'Playfair Display', Georgia, serif",
+                  fontSize: "20px",
+                  fontWeight: 600,
+                  color: "#1a1a1a",
+                  marginBottom: "8px",
+                }}
+              >
                 No events found
               </h3>
-              <p className="text-gray-500 text-sm max-w-md mx-auto mb-6">
-                {debouncedSearch || selectedCategory
+              <p
+                style={{
+                  fontSize: "14px",
+                  color: "#999",
+                  maxWidth: "320px",
+                  margin: "0 auto 24px",
+                }}
+              >
+                {hasFilters
                   ? "Try adjusting your search or filters."
                   : "No published events yet. Check back soon!"}
               </p>
-              {(debouncedSearch || selectedCategory) && (
+              {hasFilters && (
                 <button
                   onClick={() => {
                     setSearchQuery("");
                     setSelectedCategory("");
                   }}
-                  className="px-6 py-2.5 rounded-full bg-gray-900 text-white text-sm font-semibold transition-colors hover:bg-gray-800"
+                  style={{
+                    padding: "10px 28px",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    fontFamily: "'DM Sans', sans-serif",
+                    background: "#1a1a1a",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "3px",
+                    cursor: "pointer",
+                  }}
                 >
                   Clear Filters
                 </button>
@@ -239,7 +432,15 @@ export default function EventsClient({
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {/* ── Grid ── */}
+              <div
+                className="grid"
+                style={{
+                  gridTemplateColumns:
+                    "repeat(auto-fill, minmax(280px, 1fr))",
+                  gap: "48px 32px",
+                }}
+              >
                 {events.map((event) => (
                   <EventCard key={event.id} event={event} />
                 ))}
@@ -247,16 +448,35 @@ export default function EventsClient({
 
               {/* Load more */}
               {hasMore && (
-                <div className="text-center mt-10">
+                <div style={{ textAlign: "center", marginTop: "56px" }}>
                   <button
                     onClick={handleShowMore}
                     disabled={loadingMore}
-                    className="px-8 py-3 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 hover:border-gray-400 hover:bg-gray-50 transition-all disabled:opacity-50"
+                    style={{
+                      padding: "12px 40px",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      fontFamily: "'DM Sans', sans-serif",
+                      background: "transparent",
+                      color: "#1a1a1a",
+                      border: "1px solid #d4d4d0",
+                      borderRadius: "3px",
+                      cursor: loadingMore ? "default" : "pointer",
+                      opacity: loadingMore ? 0.5 : 1,
+                      transition: "all 0.2s ease",
+                    }}
                   >
                     {loadingMore ? (
-                      <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                      <Loader2
+                        className="animate-spin"
+                        style={{
+                          width: "16px",
+                          height: "16px",
+                          margin: "0 auto",
+                        }}
+                      />
                     ) : (
-                      "Load More Events"
+                      "Load More"
                     )}
                   </button>
                 </div>
@@ -264,7 +484,7 @@ export default function EventsClient({
             </>
           )}
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }

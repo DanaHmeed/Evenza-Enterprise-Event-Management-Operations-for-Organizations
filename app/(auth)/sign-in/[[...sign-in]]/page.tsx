@@ -1,3 +1,4 @@
+// app/(auth)/sign-in/[[...sign-in]]/page.tsx
 import { SignIn } from "@clerk/nextjs";
 import "@/styles/auth.css";
 export default function SignInPage() {

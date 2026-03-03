@@ -1,15 +1,55 @@
 // app/(root)/events/EventCardSkeleton.tsx
 export default function EventCardSkeleton() {
   return (
-    <div className="animate-pulse">
+    <div>
       {/* Banner skeleton */}
-      <div className="aspect-[18/10] bg-gray-100 rounded-2xl mb-4" />
-
+      <div
+        className="animate-pulse"
+        style={{
+          aspectRatio: "16 / 10",
+          background: "#efefe8",
+          borderRadius: "6px",
+          marginBottom: "16px",
+        }}
+      />
       {/* Content skeleton */}
-      <div className="space-y-2.5">
-        <div className="h-4 w-32 bg-gray-100 rounded" />
-        <div className="h-5 w-4/5 bg-gray-100 rounded" />
-        <div className="h-4 w-3/5 bg-gray-100 rounded" />
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div
+          className="animate-pulse"
+          style={{
+            height: "10px",
+            width: "80px",
+            background: "#efefe8",
+            borderRadius: "2px",
+          }}
+        />
+        <div
+          className="animate-pulse"
+          style={{
+            height: "14px",
+            width: "85%",
+            background: "#efefe8",
+            borderRadius: "2px",
+          }}
+        />
+        <div
+          className="animate-pulse"
+          style={{
+            height: "10px",
+            width: "60%",
+            background: "#f5f5f0",
+            borderRadius: "2px",
+          }}
+        />
+        <div
+          className="animate-pulse"
+          style={{
+            height: "10px",
+            width: "45%",
+            background: "#f5f5f0",
+            borderRadius: "2px",
+          }}
+        />
       </div>
     </div>
   );

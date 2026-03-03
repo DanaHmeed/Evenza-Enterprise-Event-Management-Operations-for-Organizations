@@ -21,8 +21,32 @@ import {
   Tag,
   CreditCard,
   User,
+  ArrowUpRight,
 } from "lucide-react";
 import EvenzaButton from "@/components/shared/button/EvenzaButton";
+
+/* ════════════════════════════════════════════════
+   Design tokens — keep in sync with EventsClient
+   ════════════════════════════════════════════════ */
+const t = {
+  bg: "#fafaf8",
+  surface: "#fff",
+  border: "#e5e5e0",
+  borderLight: "#f0f0ec",
+  text: "#1a1a1a",
+  textMuted: "#888",
+  textFaint: "#aaa",
+  accent: "#e63946",
+  accentSoft: "rgba(230,57,70,0.08)",
+  green: "#2d6a4f",
+  greenSoft: "rgba(45,106,79,0.08)",
+  greenBorder: "rgba(45,106,79,0.15)",
+  amber: "#b45309",
+  amberSoft: "rgba(180,83,9,0.06)",
+  amberBorder: "rgba(180,83,9,0.15)",
+  serif: "'Playfair Display', Georgia, serif",
+  sans: "'DM Sans', sans-serif",
+};
 
 // ─── Types ───
 interface EventData {
@@ -96,18 +120,16 @@ export default function EventDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Registration state
   const [registering, setRegistering] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
   const [registrationStatus, setRegistrationStatus] = useState<string | null>(
-    null,
+    null
   );
   const [actionMessage, setActionMessage] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
 
-  // Feedback state
   const [feedbacks, setFeedbacks] = useState<FeedbackData[]>([]);
   const [feedbackStats, setFeedbackStats] = useState({
     count: 0,
@@ -119,7 +141,7 @@ export default function EventDetailPage() {
   const [feedbackComment, setFeedbackComment] = useState("");
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
 
-  // Fetch event data
+  // ─── Data fetching ───
   useEffect(() => {
     const fetchEvent = async () => {
       setLoading(true);
@@ -137,10 +159,9 @@ export default function EventDetailPage() {
     if (eventId) fetchEvent();
   }, [eventId]);
 
-  // Handle payment redirect
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const payment = params.get("payment");
+    const p = new URLSearchParams(window.location.search);
+    const payment = p.get("payment");
     if (payment === "success") {
       setActionMessage({
         type: "success",
@@ -148,7 +169,6 @@ export default function EventDetailPage() {
       });
       setIsRegistered(true);
       setRegistrationStatus("APPROVED");
-      // Clean URL
       window.history.replaceState({}, "", `/events/${eventId}`);
     } else if (payment === "cancelled") {
       setActionMessage({
@@ -159,10 +179,9 @@ export default function EventDetailPage() {
     }
   }, [eventId]);
 
-  // Check if user is already registered
   useEffect(() => {
     if (!isSignedIn || !eventId) return;
-    const checkRegistration = async () => {
+    const check = async () => {
       try {
         const res = await fetch(`/api/events/${eventId}/registration-status`);
         if (res.ok) {
@@ -172,14 +191,11 @@ export default function EventDetailPage() {
             setRegistrationStatus(data.status);
           }
         }
-      } catch {
-        // Non-critical
-      }
+      } catch {}
     };
-    checkRegistration();
+    check();
   }, [isSignedIn, eventId]);
 
-  // Fetch feedback
   useEffect(() => {
     const fetchFeedback = async () => {
       try {
@@ -189,9 +205,7 @@ export default function EventDetailPage() {
           setFeedbacks(data.data?.feedbacks || []);
           setFeedbackStats(data.data?.stats || { count: 0, averageRating: 0 });
         }
-      } catch {
-        // Feedback fetch failed — non-critical
-      }
+      } catch {}
     };
     if (eventId) fetchFeedback();
   }, [eventId]);
@@ -326,20 +340,29 @@ export default function EventDetailPage() {
   };
 
   // ─── Helpers ───
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString("en-US", {
+  const fmtDate = (s: string) =>
+    new Date(s).toLocaleDateString("en-US", {
       weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
     });
 
-  const formatTime = (dateStr: string) =>
-    new Date(dateStr).toLocaleTimeString("en-US", {
+  const fmtTime = (s: string) =>
+    new Date(s).toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
     });
+
+  const fmtShortDate = (s: string) => {
+    const d = new Date(s);
+    return {
+      month: d.toLocaleDateString("en-US", { month: "short" }).toUpperCase(),
+      day: d.getDate(),
+      weekday: d.toLocaleDateString("en-US", { weekday: "short" }),
+    };
+  };
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -352,29 +375,76 @@ export default function EventDetailPage() {
     }
   };
 
-  // ─── Loading / Error states ───
+  // ─── Loading ───
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+      <div
+        style={{
+          minHeight: "100vh",
+          background: t.bg,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: t.sans,
+        }}
+      >
+        <Loader2
+          className="animate-spin"
+          style={{ width: "28px", height: "28px", color: t.accent }}
+        />
       </div>
     );
   }
 
+  // ─── Error ───
   if (error || !event) {
     return (
-      <div className=" bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+      <div
+        style={{
+          minHeight: "100vh",
+          background: t.bg,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: t.sans,
+        }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <AlertCircle
+            style={{
+              width: "40px",
+              height: "40px",
+              color: "#ccc",
+              margin: "0 auto 16px",
+            }}
+          />
+          <h2
+            style={{
+              fontFamily: t.serif,
+              fontSize: "22px",
+              fontWeight: 600,
+              color: t.text,
+              marginBottom: "8px",
+            }}
+          >
             Event Not Found
           </h2>
-          <p className="text-gray-500 mb-6">{error}</p>
+          <p style={{ fontSize: "14px", color: t.textMuted, marginBottom: "24px" }}>
+            {error}
+          </p>
           <Link
             href="/events"
-            className="inline-flex items-center gap-2 text-black-600 font-semibold hover:text-black-700"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              fontSize: "13px",
+              fontWeight: 600,
+              color: t.accent,
+              textDecoration: "none",
+            }}
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft style={{ width: "14px", height: "14px" }} />
             Back to Events
           </Link>
         </div>
@@ -387,191 +457,573 @@ export default function EventDetailPage() {
   const isDeadlinePassed = new Date(event.registrationDeadline) < new Date();
   const isFull = event.seatsRemaining <= 0;
   const isCancelled = event.status === "CANCELLED";
-
   const canRegister =
-    !isPast &&
-    !isDeadlinePassed &&
-    !isFull &&
-    !isCancelled &&
-    !isRegistered &&
-    event.eventType === "FREE";
-
+    !isPast && !isDeadlinePassed && !isFull && !isCancelled && !isRegistered && event.eventType === "FREE";
   const canPurchase =
-    !isPast &&
-    !isDeadlinePassed &&
-    !isFull &&
-    !isCancelled &&
-    !isRegistered &&
-    event.eventType === "PAID";
-
+    !isPast && !isDeadlinePassed && !isFull && !isCancelled && !isRegistered && event.eventType === "PAID";
   const canCancel = isRegistered && !isPast;
   const canLeaveFeedback = isSignedIn && isPast && isRegistered;
-
   const seatsPercentage =
     event.capacity > 0
       ? ((event.capacity - event.seatsRemaining) / event.capacity) * 100
       : 0;
 
+  const startInfo = fmtShortDate(event.startDate);
+  const locationLabel = event.isOnline
+    ? "Virtual Event (Online)"
+    : event.venueName || event.address || event.city || "TBA";
+  const locationDetail =
+    !event.isOnline && event.city && event.venueName
+      ? [event.address, event.city, event.country].filter(Boolean).join(", ")
+      : null;
+
   return (
-    <section className="min-h-screen bg-gray-50">
-      {/* Banner */}
-      <div className="relative w-full h-[300px] md:h-[400px] bg-gradient-to-br from-gray-900 to-gray-800 overflow-hidden">
+    <div style={{ background: t.bg, fontFamily: t.sans, minHeight: "100vh" }}>
+   
+      {/* ════════════════════════════════════════
+          BANNER
+          ════════════════════════════════════════ */}
+      <div
+        style={{
+          position: "relative",
+          width: "100%",
+          aspectRatio: "21 / 8",
+          maxHeight: "420px",
+          minHeight: "260px",
+          overflow: "hidden",
+          background: "#1a1a2e",
+        }}
+      >
         {event.banner ? (
           <img
             src={event.banner}
             alt={event.title}
-            className="w-full h-full object-cover opacity-60"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              opacity: 0.5,
+              filter: 'blur(5px)',
+            }}
           />
+          
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/20 to-amber-500/10" />
+          
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+            }}
+          />
+          
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-
-        {/* Back button + share */}
-        <div className="absolute top-6 left-6 right-6 flex justify-between items-center">
+        <Link
+  href="/events"
+  style={{
+    position: "absolute",
+    top: "85px",
+    left: "20px",
+    display: "flex",
+    alignItems: "center",
+    padding: "8px 14px",
+    background: "rgba(0, 0, 0, 0.38)",
+    backdropFilter: "blur(6px)",
+    borderRadius: "6px",
+    color: "#fff",
+    fontSize: "14px",
+    fontFamily: t.serif,
+  }}
+>
+  <ArrowLeft style={{ width: "14px", height: "14px" }} />
+  Back
+</Link>
+        {/* Gradient overlay */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.05) 100%)",
+          }}
+        />
+        {/* Top bar */}
+        <div
+          style={{
+            position: "absolute",
+            top: "24px",
+            left: "32px",
+            right: "32px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <Link
             href="/events"
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md text-white text-sm font-medium hover:bg-white/20 transition-colors"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 16px",
+              fontSize: "13px",
+              fontWeight: 500,
+              color: "rgba(255,255,255,0.9)",
+              background: "rgba(255,255,255,0.1)",
+              backdropFilter: "blur(8px)",
+              borderRadius: "4px",
+              textDecoration: "none",
+              transition: "background 0.2s",
+            }}
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft style={{ width: "14px", height: "14px" }} />
             All Events
           </Link>
           <button
             onClick={handleShare}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md text-white text-sm font-medium hover:bg-white/20 transition-colors"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 16px",
+              fontSize: "13px",
+              fontWeight: 500,
+              color: "rgba(255,255,255,0.9)",
+              background: "rgba(255,255,255,0.1)",
+              backdropFilter: "blur(8px)",
+              borderRadius: "4px",
+              border: "none",
+              cursor: "pointer",
+            }}
           >
-            <Share2 className="w-4 h-4" />
+            <Share2 style={{ width: "14px", height: "14px" }} />
             Share
           </button>
         </div>
 
-        {/* Title overlay */}
-        <div className="absolute bottom-8 left-6 right-6 max-w-4xl">
-          <div className="flex flex-wrap items-center gap-2 mb-3">
+        {/* Title block on banner */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: "32px",
+            left: "32px",
+            right: "32px",
+            maxWidth: "800px",
+          }}
+        >
+          {/* Badges */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "14px" }}>
             {event.category && (
-              <span className="px-3 py-1 rounded-full bg-orange-500/90 text-white text-xs font-semibold">
+              <span
+                style={{
+                  padding: "4px 12px",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "#fff",
+                  background: t.accent,
+                  borderRadius: "3px",
+                }}
+              >
                 {event.category.name}
               </span>
             )}
             {event.eventType === "FREE" ? (
-              <span className="px-3 py-1 rounded-full bg-green-500/90 text-white text-xs font-semibold">
+              <span
+                style={{
+                  padding: "4px 12px",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "#fff",
+                  background: t.green,
+                  borderRadius: "3px",
+                }}
+              >
                 Free
               </span>
             ) : (
-              <span className="px-3 py-1 rounded-full bg-amber-500/90 text-white text-xs font-semibold">
+              <span
+                style={{
+                  padding: "4px 12px",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "#fff",
+                  background: "rgba(255,255,255,0.2)",
+                  borderRadius: "3px",
+                }}
+              >
                 ${event.price} {event.currency}
               </span>
             )}
             {isPast && (
-              <span className="px-3 py-1 rounded-full bg-gray-500/90 text-white text-xs font-semibold">
+              <span
+                style={{
+                  padding: "4px 12px",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "rgba(255,255,255,0.7)",
+                  background: "rgba(255,255,255,0.1)",
+                  borderRadius: "3px",
+                }}
+              >
                 Ended
               </span>
             )}
             {isCancelled && (
-              <span className="px-3 py-1 rounded-full bg-red-500/90 text-white text-xs font-semibold">
+              <span
+                style={{
+                  padding: "4px 12px",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "#fff",
+                  background: "rgba(220,53,69,0.85)",
+                  borderRadius: "3px",
+                }}
+              >
                 Cancelled
               </span>
             )}
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-white leading-tight">
+
+          <h1
+            style={{
+              fontFamily: t.serif,
+              fontSize: "clamp(1.5rem, 3.5vw, 2.75rem)",
+              fontWeight: 600,
+              color: "#fff",
+              lineHeight: 1.2,
+              letterSpacing: "-0.02em",
+              margin: 0,
+            }}
+          >
             {event.title}
           </h1>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-6xl mx-auto px-6 py-10">
+      {/* ════════════════════════════════════════
+          CONTENT
+          ════════════════════════════════════════ */}
+      <div
+        style={{
+          maxWidth: "1200px",
+          margin: "0 auto",
+          padding: "48px 48px 96px",
+        }}
+      >
         {/* Action message */}
         {actionMessage && (
           <div
-            className={`mb-6 p-4 rounded-xl flex items-start gap-3 ${
-              actionMessage.type === "success"
-                ? "bg-green-50 border border-green-200 text-green-700"
-                : "bg-red-50 border border-red-200 text-red-700"
-            }`}
+            style={{
+              marginBottom: "32px",
+              padding: "14px 18px",
+              borderRadius: "4px",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "12px",
+              fontSize: "13px",
+              fontWeight: 500,
+              background:
+                actionMessage.type === "success" ? t.greenSoft : "rgba(220,53,69,0.06)",
+              border: `1px solid ${
+                actionMessage.type === "success" ? t.greenBorder : "rgba(220,53,69,0.15)"
+              }`,
+              color: actionMessage.type === "success" ? t.green : t.accent,
+            }}
           >
             {actionMessage.type === "success" ? (
-              <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <CheckCircle2 style={{ width: "16px", height: "16px", flexShrink: 0, marginTop: "1px" }} />
             ) : (
-              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <AlertCircle style={{ width: "16px", height: "16px", flexShrink: 0, marginTop: "1px" }} />
             )}
-            <div>
-              <p className="text-sm font-medium">{actionMessage.text}</p>
-            </div>
+            <span style={{ flex: 1 }}>{actionMessage.text}</span>
             <button
               onClick={() => setActionMessage(null)}
-              className="ml-auto text-sm opacity-60 hover:opacity-100"
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: "14px",
+                opacity: 0.5,
+                color: "inherit",
+                padding: 0,
+              }}
             >
-              ✕
+              ×
             </button>
           </div>
         )}
 
-        <div className="grid lg:grid-cols-3 gap-10">
-          {/* Left — Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Organizer */}
-            <div className="flex items-center gap-3">
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 380px",
+            gap: "56px",
+            alignItems: "start",
+          }}
+          className="lg:grid-cols-[1fr_380px] grid-cols-1"
+        >
+          {/* ── Left: Main Content ── */}
+          <div>
+            {/* Organizer row */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                marginBottom: "40px",
+                paddingBottom: "24px",
+                borderBottom: `1px solid ${t.borderLight}`,
+              }}
+            >
               {event.organizer.avatar ? (
                 <img
                   src={event.organizer.avatar}
                   alt={event.organizer.name}
-                  className="w-10 h-10 rounded-full object-cover"
+                  style={{
+                    width: "36px",
+                    height: "36px",
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                  }}
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-black-500" />
+                <div
+                  style={{
+                    width: "36px",
+                    height: "36px",
+                    borderRadius: "50%",
+                    background: t.borderLight,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <User style={{ width: "16px", height: "16px", color: t.textFaint }} />
                 </div>
               )}
               <div>
-                <p className="text-xs text-gray-500">Organized by</p>
-                <p className="text-sm font-semibold text-gray-900">
+                <p style={{ fontSize: "11px", color: t.textFaint, margin: 0, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                  Organized by
+                </p>
+                <p style={{ fontSize: "14px", fontWeight: 600, color: t.text, margin: 0 }}>
                   {event.organizer.name}
                 </p>
               </div>
             </div>
 
-            {/* Description */}
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
+            {/* Quick info strip */}
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "32px",
+                marginBottom: "40px",
+              }}
+            >
+              {/* Date chip */}
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    padding: "8px 14px",
+                    background: t.accentSoft,
+                    borderRadius: "4px",
+                    minWidth: "52px",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      fontWeight: 600,
+                      letterSpacing: "0.08em",
+                      color: t.accent,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {startInfo.month}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "20px",
+                      fontWeight: 700,
+                      color: t.text,
+                      fontFamily: t.serif,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {startInfo.day}
+                  </span>
+                </div>
+                <div>
+                  <p style={{ fontSize: "13px", fontWeight: 600, color: t.text, margin: 0 }}>
+                    {fmtDate(event.startDate)}
+                  </p>
+                  <p style={{ fontSize: "12px", color: t.textMuted, margin: "2px 0 0" }}>
+                    {fmtTime(event.startDate)} – {fmtTime(event.endDate)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Location chip */}
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div
+                  style={{
+                    width: "44px",
+                    height: "44px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: t.borderLight,
+                    borderRadius: "4px",
+                  }}
+                >
+                  {event.isOnline ? (
+                    <Globe style={{ width: "18px", height: "18px", color: t.textFaint }} />
+                  ) : (
+                    <MapPin style={{ width: "18px", height: "18px", color: t.textFaint }} />
+                  )}
+                </div>
+                <div>
+                  <p style={{ fontSize: "13px", fontWeight: 600, color: t.text, margin: 0 }}>
+                    {locationLabel}
+                  </p>
+                  {locationDetail && (
+                    <p style={{ fontSize: "12px", color: t.textMuted, margin: "2px 0 0" }}>
+                      {locationDetail}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Description ── */}
+            <div style={{ marginBottom: "48px" }}>
+              <h2
+                style={{
+                  fontFamily: t.serif,
+                  fontSize: "20px",
+                  fontWeight: 600,
+                  color: t.text,
+                  margin: "0 0 20px 0",
+                }}
+              >
                 About This Event
               </h2>
-              <div className="prose prose-sm prose-gray max-w-none text-gray-700 leading-relaxed whitespace-pre-wrap">
+              <div
+                style={{
+                  fontSize: "14px",
+                  lineHeight: 1.75,
+                  color: "#555",
+                  whiteSpace: "pre-wrap",
+                }}
+              >
                 {event.description}
               </div>
             </div>
 
-            {/* Tags */}
+            {/* ── Tags ── */}
             {event.tags && event.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "8px",
+                  marginBottom: "48px",
+                }}
+              >
                 {event.tags.map((tag) => (
                   <span
                     key={tag.id}
-                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-100 text-xs font-medium text-gray-600"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      padding: "5px 12px",
+                      fontSize: "12px",
+                      fontWeight: 500,
+                      color: "#666",
+                      background: t.borderLight,
+                      borderRadius: "3px",
+                    }}
                   >
-                    <Tag className="w-3 h-3" />
+                    <Tag style={{ width: "11px", height: "11px" }} />
                     {tag.name}
                   </span>
                 ))}
               </div>
             )}
 
-            {/* ─── Feedback Section ─── */}
-            <div className="border-t border-gray-200 pt-8">
-              <div className="flex items-center justify-between mb-6">
+            {/* ════════════════════════════════════
+                FEEDBACK SECTION
+                ════════════════════════════════════ */}
+            <div
+              style={{
+                borderTop: `1px solid ${t.borderLight}`,
+                paddingTop: "40px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  marginBottom: "28px",
+                }}
+              >
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">
-                    Reviews & Feedback
+                  <h2
+                    style={{
+                      fontFamily: t.serif,
+                      fontSize: "20px",
+                      fontWeight: 600,
+                      color: t.text,
+                      margin: 0,
+                    }}
+                  >
+                    Reviews
                   </h2>
                   {feedbackStats.count > 0 && (
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 fill-orange-400 text-orange-400" />
-                        <span className="text-sm font-semibold text-gray-900">
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        marginTop: "6px",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                        <Star
+                          style={{
+                            width: "14px",
+                            height: "14px",
+                            fill: "#d4a017",
+                            color: "#d4a017",
+                          }}
+                        />
+                        <span
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: 600,
+                            color: t.text,
+                          }}
+                        >
                           {feedbackStats.averageRating}
                         </span>
                       </div>
-                      <span className="text-sm text-gray-500">
+                      <span style={{ fontSize: "13px", color: t.textMuted }}>
                         ({feedbackStats.count} review
                         {feedbackStats.count !== 1 ? "s" : ""})
                       </span>
@@ -592,33 +1044,62 @@ export default function EventDetailPage() {
 
               {/* Feedback Form */}
               {showFeedbackForm && (
-                <form
-                  onSubmit={handleSubmitFeedback}
-                  className="bg-white border border-gray-200 rounded-2xl p-6 mb-6"
+                <div
+                  style={{
+                    background: t.surface,
+                    border: `1px solid ${t.border}`,
+                    borderRadius: "6px",
+                    padding: "28px",
+                    marginBottom: "28px",
+                  }}
                 >
-                  <h3 className="font-semibold text-gray-900 mb-4">
+                  <h3
+                    style={{
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      color: t.text,
+                      margin: "0 0 20px 0",
+                    }}
+                  >
                     Your Review
                   </h3>
 
-                  {/* Star Rating */}
-                  <div className="mb-4">
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  {/* Stars */}
+                  <div style={{ marginBottom: "20px" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        color: "#666",
+                        marginBottom: "8px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                      }}
+                    >
                       Rating *
                     </label>
-                    <div className="flex gap-1">
+                    <div style={{ display: "flex", gap: "4px" }}>
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
                           key={star}
                           type="button"
                           onClick={() => setFeedbackRating(star)}
-                          className="p-0.5"
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: "2px",
+                          }}
                         >
                           <Star
-                            className={`w-7 h-7 transition-colors ${
-                              star <= feedbackRating
-                                ? "fill-orange-400 text-orange-400"
-                                : "text-gray-300 hover:text-orange-300"
-                            }`}
+                            style={{
+                              width: "24px",
+                              height: "24px",
+                              fill: star <= feedbackRating ? "#d4a017" : "none",
+                              color: star <= feedbackRating ? "#d4a017" : "#ccc",
+                              transition: "color 0.15s, fill 0.15s",
+                            }}
                           />
                         </button>
                       ))}
@@ -626,8 +1107,18 @@ export default function EventDetailPage() {
                   </div>
 
                   {/* Title */}
-                  <div className="mb-4">
-                    <label className="text-sm font-medium text-gray-700 mb-1.5 block">
+                  <div style={{ marginBottom: "16px" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        color: "#666",
+                        marginBottom: "6px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                      }}
+                    >
                       Title (optional)
                     </label>
                     <input
@@ -635,14 +1126,34 @@ export default function EventDetailPage() {
                       value={feedbackTitle}
                       onChange={(e) => setFeedbackTitle(e.target.value)}
                       placeholder="Summarize your experience"
-                      className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10"
                       maxLength={100}
+                      style={{
+                        width: "100%",
+                        padding: "10px 14px",
+                        fontSize: "14px",
+                        border: `1px solid ${t.border}`,
+                        borderRadius: "4px",
+                        outline: "none",
+                        fontFamily: t.sans,
+                        color: t.text,
+                        background: t.bg,
+                      }}
                     />
                   </div>
 
                   {/* Comment */}
-                  <div className="mb-4">
-                    <label className="text-sm font-medium text-gray-700 mb-1.5 block">
+                  <div style={{ marginBottom: "20px" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        color: "#666",
+                        marginBottom: "6px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                      }}
+                    >
                       Comment (optional)
                     </label>
                     <textarea
@@ -650,17 +1161,29 @@ export default function EventDetailPage() {
                       onChange={(e) => setFeedbackComment(e.target.value)}
                       placeholder="Share your experience..."
                       rows={4}
-                      className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 resize-none"
                       maxLength={2000}
+                      style={{
+                        width: "100%",
+                        padding: "10px 14px",
+                        fontSize: "14px",
+                        border: `1px solid ${t.border}`,
+                        borderRadius: "4px",
+                        outline: "none",
+                        fontFamily: t.sans,
+                        color: t.text,
+                        background: t.bg,
+                        resize: "none",
+                      }}
                     />
                   </div>
 
-                  <div className="flex gap-3">
+                  <div style={{ display: "flex", gap: "12px" }}>
                     <EvenzaButton
                       type="submit"
                       size="sm"
                       loading={submittingFeedback}
                       disabled={feedbackRating === 0}
+                      onClick={handleSubmitFeedback}
                     >
                       Submit Review
                     </EvenzaButton>
@@ -673,59 +1196,114 @@ export default function EventDetailPage() {
                       Cancel
                     </EvenzaButton>
                   </div>
-                </form>
+                </div>
               )}
 
               {/* Feedback List */}
               {feedbacks.length > 0 ? (
-                <div className="space-y-4">
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                   {feedbacks.map((fb) => (
                     <div
                       key={fb.id}
-                      className="bg-white border border-gray-100 rounded-xl p-5"
+                      style={{
+                        background: t.surface,
+                        border: `1px solid ${t.borderLight}`,
+                        borderRadius: "6px",
+                        padding: "20px 24px",
+                      }}
                     >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-3">
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          justifyContent: "space-between",
+                          marginBottom: "10px",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                           {fb.user.avatar ? (
                             <img
                               src={fb.user.avatar}
                               alt={fb.user.name}
-                              className="w-8 h-8 rounded-full object-cover"
+                              style={{
+                                width: "28px",
+                                height: "28px",
+                                borderRadius: "50%",
+                                objectFit: "cover",
+                              }}
                             />
                           ) : (
-                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                              <User className="w-4 h-4 text-gray-400" />
+                            <div
+                              style={{
+                                width: "28px",
+                                height: "28px",
+                                borderRadius: "50%",
+                                background: t.borderLight,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <User style={{ width: "13px", height: "13px", color: t.textFaint }} />
                             </div>
                           )}
                           <div>
-                            <p className="text-sm font-semibold text-gray-900">
+                            <p
+                              style={{
+                                fontSize: "13px",
+                                fontWeight: 600,
+                                color: t.text,
+                                margin: 0,
+                              }}
+                            >
                               {fb.user.name}
                             </p>
-                            <p className="text-xs text-gray-400">
+                            <p
+                              style={{
+                                fontSize: "11px",
+                                color: t.textFaint,
+                                margin: 0,
+                              }}
+                            >
                               {new Date(fb.createdAt).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
-                        <div className="flex gap-0.5">
+                        <div style={{ display: "flex", gap: "2px" }}>
                           {Array.from({ length: 5 }).map((_, j) => (
                             <Star
                               key={j}
-                              className={`w-3.5 h-3.5 ${
-                                j < fb.rating
-                                  ? "fill-orange-400 text-orange-400"
-                                  : "text-gray-200"
-                              }`}
+                              style={{
+                                width: "12px",
+                                height: "12px",
+                                fill: j < fb.rating ? "#d4a017" : "none",
+                                color: j < fb.rating ? "#d4a017" : "#ddd",
+                              }}
                             />
                           ))}
                         </div>
                       </div>
                       {fb.title && (
-                        <p className="text-sm font-semibold text-gray-900 mb-1">
+                        <p
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: 600,
+                            color: t.text,
+                            margin: "0 0 4px 0",
+                          }}
+                        >
                           {fb.title}
                         </p>
                       )}
                       {fb.comment && (
-                        <p className="text-sm text-gray-600 leading-relaxed">
+                        <p
+                          style={{
+                            fontSize: "13px",
+                            color: "#666",
+                            lineHeight: 1.6,
+                            margin: 0,
+                          }}
+                        >
                           {fb.comment}
                         </p>
                       )}
@@ -733,7 +1311,14 @@ export default function EventDetailPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-400 text-center py-8">
+                <p
+                  style={{
+                    fontSize: "13px",
+                    color: t.textFaint,
+                    textAlign: "center",
+                    padding: "48px 0",
+                  }}
+                >
                   No reviews yet.{" "}
                   {canLeaveFeedback && "Be the first to leave a review!"}
                 </p>
@@ -741,230 +1326,384 @@ export default function EventDetailPage() {
             </div>
           </div>
 
-          {/* Right — Sidebar */}
-          <div className="space-y-5">
-            {/* Registration Card */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 sticky top-24">
-              {/* Date & Time */}
-              <div className="space-y-4 mb-6">
-                <div className="flex items-start gap-3">
-                  <Calendar className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase font-semibold tracking-wider mb-0.5">
-                      Event Date
-                    </p>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {formatDate(event.startDate)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <Clock className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase font-semibold tracking-wider mb-0.5">
-                      Time
-                    </p>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {formatTime(event.startDate)} –{" "}
-                      {formatTime(event.endDate)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  {event.isOnline ? (
-                    <Globe className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
-                  ) : (
-                    <MapPin className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
-                  )}
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase font-semibold tracking-wider mb-0.5">
-                      {event.isOnline ? "Online" : "Venue"}
-                    </p>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {event.isOnline
-                        ? "Virtual Event (via Zoom)"
-                        : event.venueName ||
-                          event.address ||
-                          event.city ||
-                          "TBA"}
-                    </p>
-                    {!event.isOnline && event.city && event.venueName && (
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {[event.address, event.city, event.country]
-                          .filter(Boolean)
-                          .join(", ")}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {event.eventType === "PAID" && (
-                  <div className="flex items-start gap-3">
-                    <CreditCard className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase font-semibold tracking-wider mb-0.5">
-                        Price
-                      </p>
-                      <p className="text-lg font-bold text-gray-900">
-                        ${event.price}{" "}
-                        <span className="text-xs font-normal text-gray-500">
-                          {event.currency}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Capacity bar */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
-                  <span className="flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5" />
-                    {event.capacity - event.seatsRemaining} / {event.capacity}{" "}
-                    registered
-                  </span>
-                  <span>
-                    {event.seatsRemaining > 0
-                      ? `${event.seatsRemaining} spots left`
-                      : "Full"}
-                  </span>
-                </div>
-                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      seatsPercentage > 90
-                        ? "bg-red-500"
-                        : seatsPercentage > 70
-                          ? "bg-amber-500"
-                          : "bg-orange-500"
-                    }`}
-                    style={{ width: `${Math.min(seatsPercentage, 100)}%` }}
+          {/* ── Right: Sidebar ── */}
+          <div className="hidden lg:block">
+            <div
+              style={{
+                position: "sticky",
+                top: "32px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "20px",
+              }}
+            >
+              {/* Registration card */}
+              <div
+                style={{
+                  background: t.surface,
+                  border: `1px solid ${t.border}`,
+                  borderRadius: "6px",
+                  padding: "28px",
+                }}
+              >
+                {/* Event details in sidebar */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "18px", marginBottom: "24px" }}>
+                  <SidebarRow
+                    icon={<Calendar style={{ width: "16px", height: "16px", color: t.textFaint }} />}
+                    label="Date"
+                    value={fmtDate(event.startDate)}
                   />
+                  <SidebarRow
+                    icon={<Clock style={{ width: "16px", height: "16px", color: t.textFaint }} />}
+                    label="Time"
+                    value={`${fmtTime(event.startDate)} – ${fmtTime(event.endDate)}`}
+                  />
+                  <SidebarRow
+                    icon={
+                      event.isOnline ? (
+                        <Globe style={{ width: "16px", height: "16px", color: t.textFaint }} />
+                      ) : (
+                        <MapPin style={{ width: "16px", height: "16px", color: t.textFaint }} />
+                      )
+                    }
+                    label={event.isOnline ? "Online" : "Venue"}
+                    value={locationLabel}
+                  />
+                  {event.eventType === "PAID" && (
+                    <SidebarRow
+                      icon={<CreditCard style={{ width: "16px", height: "16px", color: t.textFaint }} />}
+                      label="Price"
+                      value={`$${event.price} ${event.currency || ""}`}
+                      valueStyle={{
+                        fontSize: "17px",
+                        fontWeight: 700,
+                        fontFamily: t.serif,
+                      }}
+                    />
+                  )}
+                </div>
+
+                {/* Capacity bar */}
+                <div style={{ marginBottom: "24px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      fontSize: "11px",
+                      color: t.textMuted,
+                      marginBottom: "6px",
+                    }}
+                  >
+                    <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      <Users style={{ width: "12px", height: "12px" }} />
+                      {event.capacity - event.seatsRemaining} / {event.capacity}
+                    </span>
+                    <span>
+                      {event.seatsRemaining > 0
+                        ? `${event.seatsRemaining} spots left`
+                        : "Full"}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "4px",
+                      background: t.borderLight,
+                      borderRadius: "2px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: "100%",
+                        borderRadius: "2px",
+                        width: `${Math.min(seatsPercentage, 100)}%`,
+                        background:
+                          seatsPercentage > 90
+                            ? t.accent
+                            : seatsPercentage > 70
+                            ? t.amber
+                            : t.green,
+                        transition: "width 0.5s ease",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Deadline */}
+                {!isPast && (
+                  <p
+                    style={{
+                      fontSize: "11px",
+                      color: t.textFaint,
+                      textAlign: "center",
+                      marginBottom: "20px",
+                    }}
+                  >
+                    Registration closes{" "}
+                    <span style={{ fontWeight: 600, color: "#666" }}>
+                      {fmtDate(event.registrationDeadline)}
+                    </span>
+                  </p>
+                )}
+
+                {/* Action buttons */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {isRegistered ? (
+                    <>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "8px",
+                          padding: "12px",
+                          borderRadius: "4px",
+                          background: t.greenSoft,
+                          border: `1px solid ${t.greenBorder}`,
+                        }}
+                      >
+                        <CheckCircle2 style={{ width: "15px", height: "15px", color: t.green }} />
+                        <span style={{ fontSize: "13px", fontWeight: 600, color: t.green }}>
+                          {registrationStatus === "PENDING"
+                            ? "Pending Approval"
+                            : "You\u2019re Registered"}
+                        </span>
+                      </div>
+                      {canCancel && (
+                        <EvenzaButton
+                          variant="ghost"
+                          size="sm"
+                          className="w-full"
+                          onClick={handleCancelRegistration}
+                          loading={registering}
+                          style={{ color: t.accent }}
+                        >
+                          Cancel Registration
+                        </EvenzaButton>
+                      )}
+                    </>
+                  ) : canRegister ? (
+                    <EvenzaButton
+                      size="lg"
+                      className="w-full"
+                      onClick={handleRegister}
+                      loading={registering}
+                    >
+                      <Ticket style={{ width: "15px", height: "15px" }} />
+                      Register for Free
+                    </EvenzaButton>
+                  ) : canPurchase ? (
+                    <EvenzaButton
+                      size="lg"
+                      className="w-full"
+                      onClick={handlePurchase}
+                      loading={registering}
+                    >
+                      <CreditCard style={{ width: "15px", height: "15px" }} />
+                      Purchase Ticket — ${event.price}
+                    </EvenzaButton>
+                  ) : isPast ? (
+                    <StatusBox text="This event has ended" bg={t.borderLight} color={t.textMuted} />
+                  ) : isCancelled ? (
+                    <StatusBox
+                      text="This event has been cancelled"
+                      bg="rgba(230,57,70,0.06)"
+                      color={t.accent}
+                      border="rgba(230,57,70,0.15)"
+                    />
+                  ) : isDeadlinePassed ? (
+                    <StatusBox text="Registration closed" bg={t.borderLight} color={t.textMuted} />
+                  ) : isFull ? (
+                    <>
+                      <StatusBox
+                        text="Event is full"
+                        bg={t.amberSoft}
+                        color={t.amber}
+                        border={t.amberBorder}
+                      />
+                      {event.waitlistEnabled && (
+                        <EvenzaButton
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={handleRegister}
+                          loading={registering}
+                        >
+                          Join Waitlist
+                        </EvenzaButton>
+                      )}
+                    </>
+                  ) : null}
+
+                  {!isSignedIn && !isPast && !isCancelled && (
+                    <p style={{ fontSize: "12px", color: t.textFaint, textAlign: "center", margin: 0 }}>
+                      <Link
+                        href={`/sign-in?redirect_url=/events/${eventId}`}
+                        style={{
+                          color: t.accent,
+                          fontWeight: 600,
+                          textDecoration: "none",
+                        }}
+                      >
+                        Sign in
+                      </Link>{" "}
+                      to register for this event.
+                    </p>
+                  )}
                 </div>
               </div>
 
-              {/* Registration deadline */}
-              {!isPast && (
-                <p className="text-xs text-gray-500 mb-4 text-center">
-                  Registration deadline:{" "}
-                  <span className="font-semibold text-gray-700">
-                    {formatDate(event.registrationDeadline)}
-                  </span>
-                </p>
+              {/* Approval notice */}
+              {event.approvalRequired && !isRegistered && !isPast && (
+                <div
+                  style={{
+                    background: t.amberSoft,
+                    border: `1px solid ${t.amberBorder}`,
+                    borderRadius: "6px",
+                    padding: "16px 20px",
+                  }}
+                >
+                  <p style={{ fontSize: "12px", color: t.amber, margin: 0, lineHeight: 1.5 }}>
+                    <strong>Note:</strong> This event requires organizer approval.
+                    Your registration will be reviewed before confirmation.
+                  </p>
+                </div>
               )}
+            </div>
+          </div>
 
-              {/* Action Buttons */}
-              <div className="space-y-3">
+          {/* ── Mobile sidebar (below main content on small screens) ── */}
+          <div className="lg:hidden" style={{ gridColumn: "1 / -1" }}>
+            <div
+              style={{
+                background: t.surface,
+                border: `1px solid ${t.border}`,
+                borderRadius: "6px",
+                padding: "28px",
+              }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: "18px", marginBottom: "24px" }}>
+                <SidebarRow
+                  icon={<Calendar style={{ width: "16px", height: "16px", color: t.textFaint }} />}
+                  label="Date"
+                  value={fmtDate(event.startDate)}
+                />
+                <SidebarRow
+                  icon={<Clock style={{ width: "16px", height: "16px", color: t.textFaint }} />}
+                  label="Time"
+                  value={`${fmtTime(event.startDate)} – ${fmtTime(event.endDate)}`}
+                />
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {isRegistered ? (
-                  <>
-                    <div className="flex items-center gap-2 justify-center py-3 px-4 rounded-xl bg-green-50 border border-green-200">
-                      <CheckCircle2 className="w-4 h-4 text-green-600" />
-                      <span className="text-sm font-semibold text-green-700">
-                        {registrationStatus === "PENDING"
-                          ? "Registration Pending Approval"
-                          : "You're Registered!"}
-                      </span>
-                    </div>
-                    {canCancel && (
-                      <EvenzaButton
-                        variant="ghost"
-                        size="sm"
-                        className="w-full text-red-600 hover:bg-red-50 hover:text-red-700"
-                        onClick={handleCancelRegistration}
-                        loading={registering}
-                      >
-                        Cancel Registration
-                      </EvenzaButton>
-                    )}
-                  </>
-                ) : canRegister ? (
-                  <EvenzaButton
-                    size="lg"
-                    className="w-full"
-                    onClick={handleRegister}
-                    loading={registering}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      padding: "12px",
+                      borderRadius: "4px",
+                      background: t.greenSoft,
+                      border: `1px solid ${t.greenBorder}`,
+                    }}
                   >
-                    <Ticket className="w-4 h-4" />
+                    <CheckCircle2 style={{ width: "15px", height: "15px", color: t.green }} />
+                    <span style={{ fontSize: "13px", fontWeight: 600, color: t.green }}>
+                      {registrationStatus === "PENDING"
+                        ? "Pending Approval"
+                        : "You\u2019re Registered"}
+                    </span>
+                  </div>
+                ) : canRegister ? (
+                  <EvenzaButton size="lg" className="w-full" onClick={handleRegister} loading={registering}>
                     Register for Free
                   </EvenzaButton>
                 ) : canPurchase ? (
-                  <EvenzaButton
-                    size="lg"
-                    className="w-full"
-                    onClick={handlePurchase}
-                    loading={registering}
-                  >
-                    <CreditCard className="w-4 h-4" />
+                  <EvenzaButton size="lg" className="w-full" onClick={handlePurchase} loading={registering}>
                     Purchase Ticket — ${event.price}
                   </EvenzaButton>
-                ) : isPast ? (
-                  <div className="py-3 px-4 rounded-xl bg-gray-100 text-center">
-                    <span className="text-sm font-semibold text-gray-500">
-                      This event has ended
-                    </span>
-                  </div>
-                ) : isCancelled ? (
-                  <div className="py-3 px-4 rounded-xl bg-red-50 text-center border border-red-200">
-                    <span className="text-sm font-semibold text-red-600">
-                      This event has been cancelled
-                    </span>
-                  </div>
-                ) : isDeadlinePassed ? (
-                  <div className="py-3 px-4 rounded-xl bg-gray-100 text-center">
-                    <span className="text-sm font-semibold text-gray-500">
-                      Registration closed
-                    </span>
-                  </div>
-                ) : isFull ? (
-                  <div className="space-y-2">
-                    <div className="py-3 px-4 rounded-xl bg-amber-50 text-center border border-amber-200">
-                      <span className="text-sm font-semibold text-amber-700">
-                        Event is full
-                      </span>
-                    </div>
-                    {event.waitlistEnabled && (
-                      <EvenzaButton
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
-                        onClick={handleRegister}
-                        loading={registering}
-                      >
-                        Join Waitlist
-                      </EvenzaButton>
-                    )}
-                  </div>
-                ) : null}
-
-                {!isSignedIn && !isPast && !isCancelled && (
-                  <p className="text-xs text-gray-400 text-center">
-                    <Link
-                      href={`/sign-in?redirect_url=/events/${eventId}`}
-                      className="text-orange-600 font-semibold hover:underline"
-                    >
-                      Sign in
-                    </Link>{" "}
-                    to register for this event.
-                  </p>
+                ) : (
+                  <StatusBox text={isPast ? "This event has ended" : "Registration closed"} bg={t.borderLight} color={t.textMuted} />
                 )}
               </div>
             </div>
-
-            {/* Approval notice */}
-            {event.approvalRequired && !isRegistered && !isPast && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                <p className="text-xs text-amber-700">
-                  <strong>Note:</strong> This event requires organizer approval.
-                  Your registration will be reviewed before confirmation.
-                </p>
-              </div>
-            )}
           </div>
         </div>
       </div>
-    </section>
+    </div>
+  );
+}
+
+/* ─── Small helper components (no extra file needed) ─── */
+
+function SidebarRow({
+  icon,
+  label,
+  value,
+  valueStyle,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  valueStyle?: React.CSSProperties;
+}) {
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+      <div style={{ marginTop: "2px", flexShrink: 0 }}>{icon}</div>
+      <div>
+        <p
+          style={{
+            fontSize: "10px",
+            fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            color: t.textFaint,
+            margin: "0 0 2px 0",
+          }}
+        >
+          {label}
+        </p>
+        <p
+          style={{
+            fontSize: "13px",
+            fontWeight: 600,
+            color: t.text,
+            margin: 0,
+            ...valueStyle,
+          }}
+        >
+          {value}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function StatusBox({
+  text,
+  bg,
+  color,
+  border,
+}: {
+  text: string;
+  bg: string;
+  color: string;
+  border?: string;
+}) {
+  return (
+    <div
+      style={{
+        padding: "12px",
+        borderRadius: "4px",
+        textAlign: "center",
+        background: bg,
+        border: border ? `1px solid ${border}` : "none",
+      }}
+    >
+      <span style={{ fontSize: "13px", fontWeight: 600, color }}>{text}</span>
+    </div>
   );
 }

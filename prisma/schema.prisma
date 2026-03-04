@@ -5,6 +5,8 @@
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+
 }
 
 datasource db {
@@ -22,6 +24,11 @@ model User {
   avatar    String? // Profile picture URL
   phone     String?
   bio       String?
+  location     String?
+  jobTitle     String?
+  organization String?
+  industry     String?
+  experience   String?
   role      Role     @default(USER)
   isActive  Boolean  @default(true) // Admin can deactivate accounts
   createdAt DateTime @default(now())

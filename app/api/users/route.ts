@@ -1,3 +1,4 @@
+// app/api/users/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db/prisma";
 import { requireAdmin, isAuthError } from "@/lib/auth/require-role";

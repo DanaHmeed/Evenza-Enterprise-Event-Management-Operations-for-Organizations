@@ -15,6 +15,7 @@ import {
   LayoutDashboard,
   Ticket,
   Heart,
+  User,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import Button from "@/components/shared/button/Button";
@@ -125,114 +126,292 @@ export default function Navbar() {
               <div className="relative" ref={accountRef}>
                 <button
                   onClick={() => setAccountOpen((v) => !v)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "5px",
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    borderRadius: "100px",
+                    transition: "background 0.15s",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = "#fafaf8")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
                 >
                   {user?.imageUrl ? (
                     <img
                       src={user.imageUrl}
                       alt=""
-                      className="w-7 h-7 rounded-full object-cover"
+                      style={{
+                        width: "32px",
+                        height: "32px",
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                        border: "2px solid #f0f0ec",
+                      }}
                     />
                   ) : (
-                    <UserCircle className="w-7 h-7 text-gray-500" />
+                    <div
+                      style={{
+                        width: "32px",
+                        height: "32px",
+                        borderRadius: "50%",
+                        background: "#1a1a1a",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <User
+                        style={{ width: "15px", height: "15px", color: "#fff" }}
+                      />
+                    </div>
                   )}
-                  <span className="text-sm font-medium text-gray-700 hidden xl:block max-w-[100px] truncate">
+                  <span
+                    className="hidden xl:block"
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: "#1a1a1a",
+                      maxWidth: "110px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
                     {user?.firstName || "Account"}
                   </span>
                   <ChevronDown
-                    className={`w-4 h-4 text-gray-400 transition-transform ${
-                      accountOpen ? "rotate-180" : ""
-                    }`}
+                    style={{
+                      width: "14px",
+                      height: "14px",
+                      color: "#aaa",
+                      transition: "transform 0.2s",
+                      transform: accountOpen ? "rotate(180deg)" : "rotate(0)",
+                    }}
                   />
                 </button>
 
-                <AnimatePresence>
-                  {accountOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 6, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 6, scale: 0.98 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 mt-3 w-60 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden"
+                {accountOpen && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      right: 0,
+                      top: "calc(100% + 8px)",
+                      width: "260px",
+                      background: "#fff",
+                      border: "1px solid #e5e5e0",
+                      borderRadius: "6px",
+                      boxShadow:
+                        "0 12px 40px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)",
+                      overflow: "hidden",
+                      zIndex: 100,
+                    }}
+                  >
+                    {/* User info */}
+                    <div
+                      style={{
+                        padding: "16px 18px",
+                        borderBottom: "1px solid #f0f0ec",
+                      }}
                     >
-                      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-                        <div className="text-sm font-semibold text-gray-900 truncate">
-                          {user?.fullName || "Account"}
-                        </div>
-                        <div className="text-xs text-gray-500 truncate">
-                          {user?.primaryEmailAddress?.emailAddress}
-                        </div>
-                        {userRole && (
-                          <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-100 text-orange-600">
-                            {userRole}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="py-1">
-                        <DropdownLink
-                          href="/profile"
-                          icon={<UserCircle size={18} />}
-                          label="My Profile"
-                          onClick={() => setAccountOpen(false)}
-                        />
-                        <DropdownLink
-                          href="/my-tickets"
-                          icon={<Ticket size={18} />}
-                          label="My Tickets"
-                          onClick={() => setAccountOpen(false)}
-                        />
-                        <DropdownLink
-                          href="/my-events"
-                          icon={<Heart size={18} />}
-                          label="My Registrations"
-                          onClick={() => setAccountOpen(false)}
-                        />
-
-                        {isOrganizer && (
-                          <>
-                            <div className="border-t border-gray-100 my-1" />
-                            <DropdownLink
-                              href="/dashboard"
-                              icon={<LayoutDashboard size={18} />}
-                              label="Organizer Dashboard"
-                              onClick={() => setAccountOpen(false)}
-                            />
-                            <DropdownLink
-                              href="/dashboard/events/create"
-                              icon={<Calendar size={18} />}
-                              label="Create Event"
-                              onClick={() => setAccountOpen(false)}
-                            />
-                          </>
-                        )}
-
-                        {isAdmin && (
-                          <>
-                            <div className="border-t border-gray-100 my-1" />
-                            <DropdownLink
-                              href="/admin"
-                              icon={<Settings size={18} />}
-                              label="Admin Panel"
-                              onClick={() => setAccountOpen(false)}
-                            />
-                          </>
-                        )}
-
-                        <div className="border-t border-gray-100 my-1" />
-                        <SignOutButton redirectUrl="/">
-                          <button
-                            onClick={() => setAccountOpen(false)}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-all"
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                        }}
+                      >
+                        {user?.imageUrl ? (
+                          <img
+                            src={user.imageUrl}
+                            alt=""
+                            style={{
+                              width: "36px",
+                              height: "36px",
+                              borderRadius: "50%",
+                              objectFit: "cover",
+                              flexShrink: 0,
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: "36px",
+                              height: "36px",
+                              borderRadius: "50%",
+                              background: "#1a1a1a",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexShrink: 0,
+                            }}
                           >
-                            <LogOut size={18} />
-                            Log Out
-                          </button>
-                        </SignOutButton>
+                            <User
+                              style={{
+                                width: "16px",
+                                height: "16px",
+                                color: "#fff",
+                              }}
+                            />
+                          </div>
+                        )}
+                        <div style={{ minWidth: 0 }}>
+                          <p
+                            style={{
+                              fontSize: "14px",
+                              fontWeight: 600,
+                              color: "#1a1a1a",
+                              margin: 0,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {user?.fullName || "Account"}
+                          </p>
+                          <p
+                            style={{
+                              fontSize: "12px",
+                              color: "#888",
+                              margin: "2px 0 0",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {user?.primaryEmailAddress?.emailAddress}
+                          </p>
+                        </div>
                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                      {userRole && (
+                        <span
+                          style={{
+                            display: "inline-block",
+                            marginTop: "10px",
+                            fontSize: "10px",
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.1em",
+                            padding: "3px 8px",
+                            borderRadius: "3px",
+                            background: "#f0f0ec",
+                            color: "#555",
+                          }}
+                        >
+                          {userRole}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Items */}
+                    <div style={{ padding: "6px 0" }}>
+                      <DropdownLink
+                        href="/profile"
+                        icon={<UserCircle size={16} />}
+                        label="My Profile"
+                        onClick={() => setAccountOpen(false)}
+                      />
+                      <DropdownLink
+                        href="/my-tickets"
+                        icon={<Ticket size={16} />}
+                        label="My Tickets"
+                        onClick={() => setAccountOpen(false)}
+                      />
+                      <DropdownLink
+                        href="/my-events"
+                        icon={<Heart size={16} />}
+                        label="My Registrations"
+                        onClick={() => setAccountOpen(false)}
+                      />
+
+                      {isOrganizer && (
+                        <>
+                          <div
+                            style={{
+                              height: "1px",
+                              background: "#f0f0ec",
+                              margin: "6px 0",
+                            }}
+                          />
+                          <DropdownLink
+                            href="/dashboard"
+                            icon={<LayoutDashboard size={16} />}
+                            label="Organizer Dashboard"
+                            onClick={() => setAccountOpen(false)}
+                          />
+                          <DropdownLink
+                            href="/dashboard/events/create"
+                            icon={<Calendar size={16} />}
+                            label="Create Event"
+                            onClick={() => setAccountOpen(false)}
+                          />
+                        </>
+                      )}
+
+                      {isAdmin && (
+                        <>
+                          <div
+                            style={{
+                              height: "1px",
+                              background: "#f0f0ec",
+                              margin: "6px 0",
+                            }}
+                          />
+                          <DropdownLink
+                            href="/admin"
+                            icon={<Settings size={16} />}
+                            label="Admin Panel"
+                            onClick={() => setAccountOpen(false)}
+                          />
+                        </>
+                      )}
+
+                      <div
+                        style={{
+                          height: "1px",
+                          background: "#f0f0ec",
+                          margin: "6px 0",
+                        }}
+                      />
+                      <SignOutButton redirectUrl="/">
+                        <button
+                          onClick={() => setAccountOpen(false)}
+                          style={{
+                            width: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                            padding: "10px 18px",
+                            fontSize: "13px",
+                            fontWeight: 500,
+                            color: "#e63946",
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            transition: "background 0.15s",
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.background =
+                              "rgba(230,57,70,0.04)")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.background = "transparent")
+                          }
+                        >
+                          <LogOut style={{ width: "16px", height: "16px" }} />
+                          Log Out
+                        </button>
+                      </SignOutButton>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -396,9 +575,21 @@ function DropdownLink({
     <Link
       href={href}
       onClick={onClick}
-      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-all"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+        padding: "10px 18px",
+        fontSize: "13px",
+        fontWeight: 500,
+        color: "#555",
+        textDecoration: "none",
+        transition: "background 0.15s, color 0.15s",
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = "#fafaf8"; e.currentTarget.style.color = "#1a1a1a"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#555"; }}
     >
-      {icon}
+      <span style={{ color: "#aaa", display: "flex" }}>{icon}</span>
       {label}
     </Link>
   );

@@ -1,10 +1,7 @@
+// app/api/users/[userId]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db/prisma";
-import {
-  getCurrentUser,
-  requireAdmin,
-  isAuthError,
-} from "@/lib/auth/require-role";
+import { getCurrentUser } from "@/lib/auth/require-role";
 
 type Params = { params: Promise<{ userId: string }> };
 
@@ -21,7 +18,7 @@ export async function GET(request: NextRequest, { params }: Params) {
     if (currentUser.userId !== userId && currentUser.role !== "ADMIN") {
       return NextResponse.json(
         { error: "You can only view your own profile" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -49,60 +46,117 @@ export async function GET(request: NextRequest, { params }: Params) {
     console.error("[USER_GET]", error);
     return NextResponse.json(
       { error: "Failed to fetch user" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
-// PATCH - Update user role or deactivate (admin only)
+// PATCH - Update user profile (self) or admin actions (admin)
 export async function PATCH(request: NextRequest, { params }: Params) {
   try {
     const { userId } = await params;
-    const authResult = await requireAdmin();
-    if (isAuthError(authResult)) return authResult;
+    const currentUser = await getCurrentUser();
 
-    const body = await request.json();
-    const { role, isActive } = body;
-
-    const updateData: Record<string, unknown> = {};
-
-    if (role) {
-      if (!["USER", "ORGANIZER", "ADMIN"].includes(role)) {
-        return NextResponse.json(
-          { error: "Invalid role. Must be USER, ORGANIZER, or ADMIN" },
-          { status: 400 },
-        );
-      }
-      updateData.role = role;
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (typeof isActive === "boolean") {
-      updateData.isActive = isActive;
+    const isSelf = currentUser.userId === userId;
+    const isAdmin = currentUser.role === "ADMIN";
+
+    // Must be self or admin
+    if (!isSelf && !isAdmin) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const updateData: Record<string, unknown> = {};
+
+    // ── Fields any user can edit on their OWN profile ──
+    const selfEditableFields = [
+      "name",
+      "phone",
+      "bio",
+      "location",
+      "jobTitle",
+      "organization",
+      "industry",
+      "experience",
+    ];
+
+    if (isSelf || isAdmin) {
+      for (const field of selfEditableFields) {
+        if (body[field] !== undefined) {
+          // Convert empty strings to null for cleanliness
+          const val = typeof body[field] === "string" ? body[field].trim() : body[field];
+          updateData[field] = val === "" ? null : val;
+        }
+      }
+    }
+
+    // ── Validate user-editable fields ──
+    if (updateData.name !== undefined && !updateData.name) {
+      return NextResponse.json({ error: "Name cannot be empty" }, { status: 400 });
+    }
+
+    if (updateData.bio && (updateData.bio as string).length > 500) {
+      return NextResponse.json({ error: "Bio must be 500 characters or less" }, { status: 400 });
+    }
+
+    // ── Admin-only fields ──
+    if (isAdmin) {
+      if (body.role) {
+        if (!["USER", "ORGANIZER", "ADMIN"].includes(body.role)) {
+          return NextResponse.json(
+            { error: "Invalid role. Must be USER, ORGANIZER, or ADMIN" },
+            { status: 400 }
+          );
+        }
+        updateData.role = body.role;
+      }
+
+      if (typeof body.isActive === "boolean") {
+        updateData.isActive = body.isActive;
+      }
     }
 
     if (Object.keys(updateData).length === 0) {
-      return NextResponse.json(
-        { error: "No valid fields to update" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
     }
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: updateData,
-      select: { id: true, name: true, email: true, role: true, isActive: true },
-    });
-
-    // Audit log
-    await prisma.auditLog.create({
-      data: {
-        actorId: authResult.userId,
-        action: role ? "user.role_changed" : "user.status_changed",
-        entity: "User",
-        entityId: userId,
-        metadata: JSON.parse(JSON.stringify(updateData)),
+      include: {
+        _count: {
+          select: {
+            organizedEvents: true,
+            registrations: true,
+            tickets: true,
+            orders: true,
+            feedbacks: true,
+          },
+        },
       },
     });
+
+    // Audit log for admin actions only
+    if (isAdmin && !isSelf && (body.role || typeof body.isActive === "boolean")) {
+      await prisma.auditLog.create({
+        data: {
+          actorId: currentUser.userId,
+          action: body.role ? "user.role_changed" : "user.status_changed",
+          entity: "User",
+          entityId: userId,
+          metadata: JSON.parse(
+            JSON.stringify({
+              ...(body.role && { role: body.role }),
+              ...(typeof body.isActive === "boolean" && { isActive: body.isActive }),
+            })
+          ),
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -113,7 +167,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     console.error("[USER_PATCH]", error);
     return NextResponse.json(
       { error: "Failed to update user" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -122,14 +176,20 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 export async function DELETE(request: NextRequest, { params }: Params) {
   try {
     const { userId } = await params;
-    const authResult = await requireAdmin();
-    if (isAuthError(authResult)) return authResult;
+    const currentUser = await getCurrentUser();
 
-    // Prevent self-deletion
-    if (authResult.userId === userId) {
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (currentUser.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (currentUser.userId === userId) {
       return NextResponse.json(
         { error: "You cannot delete your own account" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -147,7 +207,6 @@ export async function DELETE(request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // If user has active events, deactivate instead of delete
     if (user.organizedEvents.length > 0) {
       await prisma.user.update({
         where: { id: userId },
@@ -156,7 +215,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
 
       await prisma.auditLog.create({
         data: {
-          actorId: authResult.userId,
+          actorId: currentUser.userId,
           action: "user.deactivated",
           entity: "User",
           entityId: userId,
@@ -166,8 +225,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
 
       return NextResponse.json({
         success: true,
-        message:
-          "User deactivated (has active events). Events were not deleted.",
+        message: "User deactivated (has active events). Events were not deleted.",
       });
     }
 
@@ -175,7 +233,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
 
     await prisma.auditLog.create({
       data: {
-        actorId: authResult.userId,
+        actorId: currentUser.userId,
         action: "user.deleted",
         entity: "User",
         entityId: userId,
@@ -191,7 +249,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     console.error("[USER_DELETE]", error);
     return NextResponse.json(
       { error: "Failed to delete user" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

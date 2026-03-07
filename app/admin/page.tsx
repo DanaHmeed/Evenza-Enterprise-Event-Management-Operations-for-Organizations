@@ -3,38 +3,47 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Users,
   CalendarDays,
   DollarSign,
   Ticket,
-  TrendingUp,
-  TrendingDown,
   ArrowRight,
   Loader2,
-  UserPlus,
-  CalendarPlus,
-  ShieldCheck,
-  Activity,
-  Star,
   MessageSquare,
+  Star,
+  Mail,
+  Clock,
+  Globe,
+  ShieldCheck,
 } from "lucide-react";
+import { t, StatusBadge, SectionTitle, StatCard } from "@/components/admin/AdminUI";
 
-interface PlatformStats {
+interface Stats {
   totalUsers: number;
   totalOrganizers: number;
+  newUsersThisMonth: number;
   totalEvents: number;
   publishedEvents: number;
-  totalRevenue: number;
+  draftEvents: number;
+  cancelledEvents: number;
+  totalRegistrations: number;
+  approvedRegistrations: number;
+  pendingRegistrations: number;
   totalTickets: number;
-  totalFeedbacks: number;
+  totalOrders: number;
+  totalRevenue: number;
   pendingFeedbacks: number;
+  totalFeedbacks: number;
+  unreadMessages: number;
 }
 
 interface RecentUser {
   id: string;
   name: string;
   email: string;
+  avatar?: string | null;
   role: string;
   createdAt: string;
 }
@@ -43,239 +52,209 @@ interface RecentEvent {
   id: string;
   title: string;
   status: string;
+  startDate: string;
+  eventType: string;
+  price?: number | null;
   organizer: { name: string };
+  _count: { registrations: number };
+}
+
+interface RecentOrder {
+  id: string;
+  amount: number;
+  currency: string;
+  paymentStatus: string;
+  paymentMethod: string;
   createdAt: string;
+  user: { name: string };
+  event: { title: string };
 }
 
 export default function AdminDashboardPage() {
-  const [stats, setStats] = useState<PlatformStats | null>(null);
+  const router = useRouter();
+  const [stats, setStats] = useState<Stats | null>(null);
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
   const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([]);
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchStats = async () => {
       try {
-        // Fetch users for stats
-        const usersRes = await fetch("/api/users?pageSize=5");
-        if (usersRes.ok) {
-          const usersData = await usersRes.json();
-          const allUsers = usersData.data || [];
-          setRecentUsers(allUsers.slice(0, 5));
-
-          // Derive basic stats from users list
-          const usersPagination = usersData.pagination || {};
-          const totalUsersCount = usersPagination.total || allUsers.length;
-
-          // Fetch events
-          const eventsRes = await fetch("/api/events?pageSize=5&sortBy=createdAt&sortOrder=desc");
-          let eventsData: any = { data: [], pagination: {} };
-          if (eventsRes.ok) {
-            eventsData = await eventsRes.json();
-            setRecentEvents(eventsData.data || []);
-          }
-
-          // Fetch feedback count
-          const feedbackRes = await fetch("/api/feedback?pageSize=1");
-          let feedbackTotal = 0;
-          let pendingCount = 0;
-          if (feedbackRes.ok) {
-            const fbData = await feedbackRes.json();
-            feedbackTotal = fbData.pagination?.total || 0;
-          }
-          const pendingRes = await fetch("/api/feedback?pageSize=1&status=PENDING");
-          if (pendingRes.ok) {
-            const pData = await pendingRes.json();
-            pendingCount = pData.pagination?.total || 0;
-          }
-
-          setStats({
-            totalUsers: totalUsersCount,
-            totalOrganizers: allUsers.filter((u: any) => u.role === "ORGANIZER").length,
-            totalEvents: eventsData.pagination?.total || 0,
-            publishedEvents: (eventsData.data || []).filter((e: any) => e.status === "PUBLISHED").length,
-            totalRevenue: 0, // Would need a dedicated endpoint
-            totalTickets: 0,
-            totalFeedbacks: feedbackTotal,
-            pendingFeedbacks: pendingCount,
-          });
+        const res = await fetch("/api/admin/stats");
+        if (res.ok) {
+          const json = await res.json();
+          const d = json.data;
+          setStats(d.counts);
+          setRecentUsers(d.recentUsers || []);
+          setRecentEvents(d.recentEvents || []);
+          setRecentOrders(d.recentOrders || []);
         }
-      } catch (err) {
-        console.error("Failed to load admin data:", err);
+      } catch {
+        console.error("Failed to load admin stats");
       } finally {
         setLoading(false);
       }
     };
-
-    fetchData();
+    fetchStats();
   }, []);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <Loader2 className="w-7 h-7 text-orange-500 animate-spin" />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
+        <Loader2 className="animate-spin" style={{ width: "24px", height: "24px", color: t.accent }} />
       </div>
     );
   }
 
-  const statCards = [
-    {
-      label: "Total Users",
-      value: stats?.totalUsers || 0,
-      icon: <Users className="w-5 h-5" />,
-      bg: "bg-blue-50",
-      iconBg: "bg-blue-100",
-      color: "text-blue-600",
-      href: "/admin/users",
-    },
-    {
-      label: "Organizers",
-      value: stats?.totalOrganizers || 0,
-      icon: <ShieldCheck className="w-5 h-5" />,
-      bg: "bg-purple-50",
-      iconBg: "bg-purple-100",
-      color: "text-purple-600",
-      href: "/admin/users?role=ORGANIZER",
-    },
-    {
-      label: "Total Events",
-      value: stats?.totalEvents || 0,
-      icon: <CalendarDays className="w-5 h-5" />,
-      bg: "bg-orange-50",
-      iconBg: "bg-orange-100",
-      color: "text-orange-600",
-      href: "/admin/events",
-    },
-    {
-      label: "Total Revenue",
-      value: `$${(stats?.totalRevenue || 0).toLocaleString()}`,
-      icon: <DollarSign className="w-5 h-5" />,
-      bg: "bg-green-50",
-      iconBg: "bg-green-100",
-      color: "text-green-600",
-      href: "/admin/orders",
-    },
-    {
-      label: "Feedbacks",
-      value: stats?.totalFeedbacks || 0,
-      icon: <MessageSquare className="w-5 h-5" />,
-      bg: "bg-amber-50",
-      iconBg: "bg-amber-100",
-      color: "text-amber-600",
-      href: "/admin/feedback",
-    },
-    {
-      label: "Pending Reviews",
-      value: stats?.pendingFeedbacks || 0,
-      icon: <Star className="w-5 h-5" />,
-      bg: "bg-red-50",
-      iconBg: "bg-red-100",
-      color: "text-red-600",
-      href: "/admin/feedback?status=PENDING",
-    },
-  ];
+  if (!stats) return null;
 
-  const getRoleBadge = (role: string) => {
-    const map: Record<string, string> = {
-      ADMIN: "bg-red-100 text-red-700",
-      ORGANIZER: "bg-purple-100 text-purple-700",
-      USER: "bg-gray-100 text-gray-600",
-    };
-    return map[role] || map.USER;
-  };
-
-  const getStatusBadge = (status: string) => {
-    const map: Record<string, string> = {
-      PUBLISHED: "bg-green-100 text-green-700",
-      DRAFT: "bg-gray-100 text-gray-600",
-      CANCELLED: "bg-red-100 text-red-600",
-    };
-    return map[status] || map.DRAFT;
-  };
-
-  const formatDate = (d: string) =>
+  const fmtDate = (d: string) =>
     new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
   return (
-    <div>
+    <div style={{ fontFamily: 'Quicksand' }}>
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">Platform overview and management.</p>
+      <div style={{ marginBottom: "32px" }}>
+        <h1 style={{ fontFamily: 'Quicksand', fontSize: "24px", fontWeight: 600, color: t.text, margin: 4, letterSpacing: "-0.02em" }}>
+          Dashboard
+        </h1>
+        <p style={{ fontSize: "14px", color: t.textMuted, marginTop: "4px", margin:4}}>
+          Platform overview · {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+        </p>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
-        {statCards.map((card, i) => (
-          <Link
-            key={i}
-            href={card.href}
-            className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md hover:border-gray-300 transition-all group"
-          >
-            <div className={`w-10 h-10 rounded-xl ${card.iconBg} flex items-center justify-center ${card.color} mb-3`}>
-              {card.icon}
-            </div>
-            <p className="text-2xl font-bold text-gray-900">{card.value}</p>
-            <p className="text-xs text-gray-500 mt-0.5 group-hover:text-orange-600 transition-colors">{card.label}</p>
-          </Link>
-        ))}
+      {/* Primary stats — 2x3 grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", marginBottom: "32px" }}>
+        <StatCard label="Total Users" value={stats.totalUsers} sub={`+${stats.newUsersThisMonth} this month`} onClick={() => router.push("/admin/users")} />
+        <StatCard label="Organizers" value={stats.totalOrganizers} onClick={() => router.push("/admin/users?role=ORGANIZER")} />
+        <StatCard label="Total Events" value={stats.totalEvents} sub={`${stats.publishedEvents} published`} onClick={() => router.push("/admin/events")} />
+        <StatCard label="Revenue" value={`$${stats.totalRevenue.toLocaleString()}`} sub={`${stats.totalOrders} orders`} onClick={() => router.push("/admin/orders")} />
+        <StatCard label="Registrations" value={stats.totalRegistrations} sub={`${stats.pendingRegistrations} pending`} />
+        <StatCard label="Tickets Issued" value={stats.totalTickets} />
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-        {[
-          { label: "Manage Users", href: "/admin/users", icon: <Users className="w-4 h-4" /> },
-          { label: "Manage Events", href: "/admin/events", icon: <CalendarDays className="w-4 h-4" /> },
-          { label: "Moderate Feedback", href: "/admin/feedback", icon: <MessageSquare className="w-4 h-4" /> },
-          { label: "Categories", href: "/admin/categories", icon: <Activity className="w-4 h-4" /> },
-        ].map((a, i) => (
-          <Link
-            key={i}
-            href={a.href}
-            className="flex items-center gap-3 bg-white rounded-xl border border-gray-200 px-4 py-3 hover:border-orange-200 hover:shadow-sm transition-all group"
-          >
-            <div className="w-8 h-8 rounded-lg bg-gray-100 group-hover:bg-orange-100 flex items-center justify-center text-gray-500 group-hover:text-orange-600 transition-colors">
-              {a.icon}
-            </div>
-            <span className="text-sm font-semibold text-gray-700 group-hover:text-orange-600 transition-colors">{a.label}</span>
-          </Link>
-        ))}
-      </div>
-
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Recent Users */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-lg font-bold text-gray-900">Recent Users</h2>
-            <Link href="/admin/users" className="text-sm text-orange-600 font-semibold hover:text-orange-700 flex items-center gap-1">
-              View All <ArrowRight className="w-3.5 h-3.5" />
+      {/* Alert strip — pending items */}
+      {(stats.pendingFeedbacks > 0 || stats.unreadMessages > 0 || stats.draftEvents > 0) && (
+        <div
+          style={{
+            display: "flex",
+            gap: "12px",
+            marginBottom: "32px",
+            flexWrap: "wrap",
+          }}
+        >
+          {stats.pendingFeedbacks > 0 && (
+            <Link
+              href="/admin/feedback?status=PENDING"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "10px 16px",
+                background: t.amberSoft,
+                borderRadius: "4px",
+                fontSize: "13px",
+                fontWeight: 500,
+                color: t.amber,
+                textDecoration: "none",
+                fontFamily: t.sans,
+              }}
+            >
+              <Star style={{ width: "14px", height: "14px" }} />
+              {stats.pendingFeedbacks} feedback{stats.pendingFeedbacks > 1 ? "s" : ""} awaiting review
             </Link>
-          </div>
+          )}
+          {stats.unreadMessages > 0 && (
+            <Link
+              href="/admin/messages"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "10px 16px",
+                background: t.blueSoft,
+                borderRadius: "4px",
+                fontSize: "13px",
+                fontWeight: 500,
+                color: t.blue,
+                textDecoration: "none",
+                fontFamily: t.sans,
+              }}
+            >
+              <Mail style={{ width: "14px", height: "14px" }} />
+              {stats.unreadMessages} unread message{stats.unreadMessages > 1 ? "s" : ""}
+            </Link>
+          )}
+          {stats.draftEvents > 0 && (
+            <Link
+              href="/admin/events"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "10px 16px",
+                background: t.borderLight,
+                borderRadius: "4px",
+                fontSize: "13px",
+                fontWeight: 500,
+                color: t.textMuted,
+                textDecoration: "none",
+                fontFamily: t.sans,
+                marginInlineStart: "2px",
+              }}
+            >
+              <Clock style={{ width: "14px", height: "14px",margin: "0 4px 0 0" }} />
+              {stats.draftEvents} draft event{stats.draftEvents > 1 ? "s" : ""}
+            </Link>
+          )}
+        </div>
+      )}
+
+      {/* Three columns: Users, Events, Orders */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}>
+        {/* Recent Users */}
+        <div style={{ background: t.surface, border: `1px solid ${t.borderLight}`, borderRadius: "4px", padding: "24px" }}>
+          <SectionTitle
+            title="Recent Users"
+            action={
+              <Link href="/admin/users" style={{ fontSize: "12px", fontWeight: 600, color: t.accent, textDecoration: "none", display: "flex", alignItems: "center", gap: "4px" }}>
+                View all <ArrowRight style={{ width: "12px", height: "12px" }} />
+              </Link>
+            }
+          />
           {recentUsers.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-8">No users yet.</p>
+            <p style={{ fontSize: "13px", color: t.textFaint, textAlign: "center", padding: "24px 0" }}>No users yet.</p>
           ) : (
-            <div className="space-y-3">
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
               {recentUsers.map((u) => (
                 <Link
                   key={u.id}
-                  href={`/admin/users/${u.id}`}
-                  className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors"
+                  href={`/admin/users`}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    padding: "10px 8px",
+                    borderRadius: "4px",
+                    textDecoration: "none",
+                    transition: "background 0.1s",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = t.borderLight)}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-semibold text-xs flex-shrink-0">
-                      {u.name?.charAt(0) || "?"}
+                  {u.avatar ? (
+                    <img src={u.avatar} alt="" style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: t.borderLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "12px", fontWeight: 600, color: t.textMuted }}>
+                      {u.name?.charAt(0)}
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{u.name}</p>
-                      <p className="text-xs text-gray-500 truncate">{u.email}</p>
-                    </div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: "13px", fontWeight: 600, color: t.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.name}</p>
+                    <p style={{ fontSize: "11px", color: t.textFaint, margin: 0 }}>{u.email}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getRoleBadge(u.role)}`}>
-                      {u.role}
-                    </span>
-                    <span className="text-xs text-gray-400">{formatDate(u.createdAt)}</span>
-                  </div>
+                  <StatusBadge status={u.role} />
                 </Link>
               ))}
             </div>
@@ -283,35 +262,130 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Recent Events */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-lg font-bold text-gray-900">Recent Events</h2>
-            <Link href="/admin/events" className="text-sm text-orange-600 font-semibold hover:text-orange-700 flex items-center gap-1">
-              View All <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
+        <div style={{ background: t.surface, border: `1px solid ${t.borderLight}`, borderRadius: "4px", padding: "24px" }}>
+          <SectionTitle
+            title="Recent Events"
+            action={
+              <Link href="/admin/events" style={{ fontSize: "12px", fontWeight: 600, color: t.accent, textDecoration: "none", display: "flex", alignItems: "center", gap: "4px" }}>
+                View all <ArrowRight style={{ width: "12px", height: "12px" }} />
+              </Link>
+            }
+          />
           {recentEvents.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-8">No events yet.</p>
+            <p style={{ fontSize: "13px", color: t.textFaint, textAlign: "center", padding: "24px 0" }}>No events yet.</p>
           ) : (
-            <div className="space-y-3">
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
               {recentEvents.map((e) => (
                 <Link
                   key={e.id}
-                  href={`/admin/events`}
-                  className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors"
+                  href={`/events/${e.id}`}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "10px 8px",
+                    borderRadius: "4px",
+                    textDecoration: "none",
+                    transition: "background 0.1s",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = t.borderLight)}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 >
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{e.title}</p>
-                    <p className="text-xs text-gray-500">by {e.organizer?.name || "Unknown"}</p>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p style={{ fontSize: "13px", fontWeight: 600, color: t.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.title}</p>
+                    <p style={{ fontSize: "11px", color: t.textFaint, margin: "2px 0 0" }}>
+                      by {e.organizer.name} · {e._count.registrations} reg
+                    </p>
                   </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getStatusBadge(e.status)}`}>
-                    {e.status}
-                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0, marginLeft: "12px" }}>
+                    <StatusBadge status={e.status} />
+                    <span style={{ fontSize: "11px", color: t.textFaint }}>{fmtDate(e.startDate)}</span>
+                  </div>
                 </Link>
               ))}
             </div>
           )}
         </div>
+
+        {/* Recent Orders */}
+        <div style={{ background: t.surface, border: `1px solid ${t.borderLight}`, borderRadius: "4px", padding: "24px" }}>
+          <SectionTitle
+            title="Recent Orders"
+            action={
+              <Link href="/admin/orders" style={{ fontSize: "12px", fontWeight: 600, color: t.accent, textDecoration: "none", display: "flex", alignItems: "center", gap: "4px" }}>
+                View all <ArrowRight style={{ width: "12px", height: "12px" }} />
+              </Link>
+            }
+          />
+          {recentOrders.length === 0 ? (
+            <p style={{ fontSize: "13px", color: t.textFaint, textAlign: "center", padding: "24px 0" }}>No orders yet.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+              {recentOrders.map((o) => (
+                <div
+                  key={o.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "10px 8px",
+                    borderRadius: "4px",
+                  }}
+                >
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p style={{ fontSize: "13px", fontWeight: 600, color: t.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.user.name}</p>
+                    <p style={{ fontSize: "11px", color: t.textFaint, margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {o.event.title}
+                    </p>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0, marginLeft: "12px" }}>
+                    <span style={{ fontSize: "13px", fontWeight: 600, color: t.text, fontVariantNumeric: "tabular-nums" }}>
+                      ${o.amount}
+                    </span>
+                    <StatusBadge status={o.paymentStatus} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Quick nav */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "8px", marginTop: "32px" }}>
+        {[
+          { label: "Users", href: "/admin/users", icon: <Users style={{ width: "16px", height: "16px" }} /> },
+          { label: "Events", href: "/admin/events", icon: <CalendarDays style={{ width: "16px", height: "16px" }} /> },
+          { label: "Orders", href: "/admin/orders", icon: <DollarSign style={{ width: "16px", height: "16px" }} /> },
+          { label: "Feedback", href: "/admin/feedback", icon: <MessageSquare style={{ width: "16px", height: "16px" }} /> },
+          { label: "Categories", href: "/admin/categories", icon: <ShieldCheck style={{ width: "16px", height: "16px" }} /> },
+          { label: "Messages", href: "/admin/messages", icon: <Mail style={{ width: "16px", height: "16px" }} /> },
+        ].map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              padding: "12px 16px",
+              background: t.surface,
+              border: `1px solid ${t.borderLight}`,
+              borderRadius: "4px",
+              textDecoration: "none",
+              color: t.textMuted,
+              fontSize: "13px",
+              fontWeight: 500,
+              fontFamily: t.sans,
+              transition: "border-color 0.15s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = t.border)}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = t.borderLight)}
+          >
+            {item.icon}
+            <span style={{ color: t.text }}>{item.label}</span>
+          </Link>
+        ))}
       </div>
     </div>
   );

@@ -6,18 +6,16 @@ import { useSearchParams } from "next/navigation";
 import {
   MessageSquare,
   Search,
-  Loader2,
   Star,
   CheckCircle2,
   XCircle,
   Clock,
-  Eye,
-  ChevronLeft,
-  ChevronRight,
-  User,
-  CalendarDays,
+  ChevronDown,
+  ChevronUp,
   Trash2,
+  Loader2,
 } from "lucide-react";
+import { t, StatusBadge, AdminPagination, AdminEmpty, AdminLoading } from "@/components/admin/AdminUI";
 
 interface FeedbackData {
   id: string;
@@ -26,46 +24,31 @@ interface FeedbackData {
   comment?: string | null;
   status: string;
   createdAt: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string | null;
-  };
-  event: {
-    id: string;
-    title: string;
-  };
+  user: { id: string; name: string; email: string; avatar?: string | null };
+  event: { id: string; title: string };
 }
 
 type StatusFilter = "ALL" | "PENDING" | "APPROVED" | "REJECTED";
 
 export default function AdminFeedbackPage() {
   const searchParams = useSearchParams();
-
   const [feedbacks, setFeedbacks] = useState<FeedbackData[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(
     (searchParams.get("status") as StatusFilter) || "ALL"
   );
-  const [searchQuery, setSearchQuery] = useState("");
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [processing, setProcessing] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  useEffect(() => { fetchFeedbacks(); }, [page, statusFilter]);
   useEffect(() => {
-    fetchFeedbacks();
-  }, [page, statusFilter]);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setPage(1);
-      fetchFeedbacks();
-    }, 400);
-    return () => clearTimeout(t);
-  }, [searchQuery]);
+    const timer = setTimeout(() => { setPage(1); fetchFeedbacks(); }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const fetchFeedbacks = async () => {
     setLoading(true);
@@ -74,110 +57,80 @@ export default function AdminFeedbackPage() {
       params.set("page", page.toString());
       params.set("pageSize", "20");
       if (statusFilter !== "ALL") params.set("status", statusFilter);
-      if (searchQuery) params.set("search", searchQuery);
-
-      const res = await fetch(`/api/feedback?${params.toString()}`);
+      if (search) params.set("search", search);
+      const res = await fetch(`/api/feedback?${params}`);
       if (res.ok) {
         const data = await res.json();
         setFeedbacks(data.data || []);
         setTotalPages(data.pagination?.totalPages || 1);
         setTotal(data.pagination?.total || 0);
       }
-    } catch {
-      console.error("Failed to fetch feedback");
-    } finally {
-      setLoading(false);
-    }
+    } catch { /* */ } finally { setLoading(false); }
   };
 
-  const handleModerate = async (feedbackId: string, action: "APPROVED" | "REJECTED") => {
-    setProcessing(feedbackId);
+  const moderate = async (id: string, action: "APPROVED" | "REJECTED") => {
+    setProcessing(id);
     try {
-      const res = await fetch(`/api/feedback/${feedbackId}`, {
+      const res = await fetch(`/api/feedback/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: action }),
       });
-      if (res.ok) {
-        setFeedbacks((prev) =>
-          prev.map((f) => (f.id === feedbackId ? { ...f, status: action } : f))
-        );
-      }
-    } catch {
-      alert("Failed to update feedback");
-    } finally {
-      setProcessing(null);
-    }
+      if (res.ok) setFeedbacks((prev) => prev.map((f) => (f.id === id ? { ...f, status: action } : f)));
+    } catch { alert("Failed to update"); }
+    finally { setProcessing(null); }
   };
 
-  const handleDelete = async (feedbackId: string) => {
-    if (!confirm("Delete this feedback permanently?")) return;
-    setProcessing(feedbackId);
+  const deleteFeedback = async (id: string) => {
+    if (!confirm("Delete this feedback?")) return;
+    setProcessing(id);
     try {
-      const res = await fetch(`/api/feedback/${feedbackId}`, { method: "DELETE" });
-      if (res.ok) {
-        setFeedbacks((prev) => prev.filter((f) => f.id !== feedbackId));
-      }
-    } catch {
-      alert("Failed to delete feedback");
-    } finally {
-      setProcessing(null);
-    }
+      const res = await fetch(`/api/feedback/${id}`, { method: "DELETE" });
+      if (res.ok) setFeedbacks((prev) => prev.filter((f) => f.id !== id));
+    } catch { alert("Failed to delete"); }
+    finally { setProcessing(null); }
   };
 
-  const getStatusBadge = (status: string) => {
-    const map: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
-      APPROVED: { bg: "bg-green-100", text: "text-green-700", icon: <CheckCircle2 className="w-3 h-3" /> },
-      PENDING: { bg: "bg-amber-100", text: "text-amber-700", icon: <Clock className="w-3 h-3" /> },
-      REJECTED: { bg: "bg-red-100", text: "text-red-600", icon: <XCircle className="w-3 h-3" /> },
-    };
-    return map[status] || map.PENDING;
-  };
-
-  const formatDate = (d: string) =>
+  const fmtDate = (d: string) =>
     new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-  const pendingCount = feedbacks.filter((f) => f.status === "PENDING").length;
+  const filters: StatusFilter[] = ["ALL", "PENDING", "APPROVED", "REJECTED"];
 
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Feedback Moderation</h1>
-        <p className="text-sm text-gray-500 mt-1">
+    <div style={{ fontFamily: 'Quicksand' }}>
+      <div style={{ marginBottom: "24px" }}>
+        <h1 style={{ fontFamily: 'Quicksand', fontSize: "24px", fontWeight: 600, color: t.text, margin: 4 }}>Feedback</h1>
+        <p style={{ fontSize: "13px", color: t.textMuted, marginTop: "4px", marginLeft: 4 }}>
           {total} total reviews.
-          {pendingCount > 0 && (
-            <span className="text-amber-600 font-semibold ml-1">
-              {pendingCount} pending approval.
+          {feedbacks.filter((f) => f.status === "PENDING").length > 0 && (
+            <span style={{ color: t.amber, fontWeight: 600, marginLeft: "6px" }}>
+              {feedbacks.filter((f) => f.status === "PENDING").length} pending
             </span>
           )}
         </p>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+      <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
+        <div style={{ position: "relative", flex: "1 1 280px", maxWidth: "320px" }}>
+          <Search style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", width: "14px", height: "14px", color: t.textFaint }} />
           <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by user or event..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-white text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10"
+            type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search user or event..."
+            style={{ width: "100%", padding: "9px 14px 9px 34px", fontSize: "13px", fontFamily: 'Quicksand', border: `1px solid ${t.border}`, borderRadius: "4px", outline: "none", color: t.text, background: t.surface }}
           />
         </div>
-        <div className="flex gap-2">
-          {(["ALL", "PENDING", "APPROVED", "REJECTED"] as StatusFilter[]).map((s) => (
+        <div style={{ display: "flex", gap: "4px" }}>
+          {filters.map((s) => (
             <button
               key={s}
               onClick={() => { setStatusFilter(s); setPage(1); }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                statusFilter === s
-                  ? s === "PENDING"
-                    ? "bg-amber-50 text-amber-600 border border-amber-200"
-                    : "bg-orange-50 text-orange-600 border border-orange-200"
-                  : "bg-white text-gray-600 border border-gray-200 hover:border-gray-300"
-              }`}
+              style={{
+                padding: "8px 14px", fontSize: "12px", fontWeight: 500, fontFamily: 'Quicksand',
+                border: `1px solid ${statusFilter === s ? t.text : t.border}`, borderRadius: "4px",
+                background: statusFilter === s ? t.text : t.surface,
+                color: statusFilter === s ? "#fff" : t.textMuted, cursor: "pointer",
+              }}
             >
               {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
             </button>
@@ -185,144 +138,90 @@ export default function AdminFeedbackPage() {
         </div>
       </div>
 
-      {/* Feedback Cards */}
-      {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
-        </div>
-      ) : feedbacks.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-2xl border border-gray-200">
-          <MessageSquare className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">No feedback found.</p>
-        </div>
+      {loading ? <AdminLoading /> : feedbacks.length === 0 ? (
+        <AdminEmpty icon={<MessageSquare style={{ width: "32px", height: "32px" }} />} message="No feedback found." />
       ) : (
-        <div className="space-y-3">
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {feedbacks.map((fb) => {
-            const badge = getStatusBadge(fb.status);
-            const isExpanded = expandedId === fb.id;
-
+            const expanded = expandedId === fb.id;
             return (
               <div
                 key={fb.id}
-                className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:border-gray-300 transition-colors"
+                style={{
+                  background: t.surface,
+                  border: `1px solid ${fb.status === "PENDING" ? t.border : t.borderLight}`,
+                  borderLeft: fb.status === "PENDING" ? `3px solid ${t.amber}` : undefined,
+                  borderRadius: "4px",
+                  overflow: "hidden",
+                }}
               >
-                {/* Header row */}
-                <div className="flex items-center gap-4 px-5 py-4">
-                  {/* User */}
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    {fb.user.avatar ? (
-                      <img src={fb.user.avatar} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
-                    ) : (
-                      <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-semibold text-xs flex-shrink-0">
-                        {fb.user.name.charAt(0)}
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{fb.user.name}</p>
-                      <p className="text-xs text-gray-500 truncate flex items-center gap-1">
-                        <CalendarDays className="w-3 h-3" />
-                        on <span className="font-medium text-gray-700">{fb.event.title}</span>
-                      </p>
+                {/* Header */}
+                <div
+                  onClick={() => setExpandedId(expanded ? null : fb.id)}
+                  style={{ display: "flex", alignItems: "center", gap: "12px", padding: "14px 20px", cursor: "pointer", transition: "background 0.1s" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#fafaf6")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                >
+                  {/* Avatar */}
+                  {fb.user.avatar ? (
+                    <img src={fb.user.avatar} alt="" style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: t.borderLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "12px", fontWeight: 600, color: t.textMuted }}>
+                      {fb.user.name.charAt(0)}
                     </div>
+                  )}
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: "13px", fontWeight: 600, color: t.text, margin: 0 }}>{fb.user.name}</p>
+                    <p style={{ fontSize: "11px", color: t.textFaint, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      on {fb.event.title}
+                    </p>
                   </div>
 
-                  {/* Rating */}
-                  <div className="flex items-center gap-0.5 flex-shrink-0">
+                  {/* Stars */}
+                  <div style={{ display: "flex", gap: "1px", flexShrink: 0 }}>
                     {Array.from({ length: 5 }).map((_, j) => (
                       <Star
                         key={j}
-                        className={`w-3.5 h-3.5 ${j < fb.rating ? "fill-orange-400 text-orange-400" : "text-gray-200"}`}
+                        style={{ width: "12px", height: "12px" }}
+                        className={j < fb.rating ? "fill-orange-400 text-orange-400" : "text-gray-200"}
                       />
                     ))}
                   </div>
 
-                  {/* Status */}
-                  <span className={`flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold ${badge.bg} ${badge.text}`}>
-                    {badge.icon}
-                    {fb.status}
-                  </span>
-
-                  {/* Date */}
-                  <span className="text-xs text-gray-400 flex-shrink-0 hidden sm:block">
-                    {formatDate(fb.createdAt)}
-                  </span>
-
-                  {/* Expand */}
-                  <button
-                    onClick={() => setExpandedId(isExpanded ? null : fb.id)}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-colors flex-shrink-0"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
+                  <StatusBadge status={fb.status} />
+                  <span style={{ fontSize: "11px", color: t.textFaint, flexShrink: 0 }}>{fmtDate(fb.createdAt)}</span>
+                  {expanded ? (
+                    <ChevronUp style={{ width: "14px", height: "14px", color: t.textFaint, flexShrink: 0 }} />
+                  ) : (
+                    <ChevronDown style={{ width: "14px", height: "14px", color: t.textFaint, flexShrink: 0 }} />
+                  )}
                 </div>
 
-                {/* Expanded content */}
-                {isExpanded && (
-                  <div className="px-5 pb-4 border-t border-gray-100 pt-3">
-                    {fb.title && (
-                      <p className="text-sm font-semibold text-gray-900 mb-1">{fb.title}</p>
-                    )}
-                    {fb.comment ? (
-                      <p className="text-sm text-gray-600 leading-relaxed mb-4 whitespace-pre-wrap">
-                        {fb.comment}
-                      </p>
-                    ) : (
-                      <p className="text-sm text-gray-400 italic mb-4">No comment provided.</p>
-                    )}
+                {/* Expanded */}
+                {expanded && (
+                  <div style={{ padding: "0 20px 16px", borderTop: `1px solid ${t.borderLight}`, paddingTop: "16px" }}>
+                    {fb.title && <p style={{ fontSize: "14px", fontWeight: 600, color: t.text, margin: "0 0 6px" }}>{fb.title}</p>}
+                    <p style={{ fontSize: "14px", color: fb.comment ? t.textSecondary : t.textFaint, lineHeight: 1.7, margin: "0 0 16px", fontStyle: fb.comment ? "normal" : "italic", whiteSpace: "pre-wrap" }}>
+                      {fb.comment || "No comment provided."}
+                    </p>
 
-                    <div className="flex items-center gap-2">
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                       {fb.status === "PENDING" && (
                         <>
-                          <button
-                            onClick={() => handleModerate(fb.id, "APPROVED")}
-                            disabled={processing === fb.id}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-green-50 text-green-700 text-xs font-semibold hover:bg-green-100 transition-colors disabled:opacity-50"
-                          >
-                            {processing === fb.id ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                            )}
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => handleModerate(fb.id, "REJECTED")}
-                            disabled={processing === fb.id}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-50 text-red-600 text-xs font-semibold hover:bg-red-100 transition-colors disabled:opacity-50"
-                          >
-                            <XCircle className="w-3.5 h-3.5" />
-                            Reject
-                          </button>
+                          <ActionBtn label="Approve" color={t.green} bg={t.greenSoft} icon={<CheckCircle2 />} loading={processing === fb.id} onClick={() => moderate(fb.id, "APPROVED")} />
+                          <ActionBtn label="Reject" color={t.accent} bg={t.accentSoft} icon={<XCircle />} loading={processing === fb.id} onClick={() => moderate(fb.id, "REJECTED")} />
                         </>
                       )}
-                      {fb.status === "REJECTED" && (
-                        <button
-                          onClick={() => handleModerate(fb.id, "APPROVED")}
-                          disabled={processing === fb.id}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-green-50 text-green-700 text-xs font-semibold hover:bg-green-100 transition-colors disabled:opacity-50"
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          Approve Instead
-                        </button>
-                      )}
                       {fb.status === "APPROVED" && (
-                        <button
-                          onClick={() => handleModerate(fb.id, "REJECTED")}
-                          disabled={processing === fb.id}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-50 text-amber-700 text-xs font-semibold hover:bg-amber-100 transition-colors disabled:opacity-50"
-                        >
-                          <XCircle className="w-3.5 h-3.5" />
-                          Revoke Approval
-                        </button>
+                        <ActionBtn label="Revoke" color={t.amber} bg={t.amberSoft} icon={<XCircle />} loading={processing === fb.id} onClick={() => moderate(fb.id, "REJECTED")} />
                       )}
-                      <button
-                        onClick={() => handleDelete(fb.id)}
-                        disabled={processing === fb.id}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gray-50 text-red-600 text-xs font-semibold hover:bg-red-50 transition-colors disabled:opacity-50 ml-auto"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        Delete
-                      </button>
+                      {fb.status === "REJECTED" && (
+                        <ActionBtn label="Approve" color={t.green} bg={t.greenSoft} icon={<CheckCircle2 />} loading={processing === fb.id} onClick={() => moderate(fb.id, "APPROVED")} />
+                      )}
+                      <div style={{ marginLeft: "auto" }}>
+                        <ActionBtn label="Delete" color={t.accent} bg={t.accentSoft} icon={<Trash2 />} loading={processing === fb.id} onClick={() => deleteFeedback(fb.id)} />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -332,28 +231,29 @@ export default function AdminFeedbackPage() {
         </div>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-6 px-2">
-          <p className="text-xs text-gray-500">Page {page} of {totalPages}</p>
-          <div className="flex gap-1">
-            <button
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page <= 1}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:bg-white border border-gray-200 disabled:opacity-30"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setPage(Math.min(totalPages, page + 1))}
-              disabled={page >= totalPages}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:bg-white border border-gray-200 disabled:opacity-30"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
+      <AdminPagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
+  );
+}
+
+function ActionBtn({ label, color, bg, icon, loading, onClick }: { label: string; color: string; bg: string; icon: React.ReactNode; loading: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: "6px", padding: "7px 14px",
+        fontSize: "12px", fontWeight: 600, fontFamily: 'Quicksand',
+        color, background: bg, border: "none", borderRadius: "4px",
+        cursor: loading ? "default" : "pointer", opacity: loading ? 0.5 : 1,
+      }}
+    >
+      {loading ? (
+        <Loader2 className="animate-spin" style={{ width: "12px", height: "12px" }} />
+      ) : (
+        <span style={{ width: "12px", height: "12px", display: "flex" }}>{icon}</span>
+      )}
+      {label}
+    </button>
   );
 }

@@ -3,29 +3,46 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import {
   LayoutDashboard,
   Users,
   CalendarDays,
   MessageSquare,
-  BarChart3,
-  Settings,
   ChevronLeft,
   ChevronRight,
   Menu,
   X,
   DollarSign,
   Tag,
-  Shield,
-  Flag,
+  Mail,
+  ChevronDown,
 } from "lucide-react";
+
+/* ═══════════════════════════════════════════
+   Design tokens
+   ═══════════════════════════════════════════ */
+const t = {
+  bg: "#fff",
+  bgHover: "#fafaf8",
+  bgActive: "#f5f5f0",
+  border: "#e5e5e0",
+  borderLight: "#f0f0ec",
+  text: "#1a1a1a",
+  textSecondary: "#555",
+  textMuted: "#888",
+  textFaint: "#bbb",
+  accent: "#e63946",
+  accentSoft: "rgba(230,57,70,0.06)",
+  sans: "'DM Sans', sans-serif",
+};
 
 interface NavItem {
   label: string;
   href: string;
   icon: React.ReactNode;
+  count?: number;
 }
 
 interface NavGroup {
@@ -33,97 +50,224 @@ interface NavGroup {
   items: NavItem[];
 }
 
+const iconSize = { width: "20px", height: "20px" };
+
+const navGroups: NavGroup[] = [
+  {
+    title: "Overview",
+    items: [
+      {
+        label: "Dashboard",
+        href: "/admin",
+        icon: <LayoutDashboard style={iconSize} />,
+      },
+    ],
+  },
+  {
+    title: "Management",
+    items: [
+      {
+        label: "Users",
+        href: "/admin/users",
+        icon: <Users style={iconSize} />,
+      },
+      {
+        label: "Events",
+        href: "/admin/events",
+        icon: <CalendarDays style={iconSize} />,
+      },
+      {
+        label: "Orders",
+        href: "/admin/orders",
+        icon: <DollarSign style={iconSize} />,
+      },
+      {
+        label: "Feedback",
+        href: "/admin/feedback",
+        icon: <MessageSquare style={iconSize} />,
+      },
+    ],
+  },
+  {
+    title: "Content",
+    items: [
+      {
+        label: "Categories",
+        href: "/admin/categories",
+        icon: <Tag style={iconSize} />,
+      },
+      {
+        label: "Messages",
+        href: "/admin/messages",
+        icon: <Mail style={iconSize} />,
+      },
+    ],
+  },
+];
+
 export default function AdminSidebar() {
   const pathname = usePathname();
   const { user } = useUser();
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("admin-sidebar-collapsed") === "true";
-    }
-    return false;
-  });
+  const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-
-  useEffect(() => {
-    localStorage.setItem("admin-sidebar-collapsed", String(collapsed));
-  }, [collapsed]);
-
-  const navGroups: NavGroup[] = [
-    {
-      title: "Overview",
-      items: [
-        { label: "Dashboard", href: "/admin", icon: <LayoutDashboard className="w-5 h-5" /> },
-        { label: "Analytics", href: "/admin/analytics", icon: <BarChart3 className="w-5 h-5" /> },
-      ],
-    },
-    {
-      title: "Management",
-      items: [
-        { label: "Users", href: "/admin/users", icon: <Users className="w-5 h-5" /> },
-        { label: "Events", href: "/admin/events", icon: <CalendarDays className="w-5 h-5" /> },
-        { label: "Orders", href: "/admin/orders", icon: <DollarSign className="w-5 h-5" /> },
-        { label: "Feedback", href: "/admin/feedback", icon: <MessageSquare className="w-5 h-5" /> },
-      ],
-    },
-    {
-      title: "Content",
-      items: [
-        { label: "Categories", href: "/admin/categories", icon: <Tag className="w-5 h-5" /> },
-        { label: "Moderation", href: "/admin/moderation", icon: <Flag className="w-5 h-5" /> },
-      ],
-    },
-    {
-      title: "System",
-      items: [
-        { label: "Settings", href: "/admin/settings", icon: <Settings className="w-5 h-5" /> },
-      ],
-    },
-  ];
 
   const isActive = (href: string) => {
     if (href === "/admin") return pathname === "/admin";
     return pathname.startsWith(href);
   };
 
-  const renderNav = (onNavigate?: () => void) => (
-    <div className="flex flex-col h-full">
-      {/* Logo */}
-      <div className={`flex items-center h-16 border-b border-gray-800 px-4 ${collapsed ? "justify-center" : "justify-between"}`}>
-        {!collapsed ? (
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center">
-              <Shield className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <span className="text-sm font-bold text-white">Evenza</span>
-              <span className="text-[10px] text-gray-500 block -mt-0.5">Admin Panel</span>
-            </div>
-          </Link>
-        ) : (
-          <Link href="/">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center">
-              <Shield className="w-4 h-4 text-white" />
-            </div>
-          </Link>
-        )}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="hidden lg:flex w-7 h-7 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-800 hover:text-gray-300 transition-colors"
+  const NavContent = ({ onNavigate }: { onNavigate?: () => void }) => (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        fontFamily: t.sans,
+      }}
+    >
+      {/* ── Logo area ── */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          height: "64px",
+          padding: collapsed ? "0 12px" : "0 20px",
+          borderBottom: `1px solid ${t.borderLight}`,
+          flexShrink: 0,
+        }}
+       >
+        <Link
+          href="/"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            flexShrink: 0,
+          }}
         >
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-        </button>
+          <img
+            src="/icons/black-logo.png"
+            alt="Evenza"
+            style={{
+              height: collapsed ? "34px" : "34px",
+              width: "auto",
+              display: "block",
+            }}
+          />
+
+          {!collapsed && (
+            <img
+              src="/icons/text.png"
+              alt="Evenza"
+              style={{
+                height: "14px",
+                width: "auto",
+                display: "block",
+                alignItems: "center",
+              }}
+            />
+          )}
+        </Link>
+
+        {!collapsed && (
+          <button
+            onClick={() => setCollapsed(true)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "28px",
+              height: "28px",
+              borderRadius: "4px",
+              border: "none",
+              background: "transparent",
+              color: t.textFaint,
+              cursor: "pointer",
+              transition: "color 0.15s, background 0.15s",
+              marginLeft: "60px",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = t.bgHover;
+              e.currentTarget.style.color = t.textMuted;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.color = t.textFaint;
+            }}
+            className="hidden lg:flex"
+          >
+            <ChevronLeft style={{ width: "16px", height: "16px" }} />
+          </button>
+        )}
+
+        {collapsed && (
+          <button
+            onClick={() => setCollapsed(false)}
+            style={{
+              position: "absolute",
+              right: "-12px",
+              top: "20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "20px",
+              height: "20px",
+              borderRadius: "50%",
+              border: `1px solid ${t.border}`,
+              background: t.bg,
+              color: t.textMuted,
+              cursor: "pointer",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+              zIndex: 10,
+            }}
+            className="hidden lg:flex"
+          >
+            <ChevronRight style={{ width: "14px", height: "14px" }} />
+          </button>
+        )}
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 py-4 px-3 overflow-y-auto">
+      {/* ── Navigation ── */}
+      <nav
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: collapsed ? "16px 8px" : "16px 12px",
+        }}
+      >
         {navGroups.map((group, gi) => (
-          <div key={gi} className="mb-5">
+          <div key={gi} style={{ marginBottom: "24px" }}>
+            {/* Group title */}
             {!collapsed && (
-              <p className="px-3 mb-2 text-[10px] font-bold text-gray-500 uppercase tracking-[0.15em]">
+              <p
+                style={{
+                  fontSize: "10px",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.14em",
+                  color: t.textFaint,
+                  padding: "0 10px",
+                  margin: "0 0 8px 0",
+                  fontFamily: t.sans,
+                }}
+              >
                 {group.title}
               </p>
             )}
-            <div className="space-y-0.5">
+
+            {collapsed && gi > 0 && (
+              <div
+                style={{
+                  height: "1px",
+                  background: t.borderLight,
+                  margin: "0 4px 12px",
+                }}
+              />
+            )}
+
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "2px" }}
+            >
               {group.items.map((item) => {
                 const active = isActive(item.href);
                 return (
@@ -132,16 +276,60 @@ export default function AdminSidebar() {
                     href={item.href}
                     onClick={onNavigate}
                     title={collapsed ? item.label : undefined}
-                    className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                      active
-                        ? "bg-orange-500/10 text-orange-400"
-                        : "text-gray-400 hover:bg-gray-800 hover:text-gray-200"
-                    } ${collapsed ? "justify-center" : ""}`}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: collapsed ? "center" : "flex-start",
+                      gap: "12px",
+                      padding: collapsed ? "10px" : "9px 12px",
+                      borderRadius: "6px",
+                      textDecoration: "none",
+                      fontSize: "14px",
+                      fontWeight: active ? 600 : 500,
+                      fontFamily: t.sans,
+                      color: active ? t.text : t.textSecondary,
+                      background: active ? t.bgActive : "transparent",
+                      transition: "background 0.12s, color 0.12s",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!active) {
+                        e.currentTarget.style.background = t.bgHover;
+                        e.currentTarget.style.color = t.text;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!active) {
+                        e.currentTarget.style.background = "transparent";
+                        e.currentTarget.style.color = t.textSecondary;
+                      }
+                    }}
                   >
-                    <span className={`flex-shrink-0 ${active ? "text-orange-400" : "text-gray-500 group-hover:text-gray-300"}`}>
+                    <span
+                      style={{
+                        display: "flex",
+                        flexShrink: 0,
+                        color: active ? t.text : t.textMuted,
+                      }}
+                    >
                       {item.icon}
                     </span>
-                    {!collapsed && <span>{item.label}</span>}
+                    {!collapsed && (
+                      <>
+                        <span style={{ flex: 1 }}>{item.label}</span>
+                        {item.count !== undefined && item.count > 0 && (
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              color: t.textFaint,
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
+                            {item.count}
+                          </span>
+                        )}
+                      </>
+                    )}
                   </Link>
                 );
               })}
@@ -150,20 +338,78 @@ export default function AdminSidebar() {
         ))}
       </nav>
 
-      {/* User */}
-      <div className={`border-t border-gray-800 p-4 ${collapsed ? "flex justify-center" : ""}`}>
-        <div className={`flex items-center gap-3 ${collapsed ? "justify-center" : ""}`}>
+      {/* ── User area ── */}
+      <div
+        style={{
+          borderTop: `1px solid ${t.borderLight}`,
+          padding: collapsed ? "16px 8px" : "16px 16px",
+          flexShrink: 0,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            justifyContent: collapsed ? "center" : "flex-start",
+          }}
+        >
           {user?.imageUrl ? (
-            <img src={user.imageUrl} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+            <img
+              src={user.imageUrl}
+              alt=""
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                objectFit: "cover",
+                flexShrink: 0,
+              }}
+            />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-orange-900/50 flex items-center justify-center flex-shrink-0">
-              <span className="text-orange-400 font-semibold text-xs">{user?.firstName?.[0] || "A"}</span>
+            <div
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                background: t.bgActive,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <span
+                style={{ fontSize: "13px", fontWeight: 600, color: t.text }}
+              >
+                {user?.firstName?.[0] || "A"}
+              </span>
             </div>
           )}
           {!collapsed && (
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-white truncate">{user?.fullName || "Admin"}</p>
-              <p className="text-xs text-gray-500 truncate">Administrator</p>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <p
+                style={{
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  color: t.text,
+                  margin: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {user?.fullName || "Admin"}
+              </p>
+              <p
+                style={{
+                  fontSize: "11px",
+                  color: t.textMuted,
+                  margin: "1px 0 0",
+                }}
+              >
+                Administrator
+              </p>
             </div>
           )}
         </div>
@@ -173,26 +419,76 @@ export default function AdminSidebar() {
 
   return (
     <>
-      <button
-        onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 w-10 h-10 rounded-xl bg-gray-900 shadow-md border border-gray-700 flex items-center justify-center text-gray-300 hover:bg-gray-800"
-      >
-        <Menu className="w-5 h-5" />
-      </button>
+      {/* ── Mobile toggle ── */}
 
+      {/* ── Mobile overlay ── */}
       {mobileOpen && (
-        <div className="lg:hidden fixed inset-0 bg-black/50 z-40" onClick={() => setMobileOpen(false)} />
+        <div
+          className="lg:hidden"
+          onClick={() => setMobileOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.3)",
+            zIndex: 40,
+          }}
+        />
       )}
 
-      <aside className={`lg:hidden fixed top-0 left-0 h-full w-64 bg-[#111318] z-50 transform transition-transform duration-300 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        <button onClick={() => setMobileOpen(false)} className="absolute top-4 right-4 w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-800">
-          <X className="w-4 h-4" />
+      {/* ── Mobile sidebar ── */}
+      <aside
+        className="lg:hidden"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          height: "100%",
+          width: "260px",
+          background: t.bg,
+          zIndex: 50,
+          transform: mobileOpen ? "translateX(0)" : "translateX(-100%)",
+          transition: "transform 0.25s ease",
+          borderRight: `1px solid ${t.borderLight}`,
+        }}
+      >
+        <button
+          onClick={() => setMobileOpen(false)}
+          style={{
+            position: "absolute",
+            top: "16px",
+            right: "16px",
+            width: "28px",
+            height: "28px",
+            borderRadius: "4px",
+            border: "none",
+            background: "transparent",
+            color: t.textMuted,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <X style={{ width: "18px", height: "18px" }} />
         </button>
-        {renderNav(() => setMobileOpen(false))}
+        <NavContent onNavigate={() => setMobileOpen(false)} />
       </aside>
 
-      <aside className={`hidden lg:flex flex-col bg-[#111318] transition-all duration-300 ${collapsed ? "w-[72px]" : "w-64"}`}>
-        {renderNav()}
+      {/* ── Desktop sidebar ── */}
+      <aside
+        className="hidden lg:flex"
+        style={{
+          flexDirection: "column",
+          width: collapsed ? "68px" : "256px",
+          background: t.bg,
+          borderRight: `1px solid ${t.borderLight}`,
+          transition: "width 0.2s ease",
+          position: "relative",
+          overflow: "visible",
+          flexShrink: 0,
+        }}
+      >
+        <NavContent />
       </aside>
     </>
   );

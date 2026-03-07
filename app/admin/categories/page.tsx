@@ -2,17 +2,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Tag,
-  Plus,
-  Pencil,
-  Trash2,
-  Loader2,
-  X,
-  CheckCircle2,
-  AlertCircle,
-  CalendarDays,
-} from "lucide-react";
+import { Tag, Plus, Pencil, Trash2, Loader2, X, CalendarDays } from "lucide-react";
+import { t, AdminLoading, AdminEmpty } from "@/components/admin/AdminUI";
 
 interface Category {
   id: string;
@@ -22,362 +13,206 @@ interface Category {
   _count?: { events: number };
 }
 
+const presetColors = [
+  "#e63946", "#f97316", "#f59e0b", "#84cc16",
+  "#10b981", "#14b8a6", "#3b82f6", "#6366f1",
+  "#8b5cf6", "#ec4899", "#0ea5e9", "#1a1a2e",
+];
+
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-
-  // Form state
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
-  const [color, setColor] = useState("#f97316");
+  const [color, setColor] = useState("#e63946");
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const presetColors = [
-    "#f97316", "#ef4444", "#8b5cf6", "#3b82f6",
-    "#10b981", "#f59e0b", "#ec4899", "#6366f1",
-    "#14b8a6", "#84cc16", "#f43f5e", "#0ea5e9",
-  ];
-
-  useEffect(() => {
-    fetchCategories();
-  }, []);
+  useEffect(() => { fetchCategories(); }, []);
 
   const fetchCategories = async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/categories");
-      if (res.ok) {
-        const data = await res.json();
-        setCategories(data.data || []);
-      }
-    } catch {
-      console.error("Failed to fetch categories");
-    } finally {
-      setLoading(false);
-    }
+      if (res.ok) { const data = await res.json(); setCategories(data.data || []); }
+    } catch { /* */ } finally { setLoading(false); }
   };
 
-  const generateSlug = (text: string) =>
-    text
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .trim();
+  const genSlug = (text: string) =>
+    text.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
 
-  const handleNameChange = (val: string) => {
-    setName(val);
-    if (!editingId) {
-      setSlug(generateSlug(val));
-    }
-  };
-
-  const openCreate = () => {
-    setEditingId(null);
-    setName("");
-    setSlug("");
-    setColor("#f97316");
-    setShowForm(true);
-  };
-
-  const openEdit = (cat: Category) => {
-    setEditingId(cat.id);
-    setName(cat.name);
-    setSlug(cat.slug);
-    setColor(cat.color || "#f97316");
-    setShowForm(true);
-  };
-
-  const closeForm = () => {
-    setShowForm(false);
-    setEditingId(null);
-    setName("");
-    setSlug("");
-    setColor("#f97316");
-  };
+  const openCreate = () => { setEditingId(null); setName(""); setSlug(""); setColor("#e63946"); setShowForm(true); };
+  const openEdit = (c: Category) => { setEditingId(c.id); setName(c.name); setSlug(c.slug); setColor(c.color || "#e63946"); setShowForm(true); };
+  const closeForm = () => { setShowForm(false); setEditingId(null); };
 
   const handleSubmit = async () => {
-    if (!name.trim() || !slug.trim()) {
-      setMessage({ type: "error", text: "Name and slug are required." });
-      return;
-    }
-
+    if (!name.trim() || !slug.trim()) return;
     setSubmitting(true);
-    setMessage(null);
-
     try {
-      const url = editingId
-        ? `/api/categories/${editingId}`
-        : "/api/categories";
-      const method = editingId ? "PATCH" : "POST";
-
+      const url = editingId ? `/api/categories/${editingId}` : "/api/categories";
       const res = await fetch(url, {
-        method,
+        method: editingId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: name.trim(), slug: slug.trim(), color }),
       });
-
-      if (res.ok) {
-        await fetchCategories();
-        closeForm();
-        setMessage({
-          type: "success",
-          text: editingId ? "Category updated!" : "Category created!",
-        });
-        setTimeout(() => setMessage(null), 3000);
-      } else {
-        const data = await res.json();
-        setMessage({ type: "error", text: data.error || "Failed to save category" });
-      }
-    } catch {
-      setMessage({ type: "error", text: "Something went wrong" });
-    } finally {
-      setSubmitting(false);
-    }
+      if (res.ok) { await fetchCategories(); closeForm(); }
+    } catch { /* */ } finally { setSubmitting(false); }
   };
 
   const handleDelete = async (id: string) => {
     const cat = categories.find((c) => c.id === id);
-    const eventCount = cat?._count?.events || 0;
-    if (eventCount > 0) {
-      if (
-        !confirm(
-          `This category has ${eventCount} event(s). Deleting it may affect those events. Continue?`
-        )
-      )
-        return;
-    } else {
-      if (!confirm("Delete this category?")) return;
-    }
-
+    if (!confirm(cat?._count?.events ? `This category has ${cat._count.events} event(s). Continue?` : "Delete this category?")) return;
     setDeleting(id);
     try {
       const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setCategories((prev) => prev.filter((c) => c.id !== id));
-        setMessage({ type: "success", text: "Category deleted." });
-        setTimeout(() => setMessage(null), 3000);
-      } else {
-        alert("Failed to delete category");
-      }
-    } catch {
-      alert("Failed to delete category");
-    } finally {
-      setDeleting(null);
-    }
+      if (res.ok) setCategories((prev) => prev.filter((c) => c.id !== id));
+    } catch { /* */ } finally { setDeleting(null); }
   };
 
   return (
-    <div className="max-w-3xl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+    <div style={{ fontFamily: 'Quicksand', maxWidth: "640px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Categories</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Manage event categories displayed across the platform.
-          </p>
+          <h1 style={{ fontFamily: 'Quicksand', fontSize: "24px", fontWeight: 600, color: t.text, margin: 4 }}>Categories</h1>
+          <p style={{ fontSize: "13px", color: t.textMuted, marginTop: "4px",fontFamily: 'Quicksand',marginLeft:4 }}>Manage event categories.</p>
         </div>
         <button
           onClick={openCreate}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-semibold hover:shadow-lg hover:shadow-orange-500/25 transition-all"
+          style={{
+            display: "inline-flex", alignItems: "center", gap: "6px", padding: "9px 18px",
+            fontSize: "13px", fontWeight: 600, fontFamily: 'Quicksand',
+            color: "#fff", background: t.text, border: "none", borderRadius: "4px", cursor: "pointer",
+          }}
         >
-          <Plus className="w-4 h-4" />
+          <Plus style={{ width: "14px", height: "14px" }} />
           Add Category
         </button>
       </div>
 
-      {/* Message */}
-      {message && (
-        <div
-          className={`mb-4 p-3 rounded-xl flex items-center gap-2 text-sm ${
-            message.type === "success"
-              ? "bg-green-50 border border-green-200 text-green-700"
-              : "bg-red-50 border border-red-200 text-red-700"
-          }`}
-        >
-          {message.type === "success" ? (
-            <CheckCircle2 className="w-4 h-4" />
-          ) : (
-            <AlertCircle className="w-4 h-4" />
-          )}
-          {message.text}
-        </div>
-      )}
-
-      {/* Create/Edit Form */}
+      {/* Form */}
       {showForm && (
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-900">
+        <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: "4px", padding: "24px", marginBottom: "20px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+            <span style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.15em", color: t.textMuted }}>
               {editingId ? "Edit Category" : "New Category"}
-            </h2>
-            <button
-              onClick={closeForm}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100"
-            >
-              <X className="w-4 h-4" />
+            </span>
+            <button onClick={closeForm} style={{ background: "transparent", border: "none", cursor: "pointer", color: t.textFaint }}>
+              <X style={{ width: "16px", height: "16px" }} />
             </button>
           </div>
 
-          <div className="space-y-4">
-            {/* Name */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Category Name *
-              </label>
+              <label style={{ display: "block", fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: t.textFaint, marginBottom: "6px" }}>Name *</label>
               <input
-                type="text"
-                value={name}
-                onChange={(e) => handleNameChange(e.target.value)}
+                type="text" value={name}
+                onChange={(e) => { setName(e.target.value); if (!editingId) setSlug(genSlug(e.target.value)); }}
                 placeholder="e.g. Technology"
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10"
+                style={{ width: "100%", padding: "9px 14px", fontSize: "13px", fontFamily: 'Quicksand', border: `1px solid ${t.border}`, borderRadius: "4px", outline: "none", color: t.text }}
               />
             </div>
-
-            {/* Slug */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Slug *
-              </label>
+              <label style={{ display: "block", fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: t.textFaint, marginBottom: "6px" }}>Slug *</label>
               <input
-                type="text"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
+                type="text" value={slug} onChange={(e) => setSlug(e.target.value)}
                 placeholder="technology"
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 font-mono"
+                style={{ width: "100%", padding: "9px 14px", fontSize: "13px", fontFamily: "monospace", border: `1px solid ${t.border}`, borderRadius: "4px", outline: "none", color: t.text }}
               />
             </div>
+          </div>
 
-            {/* Color */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Color
-              </label>
-              <div className="flex items-center gap-3">
-                <div className="flex gap-1.5 flex-wrap">
-                  {presetColors.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => setColor(c)}
-                      className={`w-7 h-7 rounded-lg transition-all ${
-                        color === c
-                          ? "ring-2 ring-offset-2 ring-gray-400 scale-110"
-                          : "hover:scale-110"
-                      }`}
-                      style={{ backgroundColor: c }}
-                    />
-                  ))}
-                </div>
-                <input
-                  type="color"
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                  className="w-8 h-8 rounded-lg border border-gray-300 cursor-pointer"
+          {/* Color picker */}
+          <label style={{ display: "block", fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: t.textFaint, marginBottom: "8px" }}>Color</label>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+            <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+              {presetColors.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setColor(c)}
+                  style={{
+                    width: "24px", height: "24px", borderRadius: "3px", background: c, border: "none", cursor: "pointer",
+                    outline: color === c ? `2px solid ${t.text}` : "none", outlineOffset: "2px",
+                  }}
                 />
-              </div>
+              ))}
             </div>
-
+            <input type="color" value={color} onChange={(e) => setColor(e.target.value)} style={{ width: "28px", height: "28px", border: "none", cursor: "pointer", borderRadius: "3px" }} />
             {/* Preview */}
-            <div className="pt-2">
-              <p className="text-xs text-gray-500 mb-2">Preview:</p>
-              <span
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold text-white"
-                style={{ backgroundColor: color }}
-              >
-                {name || "Category"}
-              </span>
-            </div>
+            <span style={{ display: "inline-flex", padding: "3px 10px", borderRadius: "3px", fontSize: "12px", fontWeight: 600, color: "#fff", background: color }}>
+              {name || "Preview"}
+            </span>
+          </div>
 
-            {/* Submit */}
-            <div className="flex gap-3 pt-2">
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50"
-              >
-                {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                {editingId ? "Update Category" : "Create Category"}
-              </button>
-              <button
-                onClick={closeForm}
-                className="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button
+              onClick={handleSubmit} disabled={submitting || !name.trim() || !slug.trim()}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: "6px", padding: "9px 18px",
+                fontSize: "13px", fontWeight: 600, fontFamily: 'Quicksand',
+                color: "#fff", background: t.text, border: "none", borderRadius: "4px",
+                cursor: submitting ? "default" : "pointer", opacity: submitting ? 0.6 : 1,
+              }}
+            >
+              {submitting && <Loader2 className="animate-spin" style={{ width: "14px", height: "14px" }} />}
+              {editingId ? "Update" : "Create"}
+            </button>
+            <button onClick={closeForm} style={{ padding: "9px 18px", fontSize: "13px", fontWeight: 500, fontFamily: 'Quicksand', color: t.textMuted, background: "transparent", border: `1px solid ${t.border}`, borderRadius: "4px", cursor: "pointer" }}>
+              Cancel
+            </button>
           </div>
         </div>
       )}
 
-      {/* Categories List */}
-      {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
-        </div>
-      ) : categories.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-2xl border border-gray-200">
-          <Tag className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500 mb-3">No categories yet.</p>
-          <button
-            onClick={openCreate}
-            className="text-sm text-orange-600 font-semibold hover:underline"
-          >
-            Create your first category →
-          </button>
-        </div>
+      {/* List */}
+      {loading ? <AdminLoading /> : categories.length === 0 ? (
+        <AdminEmpty
+          icon={<Tag style={{ width: "32px", height: "32px" }} />}
+          message="No categories yet."
+          action={<button onClick={openCreate} style={{ fontSize: "13px", fontWeight: 600, color: t.accent, background: "transparent", border: "none", cursor: "pointer" }}>Create your first category →</button>}
+        />
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          <div className="divide-y divide-gray-100">
-            {categories.map((cat) => (
-              <div
-                key={cat.id}
-                className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50/50 transition-colors"
-              >
-                {/* Color dot + name */}
-                <div
-                  className="w-4 h-4 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: cat.color || "#f97316" }}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">{cat.name}</p>
-                  <p className="text-xs text-gray-400 font-mono">/{cat.slug}</p>
-                </div>
-
-                {/* Event count */}
-                <div className="flex items-center gap-1 text-xs text-gray-500">
-                  <CalendarDays className="w-3.5 h-3.5" />
-                  {cat._count?.events || 0} events
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => openEdit(cat)}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-                    title="Edit"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(cat.id)}
-                    disabled={deleting === cat.id}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors disabled:opacity-50"
-                    title="Delete"
-                  >
-                    {deleting === cat.id ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-3.5 h-3.5" />
-                    )}
-                  </button>
-                </div>
+        <div style={{ background: t.surface, border: `1px solid ${t.borderLight}`, borderRadius: "4px", overflow: "hidden" }}>
+          {categories.map((cat, i) => (
+            <div
+              key={cat.id}
+              style={{
+                display: "flex", alignItems: "center", gap: "12px", padding: "14px 20px",
+                borderTop: i > 0 ? `1px solid ${t.borderLight}` : "none",
+                transition: "background 0.1s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#fafaf6")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+            >
+              <div style={{ width: "12px", height: "12px", borderRadius: "2px", background: cat.color || "#f97316", flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: "13px", fontWeight: 600, color: t.text, margin: 0 }}>{cat.name}</p>
+                <p style={{ fontSize: "11px", color: t.textFaint, margin: 0, fontFamily: 'Quicksand' }}>/{cat.slug}</p>
               </div>
-            ))}
-          </div>
+              <span style={{ fontSize: "11px", color: t.textMuted, display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
+                <CalendarDays style={{ width: "11px", height: "11px" }} />
+                {cat._count?.events || 0}
+              </span>
+              <button
+                onClick={() => openEdit(cat)}
+                style={{ width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", color: t.textFaint, cursor: "pointer", borderRadius: "4px" }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = t.borderLight)}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+              >
+                <Pencil style={{ width: "12px", height: "12px" }} />
+              </button>
+              <button
+                onClick={() => handleDelete(cat.id)}
+                disabled={deleting === cat.id}
+                style={{ width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", color: t.textFaint, cursor: "pointer", borderRadius: "4px", opacity: deleting === cat.id ? 0.5 : 1 }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = t.accentSoft)}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+              >
+                {deleting === cat.id ? <Loader2 className="animate-spin" style={{ width: "12px", height: "12px" }} /> : <Trash2 style={{ width: "12px", height: "12px" }} />}
+              </button>
+            </div>
+          ))}
         </div>
       )}
     </div>

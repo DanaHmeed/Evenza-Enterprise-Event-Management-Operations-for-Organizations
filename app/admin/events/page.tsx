@@ -33,9 +33,10 @@ interface EventData {
 type StatusFilter = "ALL" | "PUBLISHED" | "DRAFT" | "CANCELLED" | "COMPLETED";
 
 export default function AdminEventsPage() {
-  const [events, setEvents] = useState<EventData[]>([]);
+const [events, setEvents] = useState<EventData[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [searchDebounced, setSearchDebounced] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -43,11 +44,21 @@ export default function AdminEventsPage() {
   const [menuId, setMenuId] = useState<string | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
 
-  useEffect(() => { fetchEvents(); }, [page, statusFilter]);
+  // Debounce search
   useEffect(() => {
-    const timer = setTimeout(() => { setPage(1); fetchEvents(); }, 400);
+    const timer = setTimeout(() => setSearchDebounced(search), 400);
     return () => clearTimeout(timer);
   }, [search]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchDebounced, statusFilter]);
+
+  // Single fetch effect
+  useEffect(() => {
+    fetchEvents();
+  }, [page, searchDebounced, statusFilter]);
 
   const fetchEvents = async () => {
     setLoading(true);
@@ -57,23 +68,20 @@ export default function AdminEventsPage() {
       params.set("pageSize", "20");
       params.set("sortBy", "createdAt");
       params.set("sortOrder", "desc");
-      if (search) params.set("search", search);
-      // NOTE: The public events API only returns PUBLISHED by default.
-      // For admin, we fetch all and filter client-side, OR ideally
-      // you'd add a status filter param to the events API.
-      // For now we use client-side filtering.
+      params.set("all", "true");
+      if (searchDebounced) params.set("search", searchDebounced);
+      if (statusFilter !== "ALL") params.set("status", statusFilter);
+
       const res = await fetch(`/api/events?${params}`);
       if (res.ok) {
         const data = await res.json();
-        let items = data.data || [];
-        if (statusFilter !== "ALL") {
-          items = items.filter((e: EventData) => e.status === statusFilter);
-        }
-        setEvents(items);
+        setEvents(data.data || []);
         setTotalPages(data.pagination?.totalPages || 1);
         setTotal(data.pagination?.total || 0);
       }
-    } catch { /* */ } finally { setLoading(false); }
+    } catch { /* */ } finally {
+      setLoading(false);
+    }
   };
 
   const patchEvent = async (eventId: string, body: Record<string, unknown>) => {

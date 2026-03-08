@@ -9,15 +9,14 @@ import {
   Users,
   CheckCircle2,
   XCircle,
-  Clock,
   Search,
   Loader2,
   UserCheck,
   UserX,
   ScanLine,
   Download,
-  Ban,
 } from "lucide-react";
+import { t, StatusBadge, OrganizerLoading, OrganizerEmpty, FilterButton } from "@/components/dashboard/OrganizerUI";
 
 interface Attendee {
   id: string;
@@ -25,27 +24,13 @@ interface Attendee {
   checkedIn: boolean;
   checkedInAt?: string | null;
   createdAt: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string | null;
-  };
-  ticket?: {
-    id: string;
-    ticketNumber: string;
-    status: string;
-  } | null;
+  user: { id: string; name: string; email: string; avatar?: string | null };
+  ticket?: { ticketNumber: string; status: string } | null;
 }
 
-interface Stats {
-  total: number;
-  approved: number;
-  pending: number;
-  rejected: number;
-  cancelled: number;
-  checkedIn: number;
-}
+interface Stats { total: number; approved: number; pending: number; rejected: number; cancelled: number; checkedIn: number; }
+
+type Filter = "ALL" | "APPROVED" | "PENDING" | "REJECTED" | "CANCELLED";
 
 export default function AttendeesPage() {
   const params = useParams();
@@ -55,300 +40,168 @@ export default function AttendeesPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [eventTitle, setEventTitle] = useState("");
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<Filter>("ALL");
   const [processing, setProcessing] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchAttendees();
-    fetchEventTitle();
+    Promise.all([
+      fetch(`/api/events/${eventId}`).then((r) => r.ok ? r.json() : null),
+      fetch(`/api/events/${eventId}/attendees`).then((r) => r.ok ? r.json() : null),
+    ]).then(([eventData, attData]) => {
+      if (eventData) setEventTitle(eventData.data?.title || "Event");
+      if (attData) {
+        setAttendees(attData.data?.attendees || []);
+        setStats(attData.data?.stats || null);
+      }
+    }).finally(() => setLoading(false));
   }, [eventId]);
 
-  const fetchEventTitle = async () => {
-    try {
-      const res = await fetch(`/api/events/${eventId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setEventTitle(data.data?.title || data.title || "Event");
-      }
-    } catch {}
-  };
-
-  const fetchAttendees = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/events/${eventId}/attendees`);
-      if (res.ok) {
-        const data = await res.json();
-        setAttendees(data.data?.attendees || []);
-        setStats(data.data?.stats || null);
-      }
-    } catch {
-      console.error("Failed to fetch attendees");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleApproval = async (registrationId: string, action: "APPROVED" | "REJECTED") => {
-    setProcessing(registrationId);
+  const handleApproval = async (regId: string, action: "APPROVED" | "REJECTED") => {
+    setProcessing(regId);
     try {
       const res = await fetch(`/api/events/${eventId}/attendees`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ registrationId, status: action }),
+        body: JSON.stringify({ registrationId: regId, status: action }),
       });
       if (res.ok) {
-        await fetchAttendees();
+        // Refetch
+        const r = await fetch(`/api/events/${eventId}/attendees`);
+        if (r.ok) { const d = await r.json(); setAttendees(d.data?.attendees || []); setStats(d.data?.stats || null); }
       }
-    } catch {
-      alert(`Failed to ${action.toLowerCase()} registration`);
-    } finally {
-      setProcessing(null);
-    }
+    } catch { alert("Failed"); }
+    finally { setProcessing(null); }
   };
 
-  const handleExportCSV = () => {
-    const headers = ["Name", "Email", "Status", "Ticket #", "Checked In", "Registered At"];
-    const rows = attendees.map((a) => [
-      a.user.name,
-      a.user.email,
-      a.status,
-      a.ticket?.ticketNumber || "N/A",
-      a.checkedIn ? "Yes" : "No",
-      new Date(a.createdAt).toLocaleDateString(),
-    ]);
-
-    const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+  const exportCSV = () => {
+    const rows = [["Name", "Email", "Status", "Ticket", "Checked In", "Date"]];
+    attendees.forEach((a) => rows.push([a.user.name, a.user.email, a.status, a.ticket?.ticketNumber || "—", a.checkedIn ? "Yes" : "No", new Date(a.createdAt).toLocaleDateString()]));
+    const blob = new Blob([rows.map((r) => r.join(",")).join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `attendees-${eventId}.csv`;
-    a.click();
+    const a = document.createElement("a"); a.href = url; a.download = `attendees-${eventId}.csv`; a.click();
     URL.revokeObjectURL(url);
   };
 
-  // Filter
   const filtered = attendees.filter((a) => {
-    const matchesSearch =
-      a.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "ALL" || a.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchSearch = a.user.name.toLowerCase().includes(search.toLowerCase()) || a.user.email.toLowerCase().includes(search.toLowerCase());
+    return matchSearch && (filter === "ALL" || a.status === filter);
   });
 
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
-
-  const getStatusBadge = (status: string) => {
-    const map: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
-      APPROVED: { bg: "bg-green-100", text: "text-green-700", icon: <CheckCircle2 className="w-3 h-3" /> },
-      PENDING: { bg: "bg-amber-100", text: "text-amber-700", icon: <Clock className="w-3 h-3" /> },
-      REJECTED: { bg: "bg-red-100", text: "text-red-700", icon: <XCircle className="w-3 h-3" /> },
-      CANCELLED: { bg: "bg-gray-100", text: "text-gray-600", icon: <Ban className="w-3 h-3" /> },
-    };
-    return map[status] || map.PENDING;
-  };
+  const filters: Filter[] = ["ALL", "APPROVED", "PENDING", "REJECTED", "CANCELLED"];
 
   return (
-    <div>
+    <div style={{ fontFamily: t.sans }}>
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <Link
-          href="/dashboard/events"
-          className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
+      <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "24px" }}>
+        <Link href="/dashboard/events" style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px", border: `1px solid ${t.borderLight}`, color: t.textMuted, textDecoration: "none" }}>
+          <ArrowLeft style={{ width: "16px", height: "16px" }} />
         </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">Attendees</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{eventTitle}</p>
+        <div style={{ flex: 1 }}>
+          <h1 style={{ fontFamily: t.serif, fontSize: "24px", fontWeight: 600, color: t.text, margin: 0 }}>Attendees</h1>
+          <p style={{ fontSize: "13px", color: t.textMuted, marginTop: "2px" }}>{eventTitle}</p>
         </div>
-        <div className="flex gap-2">
-          <Link
-            href={`/dashboard/scanner?eventId=${eventId}`}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            <ScanLine className="w-4 h-4" />
-            Scanner
+        <div style={{ display: "flex", gap: "8px" }}>
+          <Link href={`/dashboard/scanner?eventId=${eventId}`} style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", fontSize: "12px", fontWeight: 500, fontFamily: t.sans, color: t.textSecondary, background: "transparent", border: `1px solid ${t.border}`, borderRadius: "4px", textDecoration: "none" }}>
+            <ScanLine style={{ width: "14px", height: "14px" }} /> Scanner
           </Link>
-          <button
-            onClick={handleExportCSV}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            Export
+          <button onClick={exportCSV} style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", fontSize: "12px", fontWeight: 500, fontFamily: t.sans, color: t.textSecondary, background: "transparent", border: `1px solid ${t.border}`, borderRadius: "4px", cursor: "pointer" }}>
+            <Download style={{ width: "14px", height: "14px" }} /> Export
           </button>
         </div>
       </div>
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "1px", background: t.borderLight, borderRadius: "4px", overflow: "hidden", marginBottom: "24px" }}>
           {[
-            { label: "Total", value: stats.total, color: "text-gray-900" },
-            { label: "Approved", value: stats.approved, color: "text-green-600" },
-            { label: "Pending", value: stats.pending, color: "text-amber-600" },
-            { label: "Rejected", value: stats.rejected, color: "text-red-600" },
-            { label: "Cancelled", value: stats.cancelled, color: "text-gray-500" },
-            { label: "Checked In", value: stats.checkedIn, color: "text-blue-600" },
+            { label: "Total", value: stats.total, color: t.text },
+            { label: "Approved", value: stats.approved, color: t.green },
+            { label: "Pending", value: stats.pending, color: t.amber },
+            { label: "Rejected", value: stats.rejected, color: t.red },
+            { label: "Cancelled", value: stats.cancelled, color: t.textFaint },
+            { label: "Checked In", value: stats.checkedIn, color: t.blue },
           ].map((s, i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-200 px-4 py-3 text-center">
-              <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
-              <p className="text-xs text-gray-500">{s.label}</p>
+            <div key={i} style={{ background: t.surface, padding: "16px 0", textAlign: "center" }}>
+              <p style={{ fontFamily: t.serif, fontSize: "20px", fontWeight: 600, color: s.color, margin: 0 }}>{s.value}</p>
+              <p style={{ fontSize: "10px", fontWeight: 500, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", margin: "2px 0 0" }}>{s.label}</p>
             </div>
           ))}
         </div>
       )}
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-5">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by name or email..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-white text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10"
-          />
+      <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
+        <div style={{ position: "relative", flex: "1 1 280px", maxWidth: "320px" }}>
+          <Search style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", width: "14px", height: "14px", color: t.textFaint }} />
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name or email..."
+            style={{ width: "100%", padding: "9px 14px 9px 34px", fontSize: "13px", fontFamily: t.sans, border: `1px solid ${t.border}`, borderRadius: "4px", outline: "none", color: t.text, background: t.surface }} />
         </div>
-        <div className="flex gap-2 flex-wrap">
-          {["ALL", "APPROVED", "PENDING", "REJECTED", "CANCELLED"].map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                statusFilter === s
-                  ? "bg-orange-50 text-orange-600 border border-orange-200"
-                  : "bg-white text-gray-600 border border-gray-200 hover:border-gray-300"
-              }`}
-            >
-              {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
-            </button>
-          ))}
+        <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+          {filters.map((f) => <FilterButton key={f} label={f === "ALL" ? "All" : f.charAt(0) + f.slice(1).toLowerCase()} active={filter === f} onClick={() => setFilter(f)} />)}
         </div>
       </div>
 
       {/* Table */}
-      {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-2xl border border-gray-200">
-          <Users className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">No attendees found.</p>
-        </div>
+      {loading ? <OrganizerLoading /> : filtered.length === 0 ? (
+        <OrganizerEmpty icon={<Users style={{ width: "32px", height: "32px" }} />} message="No attendees found." />
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            <div className="col-span-4">Attendee</div>
-            <div className="col-span-2">Status</div>
-            <div className="col-span-2">Ticket</div>
-            <div className="col-span-2">Checked In</div>
-            <div className="col-span-2 text-right">Actions</div>
+        <div style={{ background: t.surface, border: `1px solid ${t.borderLight}`, borderRadius: "4px", overflow: "hidden" }}>
+          <div className="hidden md:grid" style={{ gridTemplateColumns: "3fr 1fr 1.5fr 1fr 120px", gap: "8px", padding: "10px 20px", background: t.borderLight, fontSize: "10px", fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: t.textFaint }}>
+            <span>Attendee</span><span>Status</span><span>Ticket</span><span>Check-in</span><span style={{ textAlign: "right" }}>Actions</span>
           </div>
 
-          <div className="divide-y divide-gray-100">
-            {filtered.map((attendee) => {
-              const badge = getStatusBadge(attendee.status);
-              return (
-                <div
-                  key={attendee.id}
-                  className="grid grid-cols-1 md:grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-gray-50/50 transition-colors"
-                >
-                  {/* Attendee */}
-                  <div className="md:col-span-4 flex items-center gap-3">
-                    {attendee.user.avatar ? (
-                      <img
-                        src={attendee.user.avatar}
-                        alt=""
-                        className="w-9 h-9 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-semibold text-xs">
-                        {attendee.user.name.charAt(0)}
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">
-                        {attendee.user.name}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {attendee.user.email}
-                      </p>
-                    </div>
+          {filtered.map((att, i) => (
+            <div key={att.id} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1.5fr 1fr 120px", gap: "8px", padding: "12px 20px", alignItems: "center", borderTop: i > 0 ? `1px solid ${t.borderLight}` : "none", transition: "background 0.1s" }} className="grid-cols-1 md:grid-cols-none"
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#fafaf6")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+              {/* User */}
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                {att.user.avatar ? (
+                  <img src={att.user.avatar} alt="" style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                ) : (
+                  <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: t.accentSoft, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "12px", fontWeight: 600, color: t.accent }}>
+                    {att.user.name.charAt(0)}
                   </div>
-
-                  {/* Status */}
-                  <div className="md:col-span-2">
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${badge.bg} ${badge.text}`}
-                    >
-                      {badge.icon}
-                      {attendee.status}
-                    </span>
-                  </div>
-
-                  {/* Ticket */}
-                  <div className="md:col-span-2">
-                    <p className="text-sm text-gray-700 font-mono">
-                      {attendee.ticket?.ticketNumber || "—"}
-                    </p>
-                  </div>
-
-                  {/* Check-in */}
-                  <div className="md:col-span-2">
-                    {attendee.checkedIn ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-600">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Checked In
-                      </span>
-                    ) : (
-                      <span className="text-xs text-gray-400">Not yet</span>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="md:col-span-2 flex items-center justify-end gap-1">
-                    {attendee.status === "PENDING" && (
-                      <>
-                        <button
-                          onClick={() => handleApproval(attendee.id, "APPROVED")}
-                          disabled={processing === attendee.id}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-50 text-green-700 text-xs font-semibold hover:bg-green-100 transition-colors disabled:opacity-50"
-                          title="Approve"
-                        >
-                          {processing === attendee.id ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <UserCheck className="w-3 h-3" />
-                          )}
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleApproval(attendee.id, "REJECTED")}
-                          disabled={processing === attendee.id}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-semibold hover:bg-red-100 transition-colors disabled:opacity-50"
-                          title="Reject"
-                        >
-                          <UserX className="w-3 h-3" />
-                          Reject
-                        </button>
-                      </>
-                    )}
-                  </div>
+                )}
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: "13px", fontWeight: 600, color: t.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{att.user.name}</p>
+                  <p style={{ fontSize: "11px", color: t.textFaint, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{att.user.email}</p>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+
+              <StatusBadge status={att.status} />
+
+              <span style={{ fontSize: "12px", color: t.textMuted, fontFamily: "monospace" }}>
+                {att.ticket?.ticketNumber || "—"}
+              </span>
+
+              {att.checkedIn ? (
+                <span style={{ fontSize: "11px", fontWeight: 600, color: t.green, display: "flex", alignItems: "center", gap: "4px" }}>
+                  <CheckCircle2 style={{ width: "12px", height: "12px" }} /> Yes
+                </span>
+              ) : (
+                <span style={{ fontSize: "11px", color: t.textFaint }}>No</span>
+              )}
+
+              {/* Actions */}
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "4px" }}>
+                {att.status === "PENDING" && (
+                  <>
+                    <button onClick={() => handleApproval(att.id, "APPROVED")} disabled={processing === att.id}
+                      style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "6px 10px", fontSize: "11px", fontWeight: 600, fontFamily: t.sans, color: t.green, background: t.greenSoft, border: "none", borderRadius: "3px", cursor: "pointer", opacity: processing === att.id ? 0.5 : 1 }}>
+                      {processing === att.id ? <Loader2 className="animate-spin" style={{ width: "11px", height: "11px" }} /> : <UserCheck style={{ width: "11px", height: "11px" }} />}
+                      Approve
+                    </button>
+                    <button onClick={() => handleApproval(att.id, "REJECTED")} disabled={processing === att.id}
+                      style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "6px 10px", fontSize: "11px", fontWeight: 600, fontFamily: t.sans, color: t.red, background: t.redSoft, border: "none", borderRadius: "3px", cursor: "pointer", opacity: processing === att.id ? 0.5 : 1 }}>
+                      <UserX style={{ width: "11px", height: "11px" }} /> Reject
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

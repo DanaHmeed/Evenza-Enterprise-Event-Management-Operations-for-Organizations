@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft,
   Calendar,
@@ -10,19 +11,15 @@ import {
   Globe,
   DollarSign,
   Image as ImageIcon,
-  Tag,
   Users,
   FileText,
   Loader2,
-  AlertCircle,
-  CheckCircle2,
-  Clock,
   Upload,
   X,
   Eye,
   Save,
 } from "lucide-react";
-import Link from "next/link";
+import { t, FormSection, Field, inputStyle } from "@/components/dashboard/OrganizerUI";
 
 interface Category {
   id: string;
@@ -32,712 +29,293 @@ interface Category {
 
 export default function CreateEventPage() {
   const router = useRouter();
-
-  // Categories
   const [categories, setCategories] = useState<Category[]>([]);
-
-  // Form state
-  const [title, setTitle] = useState("");
-  const [summary, setSummary] = useState("");
-  const [description, setDescription] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState("");
-
-  // Date & Time
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [registrationDeadline, setRegistrationDeadline] = useState("");
-  const [timezone, setTimezone] = useState(
-    Intl.DateTimeFormat().resolvedOptions().timeZone
-  );
-
-  // Location
-  const [isOnline, setIsOnline] = useState(false);
-  const [venueName, setVenueName] = useState("");
-  const [address, setAddress] = useState("");
-  const [city, setCity] = useState("");
-  const [country, setCountry] = useState("");
-  const [meetingLink, setMeetingLink] = useState("");
-
-  // Pricing
-  const [eventType, setEventType] = useState<"FREE" | "PAID">("FREE");
-  const [price, setPrice] = useState("");
-  const [currency, setCurrency] = useState("USD");
-
-  // Capacity
-  const [capacity, setCapacity] = useState("");
-  const [waitlistEnabled, setWaitlistEnabled] = useState(false);
-  const [approvalRequired, setApprovalRequired] = useState(false);
-
-  // Media
-  const [banner, setBanner] = useState("");
-  const [bannerPreview, setBannerPreview] = useState("");
-
-  // State
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [actionMessage, setActionMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Fetch categories
+  // Form
+  const [form, setForm] = useState({
+    title: "",
+    summary: "",
+    description: "",
+    categoryId: "",
+    tagInput: "",
+    tags: [] as string[],
+    startDate: "",
+    endDate: "",
+    registrationDeadline: "",
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    isOnline: false,
+    venueName: "",
+    address: "",
+    city: "",
+    country: "",
+    meetingLink: "",
+    eventType: "FREE" as "FREE" | "PAID",
+    price: "",
+    currency: "USD",
+    capacity: "",
+    waitlistEnabled: false,
+    approvalRequired: false,
+    banner: "",
+    bannerPreview: "",
+  });
+
+  const set = (field: string, value: unknown) => setForm((p) => ({ ...p, [field]: value }));
+
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await fetch("/api/categories");
-        if (res.ok) {
-          const data = await res.json();
-          setCategories(data.data || []);
-        }
-      } catch {
-        console.error("Failed to fetch categories");
-      }
-    };
-    fetchCategories();
+    fetch("/api/categories").then((r) => r.ok ? r.json() : null).then((d) => { if (d) setCategories(d.data || []); });
   }, []);
 
-  // ─── Tag handlers ───
   const addTag = () => {
-    const tag = tagInput.trim();
-    if (tag && !tags.includes(tag) && tags.length < 10) {
-      setTags([...tags, tag]);
-      setTagInput("");
+    const tag = form.tagInput.trim();
+    if (tag && !form.tags.includes(tag) && form.tags.length < 10) {
+      set("tags", [...form.tags, tag]);
+      set("tagInput", "");
     }
   };
 
-  const removeTag = (tag: string) => {
-    setTags(tags.filter((t) => t !== tag));
-  };
-
-  const handleTagKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault();
-      addTag();
-    }
-  };
-
-  // ─── Banner upload (URL for now — integrate UploadThing later) ───
-  const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBanner = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // For now, create a local preview. Replace with UploadThing later.
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setBannerPreview(reader.result as string);
-        // TODO: Replace with actual upload
-        setBanner(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => { set("bannerPreview", reader.result); set("banner", reader.result); };
+    reader.readAsDataURL(file);
   };
 
-  // ─── Validation ───
-  const validate = (): boolean => {
+  const validate = () => {
     const errs: Record<string, string> = {};
-
-    if (!title.trim()) errs.title = "Title is required";
-    if (title.length > 200) errs.title = "Title must be under 200 characters";
-    if (!description.trim()) errs.description = "Description is required";
-    if (!startDate) errs.startDate = "Start date is required";
-    if (!endDate) errs.endDate = "End date is required";
-    if (!registrationDeadline) errs.registrationDeadline = "Registration deadline is required";
-    if (!capacity || parseInt(capacity) < 1) errs.capacity = "Capacity must be at least 1";
-
-    if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
-      errs.endDate = "End date must be after start date";
-    }
-
-    if (
-      startDate &&
-      registrationDeadline &&
-      new Date(registrationDeadline) >= new Date(startDate)
-    ) {
-      errs.registrationDeadline = "Deadline must be before event start";
-    }
-
-    if (eventType === "PAID") {
-      if (!price || parseFloat(price) <= 0) errs.price = "Price is required for paid events";
-      if (!currency) errs.currency = "Currency is required";
-    }
-
-    if (isOnline && !meetingLink.trim()) {
-      errs.meetingLink = "Meeting link is required for online events";
-    }
-
-    if (!isOnline) {
-      if (!venueName.trim()) errs.venueName = "Venue name is required";
-      if (!city.trim()) errs.city = "City is required";
-    }
-
+    if (!form.title.trim()) errs.title = "Required";
+    if (!form.description.trim()) errs.description = "Required";
+    if (!form.startDate) errs.startDate = "Required";
+    if (!form.endDate) errs.endDate = "Required";
+    if (!form.registrationDeadline) errs.registrationDeadline = "Required";
+    if (!form.capacity || parseInt(form.capacity) < 1) errs.capacity = "Min 1";
+    if (form.startDate && form.endDate && new Date(form.endDate) <= new Date(form.startDate)) errs.endDate = "Must be after start";
+    if (form.startDate && form.registrationDeadline && new Date(form.registrationDeadline) >= new Date(form.startDate)) errs.registrationDeadline = "Must be before start";
+    if (form.eventType === "PAID" && (!form.price || parseFloat(form.price) <= 0)) errs.price = "Required for paid events";
+    if (form.isOnline && !form.meetingLink.trim()) errs.meetingLink = "Required for online";
+    if (!form.isOnline && !form.venueName.trim()) errs.venueName = "Required";
+    if (!form.isOnline && !form.city.trim()) errs.city = "Required";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
-  // ─── Submit ───
   const handleSubmit = async (status: "DRAFT" | "PUBLISHED") => {
-    if (!validate()) {
-      setActionMessage({ type: "error", text: "Please fix the errors below." });
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
-
+    if (!validate()) { setMessage({ type: "error", text: "Please fix the errors below." }); return; }
     setSubmitting(true);
-    setActionMessage(null);
+    setMessage(null);
 
     const payload = {
-      title: title.trim(),
-      summary: summary.trim() || undefined,
-      description: description.trim(),
-      categoryId: categoryId || undefined,
-      tags: tags.length > 0 ? tags : undefined,
-      startDate: new Date(startDate).toISOString(),
-      endDate: new Date(endDate).toISOString(),
-      registrationDeadline: new Date(registrationDeadline).toISOString(),
-      timezone,
-      isOnline,
-      venueName: !isOnline ? venueName.trim() : undefined,
-      address: !isOnline ? address.trim() || undefined : undefined,
-      city: !isOnline ? city.trim() : undefined,
-      country: !isOnline ? country.trim() || undefined : undefined,
-      meetingLink: isOnline ? meetingLink.trim() : undefined,
-      eventType,
-      price: eventType === "PAID" ? parseFloat(price) : undefined,
-      currency: eventType === "PAID" ? currency : undefined,
-      capacity: parseInt(capacity),
-      waitlistEnabled,
-      approvalRequired,
-      banner: banner || undefined,
+      title: form.title.trim(),
+      summary: form.summary.trim() || undefined,
+      description: form.description.trim(),
+      categoryId: form.categoryId || undefined,
+      tags: form.tags.length > 0 ? form.tags : undefined,
+      startDate: new Date(form.startDate).toISOString(),
+      endDate: new Date(form.endDate).toISOString(),
+      registrationDeadline: new Date(form.registrationDeadline).toISOString(),
+      timezone: form.timezone,
+      isOnline: form.isOnline,
+      venueName: !form.isOnline ? form.venueName.trim() : undefined,
+      address: !form.isOnline ? form.address.trim() || undefined : undefined,
+      city: !form.isOnline ? form.city.trim() : undefined,
+      country: !form.isOnline ? form.country.trim() || undefined : undefined,
+      meetingLink: form.isOnline ? form.meetingLink.trim() : undefined,
+      eventType: form.eventType,
+      price: form.eventType === "PAID" ? parseFloat(form.price) : undefined,
+      currency: form.eventType === "PAID" ? form.currency : undefined,
+      capacity: parseInt(form.capacity),
+      waitlistEnabled: form.waitlistEnabled,
+      approvalRequired: form.approvalRequired,
+      banner: form.banner || undefined,
       status,
     };
 
     try {
-      const res = await fetch("/api/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        router.push(`/dashboard/events?created=${status.toLowerCase()}`);
-      } else {
-        setActionMessage({
-          type: "error",
-          text: data.error || "Failed to create event",
-        });
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-    } catch {
-      setActionMessage({ type: "error", text: "Something went wrong" });
-    } finally {
-      setSubmitting(false);
-    }
+      const res = await fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      if (res.ok) { router.push(`/dashboard/events?created=${status.toLowerCase()}`); }
+      else { const d = await res.json(); setMessage({ type: "error", text: d.error || "Failed to create event" }); }
+    } catch { setMessage({ type: "error", text: "Something went wrong" }); }
+    finally { setSubmitting(false); }
   };
 
+  const is = inputStyle;
+
   return (
-    <div className="max-w-3xl">
+    <div style={{ maxWidth: "720px", fontFamily: t.sans }}>
       {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Link
-          href="/dashboard/events"
-          className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
+      <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "32px" }}>
+        <Link href="/dashboard/events" style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px", border: `1px solid ${t.borderLight}`, color: t.textMuted, textDecoration: "none" }}>
+          <ArrowLeft style={{ width: "16px", height: "16px" }} />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Create Event</h1>
-          <p className="text-sm text-gray-500">
-            Fill in the details below to create your event.
-          </p>
+          <h1 style={{ fontFamily: t.serif, fontSize: "24px", fontWeight: 600, color: t.text, margin: 0 }}>Create Event</h1>
+          <p style={{ fontSize: "13px", color: t.textMuted, marginTop: "2px" }}>Fill in the details to create your event.</p>
         </div>
       </div>
 
       {/* Message */}
-      {actionMessage && (
-        <div
-          className={`mb-6 p-4 rounded-xl flex items-start gap-3 ${
-            actionMessage.type === "success"
-              ? "bg-green-50 border border-green-200 text-green-700"
-              : "bg-red-50 border border-red-200 text-red-700"
-          }`}
-        >
-          {actionMessage.type === "success" ? (
-            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-          ) : (
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          )}
-          <p className="text-sm font-medium">{actionMessage.text}</p>
+      {message && (
+        <div style={{ marginBottom: "20px", padding: "12px 16px", borderRadius: "4px", fontSize: "13px", fontWeight: 500, background: message.type === "success" ? t.greenSoft : t.redSoft, color: message.type === "success" ? t.green : t.red }}>
+          {message.text}
         </div>
       )}
 
-      {/* Form */}
-      <div className="space-y-8">
-        {/* ─── Basic Info ─── */}
-        <FormSection
-          icon={<FileText className="w-5 h-5" />}
-          title="Basic Information"
-        >
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        {/* Basic Info */}
+        <FormSection icon={<FileText style={{ width: "16px", height: "16px" }} />} title="Basic Information">
           <Field label="Event Title *" error={errors.title}>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Tech Conference 2025"
-              className={inputClass(errors.title)}
-              maxLength={200}
-            />
-            <p className="text-xs text-gray-400 mt-1">
-              {title.length}/200 characters
-            </p>
+            <input type="text" value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="e.g. Tech Conference 2025" style={is(errors.title)} maxLength={200} />
+            <span style={{ fontSize: "11px", color: t.textFaint, marginTop: "2px", display: "block" }}>{form.title.length}/200</span>
           </Field>
-
           <Field label="Summary" sublabel="Short description for cards">
-            <input
-              type="text"
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              placeholder="A brief one-liner about your event"
-              className={inputClass()}
-              maxLength={300}
-            />
+            <input type="text" value={form.summary} onChange={(e) => set("summary", e.target.value)} placeholder="A brief one-liner" style={is()} maxLength={300} />
           </Field>
-
           <Field label="Description *" error={errors.description}>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe your event in detail — agenda, what to expect, requirements..."
-              className={`${inputClass(errors.description)} resize-none`}
-              rows={8}
-            />
+            <textarea value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Describe your event in detail..." style={{ ...is(errors.description), resize: "none" as const, minHeight: "160px", lineHeight: "1.6" }} />
           </Field>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
             <Field label="Category">
-              <select
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                className={inputClass()}
-              >
-                <option value="">Select a category</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
+              <select value={form.categoryId} onChange={(e) => set("categoryId", e.target.value)} style={is()}>
+                <option value="">Select category</option>
+                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </Field>
-
             <Field label="Tags" sublabel="Press Enter to add">
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-50 text-orange-700 text-xs font-medium rounded-full"
-                  >
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: form.tags.length ? "8px" : 0 }}>
+                {form.tags.map((tag) => (
+                  <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "2px 8px", background: t.accentSoft, color: t.accent, fontSize: "11px", fontWeight: 600, borderRadius: "3px" }}>
                     {tag}
-                    <button
-                      onClick={() => removeTag(tag)}
-                      className="hover:text-orange-900"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
+                    <button onClick={() => set("tags", form.tags.filter((x) => x !== tag))} style={{ background: "none", border: "none", cursor: "pointer", color: t.accent, padding: 0, display: "flex" }}><X style={{ width: "10px", height: "10px" }} /></button>
                   </span>
                 ))}
               </div>
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={handleTagKeyDown}
-                placeholder="Add tag..."
-                className={inputClass()}
-              />
+              <input type="text" value={form.tagInput} onChange={(e) => set("tagInput", e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addTag(); } }} placeholder="Add tag..." style={is()} />
             </Field>
           </div>
         </FormSection>
 
-        {/* ─── Date & Time ─── */}
-        <FormSection
-          icon={<Calendar className="w-5 h-5" />}
-          title="Date & Time"
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Start Date & Time *" error={errors.startDate}>
-              <input
-                type="datetime-local"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className={inputClass(errors.startDate)}
-              />
-            </Field>
-            <Field label="End Date & Time *" error={errors.endDate}>
-              <input
-                type="datetime-local"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className={inputClass(errors.endDate)}
-              />
-            </Field>
+        {/* Date & Time */}
+        <FormSection icon={<Calendar style={{ width: "16px", height: "16px" }} />} title="Date & Time">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            <Field label="Start *" error={errors.startDate}><input type="datetime-local" value={form.startDate} onChange={(e) => set("startDate", e.target.value)} style={is(errors.startDate)} /></Field>
+            <Field label="End *" error={errors.endDate}><input type="datetime-local" value={form.endDate} onChange={(e) => set("endDate", e.target.value)} style={is(errors.endDate)} /></Field>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field
-              label="Registration Deadline *"
-              error={errors.registrationDeadline}
-            >
-              <input
-                type="datetime-local"
-                value={registrationDeadline}
-                onChange={(e) => setRegistrationDeadline(e.target.value)}
-                className={inputClass(errors.registrationDeadline)}
-              />
-            </Field>
-            <Field label="Timezone">
-              <input
-                type="text"
-                value={timezone}
-                onChange={(e) => setTimezone(e.target.value)}
-                className={inputClass()}
-                placeholder="e.g. Asia/Jerusalem"
-              />
-            </Field>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            <Field label="Registration Deadline *" error={errors.registrationDeadline}><input type="datetime-local" value={form.registrationDeadline} onChange={(e) => set("registrationDeadline", e.target.value)} style={is(errors.registrationDeadline)} /></Field>
+            <Field label="Timezone"><input type="text" value={form.timezone} onChange={(e) => set("timezone", e.target.value)} style={is()} /></Field>
           </div>
         </FormSection>
 
-        {/* ─── Location ─── */}
-        <FormSection
-          icon={<MapPin className="w-5 h-5" />}
-          title="Location"
-        >
-          {/* Toggle */}
-          <div className="flex gap-3 mb-4">
-            <button
-              type="button"
-              onClick={() => setIsOnline(false)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${
-                !isOnline
-                  ? "bg-orange-50 border-orange-200 text-orange-700"
-                  : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
-              }`}
-            >
-              <MapPin className="w-4 h-4" />
-              In-Person
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsOnline(true)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${
-                isOnline
-                  ? "bg-orange-50 border-orange-200 text-orange-700"
-                  : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
-              }`}
-            >
-              <Globe className="w-4 h-4" />
-              Online
-            </button>
+        {/* Location */}
+        <FormSection icon={<MapPin style={{ width: "16px", height: "16px" }} />} title="Location">
+          <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+            {[{ val: false, label: "In-Person", icon: <MapPin style={{ width: "14px", height: "14px" }} /> }, { val: true, label: "Online", icon: <Globe style={{ width: "14px", height: "14px" }} /> }].map((opt) => (
+              <button key={String(opt.val)} type="button" onClick={() => set("isOnline", opt.val)}
+                style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 16px", fontSize: "12px", fontWeight: 500, fontFamily: t.sans, border: `1px solid ${form.isOnline === opt.val ? t.text : t.border}`, borderRadius: "4px", background: form.isOnline === opt.val ? t.text : t.surface, color: form.isOnline === opt.val ? "#fff" : t.textMuted, cursor: "pointer" }}>
+                {opt.icon}{opt.label}
+              </button>
+            ))}
           </div>
-
-          {isOnline ? (
-            <Field label="Meeting Link *" error={errors.meetingLink}>
-              <input
-                type="url"
-                value={meetingLink}
-                onChange={(e) => setMeetingLink(e.target.value)}
-                placeholder="https://zoom.us/j/..."
-                className={inputClass(errors.meetingLink)}
-              />
-            </Field>
+          {form.isOnline ? (
+            <Field label="Meeting Link *" error={errors.meetingLink}><input type="url" value={form.meetingLink} onChange={(e) => set("meetingLink", e.target.value)} placeholder="https://zoom.us/j/..." style={is(errors.meetingLink)} /></Field>
           ) : (
-            <div className="space-y-4">
-              <Field label="Venue Name *" error={errors.venueName}>
-                <input
-                  type="text"
-                  value={venueName}
-                  onChange={(e) => setVenueName(e.target.value)}
-                  placeholder="e.g. Grand Hall, Conference Center"
-                  className={inputClass(errors.venueName)}
-                />
-              </Field>
-              <Field label="Address">
-                <input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Street address"
-                  className={inputClass()}
-                />
-              </Field>
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="City *" error={errors.city}>
-                  <input
-                    type="text"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder="e.g. Nablus"
-                    className={inputClass(errors.city)}
-                  />
-                </Field>
-                <Field label="Country">
-                  <input
-                    type="text"
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    placeholder="e.g. Palestine"
-                    className={inputClass()}
-                  />
-                </Field>
+            <>
+              <Field label="Venue Name *" error={errors.venueName}><input type="text" value={form.venueName} onChange={(e) => set("venueName", e.target.value)} style={is(errors.venueName)} /></Field>
+              <Field label="Address"><input type="text" value={form.address} onChange={(e) => set("address", e.target.value)} style={is()} /></Field>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <Field label="City *" error={errors.city}><input type="text" value={form.city} onChange={(e) => set("city", e.target.value)} style={is(errors.city)} /></Field>
+                <Field label="Country"><input type="text" value={form.country} onChange={(e) => set("country", e.target.value)} style={is()} /></Field>
               </div>
-            </div>
+            </>
           )}
         </FormSection>
 
-        {/* ─── Pricing ─── */}
-        <FormSection
-          icon={<DollarSign className="w-5 h-5" />}
-          title="Pricing"
-        >
-          <div className="flex gap-3 mb-4">
-            <button
-              type="button"
-              onClick={() => setEventType("FREE")}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${
-                eventType === "FREE"
-                  ? "bg-green-50 border-green-200 text-green-700"
-                  : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
-              }`}
-            >
-              Free Event
-            </button>
-            <button
-              type="button"
-              onClick={() => setEventType("PAID")}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${
-                eventType === "PAID"
-                  ? "bg-orange-50 border-orange-200 text-orange-700"
-                  : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
-              }`}
-            >
-              Paid Event
-            </button>
+        {/* Pricing */}
+        <FormSection icon={<DollarSign style={{ width: "16px", height: "16px" }} />} title="Pricing">
+          <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+            {(["FREE", "PAID"] as const).map((opt) => (
+              <button key={opt} type="button" onClick={() => set("eventType", opt)}
+                style={{ padding: "8px 16px", fontSize: "12px", fontWeight: 500, fontFamily: t.sans, border: `1px solid ${form.eventType === opt ? t.text : t.border}`, borderRadius: "4px", background: form.eventType === opt ? t.text : t.surface, color: form.eventType === opt ? "#fff" : t.textMuted, cursor: "pointer" }}>
+                {opt === "FREE" ? "Free Event" : "Paid Event"}
+              </button>
+            ))}
           </div>
-
-          {eventType === "PAID" && (
-            <div className="grid grid-cols-2 gap-4">
+          {form.eventType === "PAID" && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
               <Field label="Ticket Price *" error={errors.price}>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
-                    $
-                  </span>
-                  <input
-                    type="number"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                    className={`${inputClass(errors.price)} pl-7`}
-                  />
+                <div style={{ position: "relative" }}>
+                  <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: t.textFaint, fontSize: "13px" }}>$</span>
+                  <input type="number" value={form.price} onChange={(e) => set("price", e.target.value)} min="0" step="0.01" style={{ ...is(errors.price), paddingLeft: "28px" }} />
                 </div>
               </Field>
-              <Field label="Currency *" error={errors.currency}>
-                <select
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
-                  className={inputClass(errors.currency)}
-                >
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                  <option value="ILS">ILS (₪)</option>
-                  <option value="GBP">GBP (£)</option>
+              <Field label="Currency">
+                <select value={form.currency} onChange={(e) => set("currency", e.target.value)} style={is()}>
+                  <option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="ILS">ILS (₪)</option><option value="GBP">GBP (£)</option>
                 </select>
               </Field>
             </div>
           )}
         </FormSection>
 
-        {/* ─── Capacity & Settings ─── */}
-        <FormSection
-          icon={<Users className="w-5 h-5" />}
-          title="Capacity & Settings"
-        >
+        {/* Capacity */}
+        <FormSection icon={<Users style={{ width: "16px", height: "16px" }} />} title="Capacity & Settings">
           <Field label="Maximum Capacity *" error={errors.capacity}>
-            <input
-              type="number"
-              value={capacity}
-              onChange={(e) => setCapacity(e.target.value)}
-              placeholder="e.g. 100"
-              min="1"
-              className={inputClass(errors.capacity)}
-            />
+            <input type="number" value={form.capacity} onChange={(e) => set("capacity", e.target.value)} min="1" placeholder="e.g. 100" style={is(errors.capacity)} />
           </Field>
-
-          <div className="flex flex-col gap-3 mt-2">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={waitlistEnabled}
-                onChange={(e) => setWaitlistEnabled(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
-              />
-              <div>
-                <p className="text-sm font-medium text-gray-900">
-                  Enable Waitlist
-                </p>
-                <p className="text-xs text-gray-500">
-                  Allow users to join a waitlist when event is full
-                </p>
-              </div>
-            </label>
-
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={approvalRequired}
-                onChange={(e) => setApprovalRequired(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
-              />
-              <div>
-                <p className="text-sm font-medium text-gray-900">
-                  Require Approval
-                </p>
-                <p className="text-xs text-gray-500">
-                  Manually approve each registration before confirming
-                </p>
-              </div>
-            </label>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "4px" }}>
+            {[
+              { key: "waitlistEnabled", label: "Enable Waitlist", desc: "Allow users to join waitlist when full" },
+              { key: "approvalRequired", label: "Require Approval", desc: "Manually approve each registration" },
+            ].map((opt) => (
+              <label key={opt.key} style={{ display: "flex", alignItems: "flex-start", gap: "10px", cursor: "pointer" }}>
+                <input type="checkbox" checked={form[opt.key as keyof typeof form] as boolean} onChange={(e) => set(opt.key, e.target.checked)}
+                  style={{ width: "16px", height: "16px", marginTop: "2px", accentColor: t.accent }} />
+                <div>
+                  <p style={{ fontSize: "13px", fontWeight: 600, color: t.text, margin: 0 }}>{opt.label}</p>
+                  <p style={{ fontSize: "11px", color: t.textFaint, margin: 0 }}>{opt.desc}</p>
+                </div>
+              </label>
+            ))}
           </div>
         </FormSection>
 
-        {/* ─── Cover Image ─── */}
-        <FormSection
-          icon={<ImageIcon className="w-5 h-5" />}
-          title="Cover Image"
-        >
-          {bannerPreview ? (
-            <div className="relative rounded-xl overflow-hidden border border-gray-200">
-              <img
-                src={bannerPreview}
-                alt="Banner preview"
-                className="w-full h-48 object-cover"
-              />
-              <button
-                onClick={() => {
-                  setBanner("");
-                  setBannerPreview("");
-                }}
-                className="absolute top-3 right-3 w-8 h-8 bg-black/50 hover:bg-black/70 rounded-lg flex items-center justify-center text-white transition-colors"
-              >
-                <X className="w-4 h-4" />
+        {/* Banner */}
+        <FormSection icon={<ImageIcon style={{ width: "16px", height: "16px" }} />} title="Cover Image">
+          {form.bannerPreview ? (
+            <div style={{ position: "relative", borderRadius: "4px", overflow: "hidden", border: `1px solid ${t.borderLight}` }}>
+              <img src={form.bannerPreview} alt="Banner" style={{ width: "100%", height: "180px", objectFit: "cover" }} />
+              <button onClick={() => { set("banner", ""); set("bannerPreview", ""); }}
+                style={{ position: "absolute", top: "8px", right: "8px", width: "28px", height: "28px", background: "rgba(0,0,0,0.5)", border: "none", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff" }}>
+                <X style={{ width: "14px", height: "14px" }} />
               </button>
             </div>
           ) : (
-            <label className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-orange-400 hover:bg-orange-50/30 transition-colors">
-              <Upload className="w-8 h-8 text-gray-400 mb-2" />
-              <p className="text-sm font-medium text-gray-600">
-                Click to upload cover image
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                PNG, JPG up to 5MB. Recommended: 1200×628
-              </p>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleBannerChange}
-                className="hidden"
-              />
+            <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "160px", border: `2px dashed ${t.border}`, borderRadius: "4px", cursor: "pointer", transition: "border-color 0.15s" }}>
+              <Upload style={{ width: "24px", height: "24px", color: t.textFaint, marginBottom: "8px" }} />
+              <p style={{ fontSize: "13px", fontWeight: 500, color: t.textSecondary, margin: 0 }}>Click to upload cover image</p>
+              <p style={{ fontSize: "11px", color: t.textFaint, marginTop: "4px" }}>PNG, JPG up to 5MB</p>
+              <input type="file" accept="image/*" onChange={handleBanner} style={{ display: "none" }} />
             </label>
           )}
         </FormSection>
 
-        {/* ─── Submit Buttons ─── */}
-        <div className="flex flex-col sm:flex-row gap-3 pt-4 pb-12 border-t border-gray-200">
-          <button
-            onClick={() => handleSubmit("PUBLISHED")}
-            disabled={submitting}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold hover:shadow-lg hover:shadow-orange-500/25 transition-all disabled:opacity-50"
-          >
-            {submitting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Eye className="w-4 h-4" />
-            )}
+        {/* Submit */}
+        <div style={{ display: "flex", gap: "12px", paddingTop: "8px", paddingBottom: "40px", borderTop: `1px solid ${t.borderLight}` }}>
+          <button onClick={() => handleSubmit("PUBLISHED")} disabled={submitting}
+            style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "12px 24px", fontSize: "14px", fontWeight: 600, fontFamily: t.sans, color: "#fff", background: t.text, border: "none", borderRadius: "4px", cursor: submitting ? "default" : "pointer", opacity: submitting ? 0.6 : 1 }}>
+            {submitting ? <Loader2 className="animate-spin" style={{ width: "16px", height: "16px" }} /> : <Eye style={{ width: "16px", height: "16px" }} />}
             Publish Event
           </button>
-          <button
-            onClick={() => handleSubmit("DRAFT")}
-            disabled={submitting}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition-all disabled:opacity-50"
-          >
-            <Save className="w-4 h-4" />
+          <button onClick={() => handleSubmit("DRAFT")} disabled={submitting}
+            style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "12px 24px", fontSize: "14px", fontWeight: 600, fontFamily: t.sans, color: t.textSecondary, background: "transparent", border: `1px solid ${t.border}`, borderRadius: "4px", cursor: submitting ? "default" : "pointer", opacity: submitting ? 0.6 : 1 }}>
+            <Save style={{ width: "16px", height: "16px" }} />
             Save as Draft
           </button>
         </div>
       </div>
     </div>
   );
-}
-
-// ─── Reusable Components ───
-
-function FormSection({
-  icon,
-  title,
-  children,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6">
-      <div className="flex items-center gap-3 mb-5 pb-4 border-b border-gray-100">
-        <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center text-orange-600">
-          {icon}
-        </div>
-        <h2 className="text-lg font-bold text-gray-900">{title}</h2>
-      </div>
-      <div className="space-y-4">{children}</div>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  sublabel,
-  error,
-  children,
-}: {
-  label: string;
-  sublabel?: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1.5">
-        {label}
-        {sublabel && (
-          <span className="font-normal text-gray-400 ml-1">— {sublabel}</span>
-        )}
-      </label>
-      {children}
-      {error && (
-        <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-          <AlertCircle className="w-3 h-3" />
-          {error}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function inputClass(error?: string) {
-  return `w-full px-4 py-2.5 rounded-xl border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-orange-500/10 ${
-    error
-      ? "border-red-300 focus:border-red-500 bg-red-50/30"
-      : "border-gray-300 focus:border-orange-500 bg-white"
-  }`;
 }

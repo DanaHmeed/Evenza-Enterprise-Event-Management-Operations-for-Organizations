@@ -6,29 +6,25 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   CalendarPlus,
+  CalendarDays,
   Search,
-  Filter,
-  Eye,
+  MoreHorizontal,
   Pencil,
   Trash2,
   Users,
-  MoreHorizontal,
-  Loader2,
-  CalendarX,
+  ExternalLink,
   CheckCircle2,
   Clock,
-  XCircle,
   Ban,
-  ExternalLink,
+  Loader2,
 } from "lucide-react";
+import { t, StatusBadge, OrganizerPagination, OrganizerLoading, OrganizerEmpty, FilterButton } from "@/components/dashboard/OrganizerUI";
 
 interface Event {
   id: string;
   title: string;
-  slug?: string;
   banner?: string | null;
   startDate: string;
-  endDate: string;
   status: string;
   eventType: "FREE" | "PAID";
   price?: number | null;
@@ -36,7 +32,7 @@ interface Event {
   city?: string | null;
   capacity: number;
   seatsRemaining: number;
-  category?: { name: string } | null;
+  category?: { name: string; color?: string | null } | null;
   _count: { registrations: number; feedbacks: number };
 }
 
@@ -44,385 +40,207 @@ type StatusFilter = "ALL" | "PUBLISHED" | "DRAFT" | "CANCELLED" | "COMPLETED";
 
 export default function MyEventsPage() {
   const searchParams = useSearchParams();
-
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
-  const [actionMenuId, setActionMenuId] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<StatusFilter>((searchParams.get("status") as StatusFilter) || "ALL");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [menuId, setMenuId] = useState<string | null>(null);
+  const [processing, setProcessing] = useState<string | null>(null);
 
-  // Show created toast
   const createdStatus = searchParams.get("created");
 
+  useEffect(() => { fetchEvents(); }, [page, status]);
   useEffect(() => {
-    fetchEvents();
-  }, []);
+    const timer = setTimeout(() => { setPage(1); fetchEvents(); }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const fetchEvents = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/events?pageSize=100&sortBy=createdAt&sortOrder=desc");
+      const params = new URLSearchParams();
+      params.set("page", page.toString());
+      params.set("pageSize", "20");
+      if (status !== "ALL") params.set("status", status);
+      if (search) params.set("search", search);
+      const res = await fetch(`/api/organizer/events?${params}`);
       if (res.ok) {
         const data = await res.json();
         setEvents(data.data || []);
+        setTotalPages(data.pagination?.totalPages || 1);
+        setTotal(data.pagination?.total || 0);
       }
-    } catch {
-      console.error("Failed to fetch events");
-    } finally {
-      setLoading(false);
-    }
+    } catch { /* */ } finally { setLoading(false); }
   };
 
-  const handleDelete = async (eventId: string) => {
-    if (!confirm("Are you sure you want to delete this event?")) return;
-    setDeleting(eventId);
-    try {
-      const res = await fetch(`/api/events/${eventId}`, { method: "DELETE" });
-      if (res.ok) {
-        setEvents((prev) => prev.filter((e) => e.id !== eventId));
-      }
-    } catch {
-      alert("Failed to delete event");
-    } finally {
-      setDeleting(null);
-      setActionMenuId(null);
-    }
-  };
-
-  const handleStatusChange = async (eventId: string, newStatus: string) => {
+  const patchStatus = async (eventId: string, newStatus: string) => {
+    setProcessing(eventId);
     try {
       const res = await fetch(`/api/events/${eventId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-      if (res.ok) {
-        setEvents((prev) =>
-          prev.map((e) => (e.id === eventId ? { ...e, status: newStatus } : e))
-        );
-      }
-    } catch {
-      alert("Failed to update status");
-    }
-    setActionMenuId(null);
+      if (res.ok) setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, status: newStatus } : e)));
+    } catch { alert("Failed"); }
+    finally { setProcessing(null); setMenuId(null); }
   };
 
-  // Filter & search
-  const filtered = events.filter((e) => {
-    const matchesSearch = e.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "ALL" || e.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  const statusCounts = {
-    ALL: events.length,
-    PUBLISHED: events.filter((e) => e.status === "PUBLISHED").length,
-    DRAFT: events.filter((e) => e.status === "DRAFT").length,
-    CANCELLED: events.filter((e) => e.status === "CANCELLED").length,
-    COMPLETED: events.filter((e) => e.status === "COMPLETED").length,
+  const deleteEvent = async (eventId: string) => {
+    if (!confirm("Delete this event?")) return;
+    setProcessing(eventId);
+    try {
+      const res = await fetch(`/api/events/${eventId}`, { method: "DELETE" });
+      if (res.ok) setEvents((prev) => prev.filter((e) => e.id !== eventId));
+    } catch { alert("Failed"); }
+    finally { setProcessing(null); setMenuId(null); }
   };
 
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+  const fmtDate = (d: string) =>
+    new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-  const getStatusStyle = (status: string) => {
-    const map: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
-      PUBLISHED: {
-        bg: "bg-green-100",
-        text: "text-green-700",
-        icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-      },
-      DRAFT: {
-        bg: "bg-gray-100",
-        text: "text-gray-600",
-        icon: <Clock className="w-3.5 h-3.5" />,
-      },
-      CANCELLED: {
-        bg: "bg-red-100",
-        text: "text-red-600",
-        icon: <Ban className="w-3.5 h-3.5" />,
-      },
-      COMPLETED: {
-        bg: "bg-blue-100",
-        text: "text-blue-600",
-        icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-      },
-    };
-    return map[status] || map.DRAFT;
-  };
+  const filters: StatusFilter[] = ["ALL", "PUBLISHED", "DRAFT", "CANCELLED", "COMPLETED"];
 
   return (
-    <div>
+    <div style={{ fontFamily: t.sans }}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Events</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Manage and track all your events.
-          </p>
+          <h1 style={{ fontFamily: t.serif, fontSize: "24px", fontWeight: 600, color: t.text, margin: 0 }}>My Events</h1>
+          <p style={{ fontSize: "13px", color: t.textMuted, marginTop: "4px" }}>{total} events total.</p>
         </div>
-        <Link
-          href="/dashboard/events/create"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-semibold hover:shadow-lg hover:shadow-orange-500/25 transition-all"
-        >
-          <CalendarPlus className="w-4 h-4" />
-          Create Event
+        <Link href="/dashboard/events/create" style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 20px", fontSize: "13px", fontWeight: 600, color: "#fff", background: t.text, borderRadius: "4px", textDecoration: "none", fontFamily: t.sans }}>
+          <CalendarPlus style={{ width: "14px", height: "14px" }} /> Create Event
         </Link>
       </div>
 
       {/* Created toast */}
       {createdStatus && (
-        <div className="mb-4 p-3 rounded-xl bg-green-50 border border-green-200 flex items-center gap-2 text-sm text-green-700">
-          <CheckCircle2 className="w-4 h-4" />
+        <div style={{ marginBottom: "16px", padding: "10px 16px", background: t.greenSoft, borderRadius: "4px", fontSize: "13px", fontWeight: 500, color: t.green, display: "flex", alignItems: "center", gap: "8px" }}>
+          <CheckCircle2 style={{ width: "14px", height: "14px" }} />
           Event {createdStatus === "draft" ? "saved as draft" : "published"} successfully!
         </div>
       )}
 
-      {/* Status tabs */}
-      <div className="flex flex-wrap gap-2 mb-5">
-        {(["ALL", "PUBLISHED", "DRAFT", "CANCELLED", "COMPLETED"] as StatusFilter[]).map(
-          (status) => (
-            <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                statusFilter === status
-                  ? "bg-orange-50 text-orange-600 border border-orange-200"
-                  : "bg-white text-gray-600 border border-gray-200 hover:border-gray-300"
-              }`}
-            >
-              {status === "ALL" ? "All" : status.charAt(0) + status.slice(1).toLowerCase()}
-              <span className="ml-1.5 text-xs opacity-70">
-                ({statusCounts[status]})
-              </span>
-            </button>
-          )
-        )}
+      {/* Filters */}
+      <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
+        <div style={{ position: "relative", flex: "1 1 280px", maxWidth: "320px" }}>
+          <Search style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", width: "14px", height: "14px", color: t.textFaint }} />
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search events..."
+            style={{ width: "100%", padding: "9px 14px 9px 34px", fontSize: "13px", fontFamily: t.sans, border: `1px solid ${t.border}`, borderRadius: "4px", outline: "none", color: t.text, background: t.surface }} />
+        </div>
+        <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+          {filters.map((s) => (
+            <FilterButton key={s} label={s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()} active={status === s} onClick={() => { setStatus(s); setPage(1); }} />
+          ))}
+        </div>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-sm mb-6">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search events..."
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-white text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 transition-all"
+      {loading ? <OrganizerLoading /> : events.length === 0 ? (
+        <OrganizerEmpty
+          icon={<CalendarDays style={{ width: "32px", height: "32px" }} />}
+          message={search || status !== "ALL" ? "No events match your filters." : "Create your first event to get started."}
+          action={
+            <Link href="/dashboard/events/create" style={{ fontSize: "13px", fontWeight: 600, color: t.accent, textDecoration: "none" }}>Create Event →</Link>
+          }
         />
-      </div>
-
-      {/* Events List */}
-      {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-2xl border border-gray-200">
-          <CalendarX className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">No events found</h3>
-          <p className="text-sm text-gray-500 mb-4">
-            {searchQuery || statusFilter !== "ALL"
-              ? "Try adjusting your filters."
-              : "Create your first event to get started."}
-          </p>
-          <Link
-            href="/dashboard/events/create"
-            className="text-sm text-orange-600 font-semibold hover:underline"
-          >
-            Create Event →
-          </Link>
-        </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          {/* Table header */}
-          <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            <div className="col-span-5">Event</div>
-            <div className="col-span-2">Date</div>
-            <div className="col-span-1">Status</div>
-            <div className="col-span-2">Registrations</div>
-            <div className="col-span-2 text-right">Actions</div>
+        <div style={{ background: t.surface, border: `1px solid ${t.borderLight}`, borderRadius: "4px", overflow: "hidden" }}>
+          <div className="hidden lg:grid" style={{ gridTemplateColumns: "3fr 1fr 1fr 1.5fr 80px", gap: "8px", padding: "10px 20px", background: t.borderLight, fontSize: "10px", fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: t.textFaint }}>
+            <span>Event</span><span>Date</span><span>Status</span><span>Capacity</span><span style={{ textAlign: "right" }}>Actions</span>
           </div>
 
-          {/* Rows */}
-          <div className="divide-y divide-gray-100">
-            {filtered.map((event) => {
-              const style = getStatusStyle(event.status);
-              const registered = event.capacity - event.seatsRemaining;
-              return (
-                <div
-                  key={event.id}
-                  className="grid grid-cols-1 md:grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-gray-50/50 transition-colors"
-                >
-                  {/* Event info */}
-                  <div className="md:col-span-5 flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0">
-                      {event.banner ? (
-                        <img
-                          src={event.banner}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-orange-100 to-amber-50 flex items-center justify-center">
-                          <CalendarPlus className="w-5 h-5 text-orange-300" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">
-                        {event.title}
-                      </p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        {event.category && (
-                          <span className="text-xs text-gray-500">
-                            {event.category.name}
-                          </span>
-                        )}
-                        <span className="text-xs text-gray-400">
-                          {event.eventType === "FREE" ? "Free" : `$${event.price}`}
-                        </span>
+          {events.map((event, i) => {
+            const registered = event.capacity - event.seatsRemaining;
+            const pct = event.capacity > 0 ? Math.min((registered / event.capacity) * 100, 100) : 0;
+            return (
+              <div key={event.id} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1fr 1.5fr 80px", gap: "8px", padding: "12px 20px", alignItems: "center", borderTop: i > 0 ? `1px solid ${t.borderLight}` : "none", transition: "background 0.1s" }} className="grid-cols-1 lg:grid-cols-none"
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#fafaf6")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+              >
+                {/* Event */}
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                  <div style={{ width: "36px", height: "36px", borderRadius: "4px", overflow: "hidden", background: t.borderLight, flexShrink: 0 }}>
+                    {event.banner ? (
+                      <img src={event.banner} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <CalendarDays style={{ width: "14px", height: "14px", color: t.textFaint }} />
                       </div>
-                    </div>
+                    )}
                   </div>
-
-                  {/* Date */}
-                  <div className="md:col-span-2">
-                    <p className="text-sm text-gray-700">{formatDate(event.startDate)}</p>
-                    <p className="text-xs text-gray-400">
-                      {event.isOnline ? "Online" : event.city || "In-person"}
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontSize: "13px", fontWeight: 600, color: t.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{event.title}</p>
+                    <p style={{ fontSize: "11px", color: t.textFaint, margin: 0 }}>
+                      {event.category?.name || "—"} · {event.eventType === "FREE" ? "Free" : `$${event.price}`}
                     </p>
                   </div>
+                </div>
 
-                  {/* Status */}
-                  <div className="md:col-span-1">
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${style.bg} ${style.text}`}
-                    >
-                      {style.icon}
-                      {event.status}
-                    </span>
-                  </div>
+                <span style={{ fontSize: "12px", color: t.textMuted }}>{fmtDate(event.startDate)}</span>
+                <StatusBadge status={event.status} />
 
-                  {/* Registrations */}
-                  <div className="md:col-span-2">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-700">
-                        {registered} / {event.capacity}
-                      </span>
-                    </div>
-                    <div className="w-full h-1.5 bg-gray-100 rounded-full mt-1.5 max-w-[120px]">
-                      <div
-                        className="h-full bg-orange-500 rounded-full"
-                        style={{
-                          width: `${Math.min((registered / event.capacity) * 100, 100)}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="md:col-span-2 flex items-center justify-end gap-1 relative">
-                    <Link
-                      href={`/events/${event.id}`}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-                      title="View public page"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </Link>
-                    <Link
-                      href={`/dashboard/events/${event.id}/attendees`}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-                      title="Attendees"
-                    >
-                      <Users className="w-4 h-4" />
-                    </Link>
-                    <div className="relative">
-                      <button
-                        onClick={() =>
-                          setActionMenuId(actionMenuId === event.id ? null : event.id)
-                        }
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-                      >
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
-
-                      {actionMenuId === event.id && (
-                        <>
-                          <div
-                            className="fixed inset-0 z-10"
-                            onClick={() => setActionMenuId(null)}
-                          />
-                          <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1">
-                            <Link
-                              href={`/dashboard/events/${event.id}/edit`}
-                              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                              onClick={() => setActionMenuId(null)}
-                            >
-                              <Pencil className="w-3.5 h-3.5" />
-                              Edit Event
-                            </Link>
-
-                            {event.status === "DRAFT" && (
-                              <button
-                                onClick={() => handleStatusChange(event.id, "PUBLISHED")}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-green-600 hover:bg-green-50"
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                Publish
-                              </button>
-                            )}
-
-                            {event.status === "PUBLISHED" && (
-                              <button
-                                onClick={() => handleStatusChange(event.id, "DRAFT")}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-amber-600 hover:bg-amber-50"
-                              >
-                                <Clock className="w-3.5 h-3.5" />
-                                Unpublish
-                              </button>
-                            )}
-
-                            {event.status !== "CANCELLED" && (
-                              <button
-                                onClick={() => handleStatusChange(event.id, "CANCELLED")}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
-                              >
-                                <Ban className="w-3.5 h-3.5" />
-                                Cancel Event
-                              </button>
-                            )}
-
-                            <div className="border-t border-gray-100 my-1" />
-                            <button
-                              onClick={() => handleDelete(event.id)}
-                              disabled={deleting === event.id}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
-                            >
-                              {deleting === event.id ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              ) : (
-                                <Trash2 className="w-3.5 h-3.5" />
-                              )}
-                              Delete
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
+                {/* Capacity bar */}
+                <div>
+                  <span style={{ fontSize: "12px", color: t.textMuted, fontVariantNumeric: "tabular-nums" }}>{registered}/{event.capacity}</span>
+                  <div style={{ width: "100%", maxWidth: "100px", height: "3px", background: t.borderLight, borderRadius: "2px", marginTop: "4px" }}>
+                    <div style={{ width: `${pct}%`, height: "100%", background: pct > 90 ? t.red : t.accent, borderRadius: "2px", transition: "width 0.3s" }} />
                   </div>
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Actions */}
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: "2px", position: "relative" }}>
+                  <Link href={`/events/${event.id}`} style={{ width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", color: t.textFaint, borderRadius: "4px", textDecoration: "none" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = t.borderLight)}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                    <ExternalLink style={{ width: "13px", height: "13px" }} />
+                  </Link>
+                  <Link href={`/dashboard/events/${event.id}/attendees`} style={{ width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", color: t.textFaint, borderRadius: "4px", textDecoration: "none" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = t.borderLight)}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                    <Users style={{ width: "13px", height: "13px" }} />
+                  </Link>
+                  <div style={{ position: "relative" }}>
+                    <button onClick={() => setMenuId(menuId === event.id ? null : event.id)}
+                      style={{ width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", color: t.textFaint, cursor: "pointer", borderRadius: "4px" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = t.borderLight)}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                      <MoreHorizontal style={{ width: "14px", height: "14px" }} />
+                    </button>
+                    {menuId === event.id && (
+                      <>
+                        <div style={{ position: "fixed", inset: 0, zIndex: 10 }} onClick={() => setMenuId(null)} />
+                        <div style={{ position: "absolute", right: 0, top: "100%", marginTop: "4px", width: "160px", background: t.surface, border: `1px solid ${t.border}`, borderRadius: "4px", boxShadow: "0 4px 16px rgba(0,0,0,0.08)", zIndex: 20, padding: "4px 0", fontFamily: t.sans }}>
+                          <MenuBtn icon={<Pencil />} label="Edit" color={t.textSecondary} href={`/dashboard/events/${event.id}/edit`} onClick={() => setMenuId(null)} />
+                          {event.status === "DRAFT" && <MenuBtn icon={<CheckCircle2 />} label="Publish" color={t.green} onClick={() => patchStatus(event.id, "PUBLISHED")} disabled={processing === event.id} />}
+                          {event.status === "PUBLISHED" && <MenuBtn icon={<Clock />} label="Unpublish" color={t.amber} onClick={() => patchStatus(event.id, "DRAFT")} disabled={processing === event.id} />}
+                          {event.status !== "CANCELLED" && <MenuBtn icon={<Ban />} label="Cancel" color={t.red} onClick={() => patchStatus(event.id, "CANCELLED")} disabled={processing === event.id} />}
+                          <div style={{ height: "1px", background: t.borderLight, margin: "4px 0" }} />
+                          <MenuBtn icon={<Trash2 />} label="Delete" color={t.red} onClick={() => deleteEvent(event.id)} disabled={processing === event.id} />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
+
+      <OrganizerPagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
+}
+
+function MenuBtn({ icon, label, color, href, onClick, disabled }: { icon: React.ReactNode; label: string; color: string; href?: string; onClick?: () => void; disabled?: boolean }) {
+  const style: React.CSSProperties = { width: "100%", display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px", fontSize: "13px", color, background: "transparent", border: "none", cursor: disabled ? "default" : "pointer", fontFamily: "'DM Sans', sans-serif", opacity: disabled ? 0.5 : 1, textDecoration: "none" };
+  const hover = (e: React.MouseEvent) => { if (!disabled) (e.currentTarget as HTMLElement).style.background = "#f0f0ec"; };
+  const leave = (e: React.MouseEvent) => { (e.currentTarget as HTMLElement).style.background = "transparent"; };
+
+  if (href) return <Link href={href} style={style} onMouseEnter={hover} onMouseLeave={leave} onClick={onClick}><span style={{ width: "13px", height: "13px", display: "flex" }}>{icon}</span>{label}</Link>;
+  return <button onClick={onClick} disabled={disabled} style={style} onMouseEnter={hover} onMouseLeave={leave}><span style={{ width: "13px", height: "13px", display: "flex" }}>{icon}</span>{label}</button>;
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db/prisma";
-import { getCurrentUser, requireOrganizer, isAuthError } from "@/lib/auth/require-role";
+import { requireOrganizer, isAuthError } from "@/lib/auth/require-role";
 import { createEventSchema } from "@/lib/validations/event.schema";
 import { generateSlug } from "@/lib/utils/helpers";
 import { ZodError } from "zod";
@@ -27,9 +27,14 @@ export async function GET(request: NextRequest) {
     const sortOrder = searchParams.get("sortOrder") || "asc";
 
     // Build where clause
-    const where: Record<string, unknown> = {
-      status: "PUBLISHED",
-    };
+   const status = searchParams.get("status");
+    const where: Record<string, unknown> = {};
+    
+    if (status) {
+      where.status = status;
+    } else if (!searchParams.get("all")) {
+      where.status = "PUBLISHED";
+    }
 
     if (search) {
       where.OR = [

@@ -12,12 +12,10 @@ import {
   MessageSquare,
   ChevronLeft,
   ChevronRight,
-  Menu,
   X,
   DollarSign,
   Tag,
   Mail,
-  ChevronDown,
 } from "lucide-react";
 
 /* ═══════════════════════════════════════════

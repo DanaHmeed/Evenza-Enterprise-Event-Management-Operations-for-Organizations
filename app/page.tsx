@@ -57,7 +57,6 @@ export default function LandingPage() {
         <div className="flex flex-col gap-20">
           <FeaturesShowcase />
           <IntelligentWorkflow />
-          <FeaturesSection />
           <HowItWorksSection />
           <PlatformShowcaseSection />
           <EventTypesSection />
@@ -418,7 +417,7 @@ export function IntelligentWorkflow() {
 // ════════════════════════════════════════════════════════════
 // 3. FEATURES — 12 Cards
 // ════════════════════════════════════════════════════════════
-function FeaturesSection() {
+/*function FeaturesSection() {
   const features = [
   {
     icon: <CalendarCheck className="w-8 h-8" strokeWidth={1.2} />,
@@ -534,90 +533,267 @@ function FeatureCard({
     </div>
   );
 }
-
+*/
 // ════════════════════════════════════════════════════════════
 // 4. HOW IT WORKS
 // ════════════════════════════════════════════════════════════
+// Replace HowItWorksSection in app/page.tsx with this
+
 function HowItWorksSection() {
   const steps = [
     {
-      step: "01",
+      num: "01",
       title: "Create Your Account",
-      desc: "Sign up in seconds with email or Google. Choose to discover events or start organizing them.",
-      icon: <Users className="w-7 h-7" />,
+      desc: "Sign up in seconds with email or Google. Choose your path — discover events or start organizing.",
+      detail: "Free forever for attendees",
     },
     {
-      step: "02",
-      title: "Discover or Create Events",
-      desc: "Browse by category, date, or location. Organizers create rich event pages with pricing and media.",
-      icon: <Search className="w-7 h-7" />,
+      num: "02",
+      title: "Discover or Create",
+      desc: "Browse by category, date, or location. Organizers build rich event pages with pricing and media.",
+      detail: "Smart filters & search",
     },
     {
-      step: "03",
-      title: "Register & Get Your Ticket",
-      desc: "One-click registration for free events. Secure Stripe checkout for paid events. Instant QR ticket.",
-      icon: <Ticket className="w-7 h-7" />,
+      num: "03",
+      title: "Register & Pay",
+      desc: "One-click for free events. Secure Stripe checkout for paid ones. Your ticket is generated instantly.",
+      detail: "Stripe-powered checkout",
     },
     {
-      step: "04",
-      title: "Attend & Check In",
-      desc: "Show your QR code at the door. Organizer scans it for instant validation. You're in!",
-      icon: <ScanLine className="w-7 h-7" />,
+      num: "04",
+      title: "Attend & Review",
+      desc: "Check in at the venue, enjoy the experience, then leave feedback to help the community grow.",
+      detail: "Ratings & reviews",
     },
   ];
 
   return (
-    <section className="py-28">
-      <div className="w-full flex justify-center">
-        <div className="w-full max-w-7xl px-6">
-          {" "}
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-50 border border-orange-100 mb-6">
-              <Zap className="w-4 h-4 text-orange-600" />
-              <span className="text-sm font-semibold text-orange-600 tracking-wide">
-                HOW IT WORKS
-              </span>
-            </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-5">
-              Get Started in{" "}
-              <span className="text-orange-600">4 Simple Steps</span>
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Whether you&apos;re attending or organizing, Evenza makes it
-              seamless from start to finish.
-            </p>
-          </motion.div>
-          <div className="grid md:grid-cols-4 gap-8 relative">
-            {/* Connecting line */}
-            <div className="hidden md:block absolute top-16 left-[12.5%] right-[12.5%] h-0.5 bg-gradient-to-r from-orange-200 via-orange-400 to-orange-200" />
+    <section
+      style={{
+        padding: "140px 0",
+        background: "#0a0a0f",
+        fontFamily: "'Quicksand', sans-serif",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* Subtle background glow */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "800px",
+          height: "600px",
+          background: "radial-gradient(ellipse, rgba(249,115,22,0.04) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }}
+      />
 
-            {steps.map((s, i) => (
-              <motion.div
+      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 32px", position: "relative" }}>
+        {/* Header — centered */}
+        <div style={{ textAlign: "center", marginBottom: "88px" }}>
+          <p
+            style={{
+              fontSize: "12px",
+              fontWeight: 700,
+              letterSpacing: "0.3em",
+              textTransform: "uppercase",
+              color: "#f97316",
+              marginBottom: "20px",
+            }}
+          >
+            How It Works
+          </p>
+          <h2
+            style={{
+              fontSize: "clamp(2rem, 4vw, 3rem)",
+              fontWeight: 700,
+              color: "#fff",
+              lineHeight: 1.15,
+              margin: "0 0 16px 0",
+            }}
+          >
+            Four steps to your
+            <br />
+            <span style={{ color: "#f97316" }}>next great event</span>
+          </h2>
+          <p
+            style={{
+              fontSize: "16px",
+              color: "rgba(255,255,255,0.35)",
+              maxWidth: "440px",
+              margin: "0 auto",
+              lineHeight: 1.7,
+            }}
+          >
+            Whether you&apos;re attending or organizing, the journey is seamless
+            from start to finish.
+          </p>
+        </div>
+
+        {/* Steps — vertical layout with large numbers */}
+        <div style={{ position: "relative" }}>
+          {/* Vertical connecting line */}
+          <div
+            style={{
+              position: "absolute",
+              left: "60px",
+              top: "40px",
+              bottom: "40px",
+              width: "1px",
+              background: "linear-gradient(to bottom, transparent, rgba(249,115,22,0.2) 20%, rgba(249,115,22,0.2) 80%, transparent)",
+            }}
+            className="hidden md:block"
+          />
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+            {steps.map((step, i) => (
+              <div
                 key={i}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                custom={i}
-                className="relative text-center"
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "48px",
+                  padding: "40px 0",
+                  borderBottom: i < steps.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
+                  position: "relative",
+                  transition: "background 0.3s",
+                  borderRadius: "12px",
+                  marginLeft: "-16px",
+                  marginRight: "-16px",
+                  paddingLeft: "16px",
+                  paddingRight: "16px",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.02)";
+                  const numEl = e.currentTarget.querySelector("[data-num]") as HTMLElement;
+                  if (numEl) {
+                    numEl.style.color = "#f97316";
+                    numEl.style.textShadow = "0 0 40px rgba(249,115,22,0.3)";
+                  }
+                  const dotEl = e.currentTarget.querySelector("[data-dot]") as HTMLElement;
+                  if (dotEl) {
+                    dotEl.style.background = "#f97316";
+                    dotEl.style.boxShadow = "0 0 12px rgba(249,115,22,0.4)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                  const numEl = e.currentTarget.querySelector("[data-num]") as HTMLElement;
+                  if (numEl) {
+                    numEl.style.color = "rgba(255,255,255,0.06)";
+                    numEl.style.textShadow = "none";
+                  }
+                  const dotEl = e.currentTarget.querySelector("[data-dot]") as HTMLElement;
+                  if (dotEl) {
+                    dotEl.style.background = "rgba(249,115,22,0.4)";
+                    dotEl.style.boxShadow = "none";
+                  }
+                }}
               >
-                <div className="relative z-10 w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 text-white flex items-center justify-center shadow-lg shadow-orange-500/25 ring-4 ring-white">
-                  {s.icon}
+                {/* Large number */}
+                <div
+                  style={{
+                    flexShrink: 0,
+                    width: "120px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    position: "relative",
+                  }}
+                  className="hidden md:flex"
+                >
+                  <span
+                    data-num
+                    style={{
+                      fontSize: "80px",
+                      fontWeight: 700,
+                      color: "rgba(255,255,255,0.06)",
+                      lineHeight: 1,
+                      letterSpacing: "-0.04em",
+                      transition: "color 0.4s, text-shadow 0.4s",
+                      userSelect: "none",
+                    }}
+                  >
+                    {step.num}
+                  </span>
+
+                  {/* Dot on the line */}
+                  <div
+                    data-dot
+                    style={{
+                      position: "absolute",
+                      right: "-24px",
+                      top: "50%",
+                      transform: "translateY(-50%) translateX(50%)",
+                      width: "10px",
+                      height: "10px",
+                      borderRadius: "50%",
+                      background: "rgba(249,115,22,0.4)",
+                      transition: "background 0.3s, box-shadow 0.3s",
+                      zIndex: 2,
+                    }}
+                  />
                 </div>
-                <div className="text-xs font-bold text-orange-500 mb-2 tracking-widest">
-                  STEP {s.step}
+
+                {/* Content */}
+                <div style={{ flex: 1, paddingTop: "8px" }}>
+                  {/* Mobile number */}
+                  <span
+                    className="md:hidden"
+                    style={{
+                      display: "inline-block",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      color: "#f97316",
+                      letterSpacing: "0.15em",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    STEP {step.num}
+                  </span>
+
+                  <h3
+                    style={{
+                      fontSize: "22px",
+                      fontWeight: 700,
+                      color: "#fff",
+                      margin: "0 0 10px 0",
+                    }}
+                  >
+                    {step.title}
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: "15px",
+                      color: "rgba(255,255,255,0.4)",
+                      lineHeight: 1.7,
+                      margin: "0 0 16px 0",
+                      maxWidth: "480px",
+                    }}
+                  >
+                    {step.desc}
+                  </p>
+
+                  {/* Detail chip */}
+                  <span
+                    style={{
+                      display: "inline-block",
+                      padding: "5px 14px",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      color: "#f97316",
+                      background: "rgba(249,115,22,0.08)",
+                      borderRadius: "100px",
+                      border: "1px solid rgba(249,115,22,0.12)",
+                    }}
+                  >
+                    {step.detail}
+                  </span>
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">
-                  {s.title}
-                </h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  {s.desc}
-                </p>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -625,163 +801,257 @@ function HowItWorksSection() {
     </section>
   );
 }
-
 // ════════════════════════════════════════════════════════════
 // 5. PLATFORM SHOWCASE — Role-based tabs
 // ════════════════════════════════════════════════════════════
 function PlatformShowcaseSection() {
-  const [activeTab, setActiveTab] = useState(0);
-
-  const tabs = [
+  const roles = [
     {
       label: "For Attendees",
-      icon: <Users className="w-5 h-5" />,
-      title: "Discover & Attend Events Seamlessly",
-      color: "from-blue-500 to-blue-600",
+      title: "Discover & Experience",
+      desc: "Browse events with smart filters, register in one click, receive instant tickets, submit reviews, and join waitlists when events fill up.",
       features: [
-        "Browse events with powerful search and smart filters",
-        "Register for free events or purchase tickets via Stripe",
-        "Receive QR code tickets instantly in your account",
-        "View upcoming events and past attendance history",
-        "Submit star ratings and reviews after attending",
-        "Join waitlists and get notified when spots open",
+        "Smart search & filters",
+        "One-click registration",
+        "Instant QR tickets",
+        "Ratings & reviews",
+        "Waitlist notifications",
       ],
+      image: "/images/role-attendee.png",
+      accent: "#3b82f6",
+      accentBg: "rgba(59,130,246,0.06)",
+      span: "1 / 2",  // takes left column
+      rowSpan: "1 / 3", // spans 2 rows
     },
     {
       label: "For Organizers",
-      icon: <CalendarCheck className="w-5 h-5" />,
-      title: "Create & Manage Professional Events",
-      color: "from-orange-500 to-orange-600",
+      title: "Create & Manage",
+      desc: "Rich event editor, flexible pricing, real-time attendee tracking, revenue analytics, and feedback collection.",
       features: [
-        "Rich event editor with media uploads and categories",
-        "Set pricing, capacity limits, and registration deadlines",
-        "Draft → Publish workflow with preview before going live",
-        "Real-time attendee list with check-in status tracking",
-        "Scan QR tickets at the door with built-in validator",
-        "Revenue tracking, feedback analysis, and analytics",
+        "Rich event creation",
+        "Stripe payments",
+        "Attendee management",
+        "Revenue tracking",
+        "Post-event analytics",
       ],
+      image: "/images/role-organizer.png",
+      accent: "#f97316",
+      accentBg: "rgba(249,115,22,0.06)",
+      span: "2 / 3",
+      rowSpan: "1 / 2",
     },
     {
       label: "For Admins",
-      icon: <ShieldCheck className="w-5 h-5" />,
-      title: "Oversee & Optimize the Entire Platform",
-      color: "from-purple-500 to-purple-600",
+      title: "Oversee & Optimize",
+      desc: "Platform-wide metrics, user management, content moderation, and full administrative control.",
       features: [
-        "Platform-wide dashboard with key performance metrics",
-        "Approve, flag, or unpublish events and user content",
-        "Manage user accounts, roles, and access permissions",
-        "Moderate feedback and reviews before they go public",
-        "Full audit log of all administrative actions",
-        "Edit platform settings, terms, and contact info",
+        "Platform dashboard",
+        "User & role management",
+        "Content moderation",
+        "System settings",
       ],
+      image: "/images/role-admin.png",
+      accent: "#8b5cf6",
+      accentBg: "rgba(139,92,246,0.06)",
+      span: "2 / 3",
+      rowSpan: "2 / 3",
     },
   ];
 
-  const active = tabs[activeTab];
-
   return (
-    <section className="py-28">
-      <div className="w-full flex justify-center">
-        <div className="w-full max-w-7xl px-6">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="text-center mb-12"
+    <section
+      style={{
+        padding: "140px 0",
+        background: "#fafaf8",
+        fontFamily: "'Quicksand', sans-serif",
+      }}
+    >
+      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 32px" }}>
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: "72px" }}>
+          <p
+            style={{
+              fontSize: "12px",
+              fontWeight: 700,
+              letterSpacing: "0.25em",
+              textTransform: "uppercase",
+              color: "#f97316",
+              marginBottom: "16px",
+            }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-50 border border-orange-100 mb-6">
-              <Globe className="w-4 h-4 text-orange-600" />
-              <span className="text-sm font-semibold text-orange-600 tracking-wide">
-                THE PLATFORM
-              </span>
-            </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-5">
-              Built for <span className="text-orange-600">Every Role</span>
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Three distinct experiences tailored to each user type. One
-              powerful platform.
-            </p>
-          </motion.div>
+            The Platform
+          </p>
+          <h2
+            style={{
+              fontSize: "clamp(2rem, 4vw, 3rem)",
+              fontWeight: 700,
+              color: "#1a1a1a",
+              lineHeight: 1.15,
+              margin: "0 0 16px 0",
+            }}
+          >
+            Built for <span style={{ color: "#f97316" }}>every role</span>
+          </h2>
+          <p
+            style={{
+              fontSize: "16px",
+              color: "#888",
+              maxWidth: "480px",
+              margin: "0 auto",
+              lineHeight: 1.7,
+            }}
+          >
+            Three distinct experiences designed for attendees, organizers, and
+            administrators. One powerful platform.
+          </p>
+        </div>
 
-          {/* Tab Switcher */}
-          <div className="flex flex-wrap justify-center gap-3 mb-12">
-            {tabs.map((tab, i) => (
-              <button
-                key={i}
-                onClick={() => setActiveTab(i)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 ${
-                  activeTab === i
-                    ? "bg-orange-500 text-white shadow-lg shadow-orange-500/25 scale-105"
-                    : "bg-white text-gray-600 border border-gray-200 hover:border-orange-200 hover:text-orange-600"
-                }`}
+        {/* Bento grid */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gridTemplateRows: "auto auto",
+            gap: "20px",
+          }}
+          className="grid-cols-1 lg:grid-cols-2"
+        >
+          {roles.map((role, i) => (
+            <div
+              key={i}
+              style={{
+                gridColumn: role.span,
+                gridRow: role.rowSpan,
+                borderRadius: "16px",
+                border: "1px solid #f0f0ec",
+                background: "#fff",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                transition: "border-color 0.3s, box-shadow 0.3s",
+              }}
+              className={i === 0 ? "lg:row-span-2" : ""}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "#e5e5e0";
+                e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.06)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "#f0f0ec";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              {/* Image area */}
+              <div
+                style={{
+                  flex: i === 0 ? 1 : "none",
+                  minHeight: i === 0 ? "300px" : "200px",
+                  background: role.accentBg,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden",
+                  position: "relative",
+                }}
               >
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
-          </div>
+                <img
+                  src={role.image}
+                  alt={role.title}
+                  style={{
+                    width: "88%",
+                    height: "auto",
+                    borderRadius: "10px",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+                    objectFit: "cover",
+                  }}
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    target.style.display = "none";
+                    if (target.parentElement) {
+                      target.parentElement.innerHTML = `
+                        <div style="width:80%;height:70%;background:white;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.04);display:flex;flex-direction:column;padding:24px;gap:12px">
+                          <div style="display:flex;gap:8px">
+                            <div style="width:32px;height:32px;border-radius:8px;background:${role.accent}15"></div>
+                            <div style="flex:1"><div style="height:10px;background:#f0f0ec;border-radius:4px;width:60%;margin-bottom:6px"></div><div style="height:8px;background:#f0f0ec;border-radius:4px;width:40%"></div></div>
+                          </div>
+                          <div style="flex:1;display:flex;flex-direction:column;gap:8px;justify-content:center">
+                            <div style="height:8px;background:#f0f0ec;border-radius:4px;width:90%"></div>
+                            <div style="height:8px;background:#f0f0ec;border-radius:4px;width:70%"></div>
+                            <div style="height:8px;background:#f0f0ec;border-radius:4px;width:80%"></div>
+                          </div>
+                          <div style="font-size:10px;color:#ccc;text-align:center">Add screenshot: ${role.image}</div>
+                        </div>
+                      `;
+                    }
+                  }}
+                />
 
-          {/* Tab Content */}
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="bg-white rounded-3xl border border-gray-200 p-10 md:p-14 shadow-sm"
-          >
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div>
-                <h3 className="text-3xl font-bold text-gray-900 mb-6">
-                  {active.title}
-                </h3>
-                <ul className="space-y-4">
-                  {active.features.map((f, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700 leading-relaxed">{f}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/sign-up"
-                  className="inline-flex items-center gap-2 mt-8 px-6 py-3 rounded-full bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors"
+                {/* Role badge */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "16px",
+                    left: "16px",
+                    padding: "5px 12px",
+                    borderRadius: "6px",
+                    background: role.accent,
+                    color: "#fff",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    letterSpacing: "0.05em",
+                  }}
                 >
-                  Get Started Free
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
+                  {role.label}
+                </div>
               </div>
 
-              {/* Visual mockup placeholder */}
-              <div
-                className={`bg-gradient-to-br ${active.color} rounded-2xl p-10 flex flex-col items-center justify-center min-h-[380px] text-white relative overflow-hidden`}
-              >
-                {/* Decorative pattern */}
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:20px_20px]" />
-                <div className="relative text-center">
-                  <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                    {tabs[activeTab].icon}
-                  </div>
-                  <p className="font-bold text-xl mb-1">
-                    {tabs[activeTab].label}
-                  </p>
-                  <p className="text-white/70 text-sm">Dashboard Preview</p>
-
-                  {/* Mock UI elements */}
-                  <div className="mt-6 space-y-2 max-w-[200px] mx-auto">
-                    <div className="h-3 bg-white/20 rounded-full" />
-                    <div className="h-3 bg-white/15 rounded-full w-4/5" />
-                    <div className="h-3 bg-white/10 rounded-full w-3/5" />
-                    <div className="mt-4 grid grid-cols-3 gap-2">
-                      <div className="h-16 bg-white/10 rounded-lg" />
-                      <div className="h-16 bg-white/15 rounded-lg" />
-                      <div className="h-16 bg-white/10 rounded-lg" />
-                    </div>
-                  </div>
+              {/* Content */}
+              <div style={{ padding: "28px 28px 32px" }}>
+                <h3
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: 700,
+                    color: "#1a1a1a",
+                    margin: "0 0 8px 0",
+                  }}
+                >
+                  {role.title}
+                </h3>
+                <p
+                  style={{
+                    fontSize: "14px",
+                    color: "#888",
+                    lineHeight: 1.65,
+                    margin: "0 0 20px 0",
+                  }}
+                >
+                  {role.desc}
+                </p>
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "8px",
+                  }}
+                >
+                  {role.features.map((f, j) => (
+                    <span
+                      key={j}
+                      style={{
+                        padding: "5px 12px",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        color: role.accent,
+                        background: role.accentBg,
+                        borderRadius: "6px",
+                      }}
+                    >
+                      {f}
+                    </span>
+                  ))}
                 </div>
               </div>
             </div>
-          </motion.div>
+          ))}
         </div>
       </div>
     </section>
@@ -796,94 +1066,190 @@ function EventTypesSection() {
     {
       title: "Conferences & Summits",
       desc: "Multi-day professional events with speaker management and session scheduling.",
-      icon: <Layers className="w-6 h-6" />,
-      color: "bg-blue-500",
+      image: "/images/type-conference.png",
+      color: "#1a1a2e",
     },
     {
       title: "Workshops & Training",
-      desc: "Hands-on learning events with limited capacity and approval-based registration.",
-      icon: <Users className="w-6 h-6" />,
-      color: "bg-green-500",
+      desc: "Hands-on learning with limited capacity and approval-based registration.",
+      image: "/images/type-workshop.png",
+      color: "#1a2e1a",
     },
     {
       title: "Networking & Meetups",
-      desc: "Casual community gatherings with free or paid entry and check-in tracking.",
-      icon: <MessageSquare className="w-6 h-6" />,
-      color: "bg-purple-500",
+      desc: "Community gatherings with free or paid entry and check-in tracking.",
+      image: "/images/type-meetup.png",
+      color: "#2e1a1a",
     },
     {
-      title: "Webinars & Virtual Events",
-      desc: "Online events with meeting link integration. No venue needed, global reach.",
-      icon: <Globe className="w-6 h-6" />,
-      color: "bg-orange-500",
+      title: "Webinars & Online",
+      desc: "Virtual events with meeting link integration. No venue, global reach.",
+      image: "/images/type-webinar.png",
+      color: "#1a1a2e",
     },
     {
       title: "Fundraisers & Galas",
-      desc: "Paid events with ticket management, revenue tracking, and receipt generation.",
-      icon: <CreditCard className="w-6 h-6" />,
-      color: "bg-rose-500",
+      desc: "Paid events with ticket management, revenue tracking, and receipts.",
+      image: "/images/type-gala.png",
+      color: "#2e1a2e",
     },
     {
-      title: "University & Campus Events",
-      desc: "Student-run events with admin oversight, waitlists, and feedback collection.",
-      icon: <Eye className="w-6 h-6" />,
-      color: "bg-amber-500",
+      title: "Campus Events",
+      desc: "Student-run events with admin oversight, waitlists, and feedback.",
+      image: "/images/type-campus.png",
+      color: "#1a2e2e",
     },
   ];
 
   return (
-    <section className="py-28 bg-white">
-      <div className="w-full flex justify-center">
-        <div className="w-full max-w-7xl px-6">
-          {" "}
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="text-center mb-16"
+    <section
+      style={{
+        padding: "140px 0",
+        background: "#fff",
+        fontFamily: "'Quicksand', sans-serif",
+      }}
+    >
+      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 32px" }}>
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: "72px" }}>
+          <p
+            style={{
+              fontSize: "12px",
+              fontWeight: 700,
+              letterSpacing: "0.25em",
+              textTransform: "uppercase",
+              color: "#f97316",
+              marginBottom: "16px",
+            }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-50 border border-orange-100 mb-6">
-              <Filter className="w-4 h-4 text-orange-600" />
-              <span className="text-sm font-semibold text-orange-600 tracking-wide">
-                EVENT TYPES
-              </span>
-            </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-5">
-              One Platform,{" "}
-              <span className="text-orange-600">Endless Possibilities</span>
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              From intimate workshops to large-scale conferences, Evenza adapts
-              to any event format.
-            </p>
-          </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={staggerContainer}
-            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            Event Types
+          </p>
+          <h2
+            style={{
+              fontSize: "clamp(2rem, 4vw, 3rem)",
+              fontWeight: 700,
+              color: "#1a1a1a",
+              lineHeight: 1.15,
+              margin: "0 0 16px 0",
+            }}
           >
-            {types.map((t, i) => (
-              <motion.div
-                key={i}
-                custom={i}
-                className="group p-7 rounded-2xl border border-gray-200 bg-white hover:shadow-lg hover:border-gray-300 transition-all duration-300"
+            One platform,{" "}
+            <span style={{ color: "#f97316" }}>endless possibilities</span>
+          </h2>
+          <p
+            style={{
+              fontSize: "16px",
+              color: "#888",
+              maxWidth: "480px",
+              margin: "0 auto",
+              lineHeight: 1.7,
+            }}
+          >
+            From intimate workshops to large-scale conferences, Evenza adapts
+            to any event format.
+          </p>
+        </div>
+
+        {/* Cards — 3 columns, image-forward */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "20px",
+          }}
+          className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          {types.map((type, i) => (
+            <div
+              key={i}
+              style={{
+                position: "relative",
+                borderRadius: "16px",
+                overflow: "hidden",
+                aspectRatio: "4 / 5",
+                cursor: "default",
+                transition: "transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 20px 48px rgba(0,0,0,0.12)";
+                // Zoom the background image
+                const img = e.currentTarget.querySelector("img");
+                if (img) (img as HTMLElement).style.transform = "scale(1.08)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+                const img = e.currentTarget.querySelector("img");
+                if (img) (img as HTMLElement).style.transform = "scale(1)";
+              }}
+            >
+              {/* Background image */}
+              <img
+                src={type.image}
+                alt={type.title}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  transition: "transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)",
+                }}
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  target.style.display = "none";
+                  if (target.parentElement) {
+                    const fallback = document.createElement("div");
+                    fallback.style.cssText = `position:absolute;inset:0;background:${type.color}`;
+                    target.parentElement.insertBefore(fallback, target.parentElement.firstChild);
+                  }
+                }}
+              />
+
+              {/* Gradient overlay */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background:
+                    "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.05) 100%)",
+                }}
+              />
+
+              {/* Content pinned to bottom */}
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  padding: "32px 24px",
+                }}
               >
-                <div
-                  className={`w-12 h-12 ${t.color} rounded-xl flex items-center justify-center text-white mb-5 group-hover:scale-110 transition-transform shadow-lg`}
+                <h3
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: 700,
+                    color: "#fff",
+                    margin: "0 0 8px 0",
+                  }}
                 >
-                  {t.icon}
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">
-                  {t.title}
+                  {type.title}
                 </h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  {t.desc}
+                <p
+                  style={{
+                    fontSize: "13px",
+                    color: "rgba(255,255,255,0.6)",
+                    lineHeight: 1.6,
+                    margin: 0,
+                  }}
+                >
+                  {type.desc}
                 </p>
-              </motion.div>
-            ))}
-          </motion.div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>

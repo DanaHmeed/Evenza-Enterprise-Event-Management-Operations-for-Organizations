@@ -6,7 +6,7 @@ import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
 import Link from "next/link";
 import Image from "next/image";
-import { Link2, Video } from "lucide-react";
+import { AlignCenter, Link2, Video } from "lucide-react";
 import { useScroll, useTransform, motion } from "framer-motion";
 import { useRef, useState } from "react";
 import {
@@ -60,8 +60,6 @@ export default function LandingPage() {
           <HowItWorksSection />
           <PlatformShowcaseSection />
           <EventTypesSection />
-          <StatsSection />
-          <TestimonialsSection />
           <PricingPreviewSection />
           <FAQSection />
           <CTASection />
@@ -212,7 +210,7 @@ const features = [
       "Host online events with meeting link integration. Attendees receive instant QR code tickets for seamless access.",
     glow: "rgba(249,115,22,0.15)",
     bg: "/images/card2.png",
-    icon: <Video size={26} strokeWidth={2} />,    
+    icon: <Video size={26} strokeWidth={2} />,
   },
   {
     title: "HYBRID EVENTS",
@@ -294,7 +292,9 @@ export function FeaturesShowcase() {
                   {/* Icon + Title */}
                   <div className="feat-card__head">
                     <div className="feat-card__icon">{feature.icon}</div>
-                    <h3 className="feat-card__title font-quicksand">{feature.title}</h3>
+                    <h3 className="feat-card__title font-quicksand">
+                      {feature.title}
+                    </h3>
                   </div>
 
                   {/* Gold divider */}
@@ -586,12 +586,20 @@ function HowItWorksSection() {
           transform: "translate(-50%, -50%)",
           width: "800px",
           height: "600px",
-          background: "radial-gradient(ellipse, rgba(249,115,22,0.04) 0%, transparent 70%)",
+          background:
+            "radial-gradient(ellipse, rgba(249,115,22,0.04) 0%, transparent 70%)",
           pointerEvents: "none",
         }}
       />
 
-      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 32px", position: "relative" }}>
+      <div
+        style={{
+          maxWidth: "1100px",
+          margin: "0 auto",
+          padding: "0 32px",
+          position: "relative",
+        }}
+      >
         {/* Header — centered */}
         <div style={{ textAlign: "center", marginBottom: "88px" }}>
           <p
@@ -643,7 +651,8 @@ function HowItWorksSection() {
               top: "40px",
               bottom: "40px",
               width: "1px",
-              background: "linear-gradient(to bottom, transparent, rgba(249,115,22,0.2) 20%, rgba(249,115,22,0.2) 80%, transparent)",
+              background:
+                "linear-gradient(to bottom, transparent, rgba(249,115,22,0.2) 20%, rgba(249,115,22,0.2) 80%, transparent)",
             }}
             className="hidden md:block"
           />
@@ -657,7 +666,10 @@ function HowItWorksSection() {
                   alignItems: "flex-start",
                   gap: "48px",
                   padding: "40px 0",
-                  borderBottom: i < steps.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
+                  borderBottom:
+                    i < steps.length - 1
+                      ? "1px solid rgba(255,255,255,0.04)"
+                      : "none",
                   position: "relative",
                   transition: "background 0.3s",
                   borderRadius: "12px",
@@ -668,12 +680,16 @@ function HowItWorksSection() {
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = "rgba(255,255,255,0.02)";
-                  const numEl = e.currentTarget.querySelector("[data-num]") as HTMLElement;
+                  const numEl = e.currentTarget.querySelector(
+                    "[data-num]",
+                  ) as HTMLElement;
                   if (numEl) {
                     numEl.style.color = "#f97316";
                     numEl.style.textShadow = "0 0 40px rgba(249,115,22,0.3)";
                   }
-                  const dotEl = e.currentTarget.querySelector("[data-dot]") as HTMLElement;
+                  const dotEl = e.currentTarget.querySelector(
+                    "[data-dot]",
+                  ) as HTMLElement;
                   if (dotEl) {
                     dotEl.style.background = "#f97316";
                     dotEl.style.boxShadow = "0 0 12px rgba(249,115,22,0.4)";
@@ -681,12 +697,16 @@ function HowItWorksSection() {
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = "transparent";
-                  const numEl = e.currentTarget.querySelector("[data-num]") as HTMLElement;
+                  const numEl = e.currentTarget.querySelector(
+                    "[data-num]",
+                  ) as HTMLElement;
                   if (numEl) {
                     numEl.style.color = "rgba(255,255,255,0.06)";
                     numEl.style.textShadow = "none";
                   }
-                  const dotEl = e.currentTarget.querySelector("[data-dot]") as HTMLElement;
+                  const dotEl = e.currentTarget.querySelector(
+                    "[data-dot]",
+                  ) as HTMLElement;
                   if (dotEl) {
                     dotEl.style.background = "rgba(249,115,22,0.4)";
                     dotEl.style.boxShadow = "none";
@@ -817,10 +837,10 @@ function PlatformShowcaseSection() {
         "Ratings & reviews",
         "Waitlist notifications",
       ],
-      image: "/images/role-attendee.png",
+      image: "/images/attendee.png",
       accent: "#3b82f6",
       accentBg: "rgba(59,130,246,0.06)",
-      span: "1 / 2",  // takes left column
+      span: "1 / 2", // takes left column
       rowSpan: "1 / 3", // spans 2 rows
     },
     {
@@ -834,7 +854,7 @@ function PlatformShowcaseSection() {
         "Revenue tracking",
         "Post-event analytics",
       ],
-      image: "/images/role-organizer.png",
+      image: "/images/organizer.png",
       accent: "#f97316",
       accentBg: "rgba(249,115,22,0.06)",
       span: "2 / 3",
@@ -850,19 +870,20 @@ function PlatformShowcaseSection() {
         "Content moderation",
         "System settings",
       ],
-      image: "/images/role-admin.png",
+      image: "/images/admin.png",
       accent: "#8b5cf6",
       accentBg: "rgba(139,92,246,0.06)",
       span: "2 / 3",
       rowSpan: "2 / 3",
+      style: { AlignCenter: "center" },
     },
   ];
 
   return (
     <section
       style={{
-        padding: "140px 0",
-        background: "#fafaf8",
+        padding: "45px 0",
+        background: "#fff",
         fontFamily: "'Quicksand', sans-serif",
       }}
     >
@@ -910,18 +931,16 @@ function PlatformShowcaseSection() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gridTemplateRows: "auto auto",
+            gridTemplateColumns: "repeat(3, 1fr)",
             gap: "20px",
+            alignItems: "start",
           }}
-          className="grid-cols-1 lg:grid-cols-2"
+          className="grid-cols-1 lg:grid-cols-3"
         >
           {roles.map((role, i) => (
             <div
               key={i}
               style={{
-                gridColumn: role.span,
-                gridRow: role.rowSpan,
                 borderRadius: "16px",
                 border: "1px solid #f0f0ec",
                 background: "#fff",
@@ -930,7 +949,6 @@ function PlatformShowcaseSection() {
                 flexDirection: "column",
                 transition: "border-color 0.3s, box-shadow 0.3s",
               }}
-              className={i === 0 ? "lg:row-span-2" : ""}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = "#e5e5e0";
                 e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.06)";
@@ -943,8 +961,8 @@ function PlatformShowcaseSection() {
               {/* Image area */}
               <div
                 style={{
-                  flex: i === 0 ? 1 : "none",
-                  minHeight: i === 0 ? "300px" : "200px",
+                  flex: "none",
+                  height: "280px",
                   background: role.accentBg,
                   display: "flex",
                   alignItems: "center",
@@ -957,8 +975,8 @@ function PlatformShowcaseSection() {
                   src={role.image}
                   alt={role.title}
                   style={{
-                    width: "88%",
-                    height: "auto",
+                    width: "100%",
+                    height: "100%",
                     borderRadius: "10px",
                     boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
                     objectFit: "cover",
@@ -1145,8 +1163,8 @@ function EventTypesSection() {
               lineHeight: 1.7,
             }}
           >
-            From intimate workshops to large-scale conferences, Evenza adapts
-            to any event format.
+            From intimate workshops to large-scale conferences, Evenza adapts to
+            any event format.
           </p>
         </div>
 
@@ -1168,11 +1186,13 @@ function EventTypesSection() {
                 overflow: "hidden",
                 aspectRatio: "4 / 5",
                 cursor: "default",
-                transition: "transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s",
+                transition:
+                  "transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 20px 48px rgba(0,0,0,0.12)";
+                e.currentTarget.style.boxShadow =
+                  "0 20px 48px rgba(0,0,0,0.12)";
                 // Zoom the background image
                 const img = e.currentTarget.querySelector("img");
                 if (img) (img as HTMLElement).style.transform = "scale(1.08)";
@@ -1202,7 +1222,10 @@ function EventTypesSection() {
                   if (target.parentElement) {
                     const fallback = document.createElement("div");
                     fallback.style.cssText = `position:absolute;inset:0;background:${type.color}`;
-                    target.parentElement.insertBefore(fallback, target.parentElement.firstChild);
+                    target.parentElement.insertBefore(
+                      fallback,
+                      target.parentElement.firstChild,
+                    );
                   }
                 }}
               />
@@ -1257,192 +1280,17 @@ function EventTypesSection() {
 }
 
 // ════════════════════════════════════════════════════════════
-// 7. STATS — Trust bar
+// 8. PRICING PREVIEW
 // ════════════════════════════════════════════════════════════
-function StatsSection() {
-  const stats = [
-    {
-      value: "99.9%",
-      label: "Uptime Reliability",
-      icon: <Zap className="w-6 h-6" />,
-    },
-    {
-      value: "<2s",
-      label: "Average Load Time",
-      icon: <TrendingUp className="w-6 h-6" />,
-    },
-    {
-      value: "256-bit",
-      label: "SSL Encryption",
-      icon: <Lock className="w-6 h-6" />,
-    },
-    {
-      value: "24/7",
-      label: "Platform Monitoring",
-      icon: <Headphones className="w-6 h-6" />,
-    },
-  ];
+// Replace PricingPreviewSection in app/page.tsx with this
 
-  return (
-    <section className="py-20 bg-white text-gray relative overflow-hidden">
-      <div className="absolute inset-0">
-        <div className="absolute top-0 left-1/4 w-[400px] h-[400px] bg-orange-500/5 rounded-full blur-[100px]" />
-        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-orange-500/5 rounded-full blur-[100px]" />
-      </div>
-      <div className="w-full flex justify-center">
-        <div className="w-full max-w-7xl px-6">
-          {" "}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((s, i) => (
-              <motion.div
-                key={i}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                custom={i}
-                className="text-center"
-              >
-                <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400">
-                  {s.icon}
-                </div>
-                <div className="text-3xl font-bold text-gray mb-1">
-                  {s.value}
-                </div>
-                <div className="text-sm text-gray-400">{s.label}</div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ════════════════════════════════════════════════════════════
-// 8. TESTIMONIALS
-// ════════════════════════════════════════════════════════════
-function TestimonialsSection() {
-  const testimonials = [
-    {
-      quote:
-        "Evenza transformed how we manage university conferences. The QR check-in alone saved hours of manual work.",
-      name: "Dr. Ahmad Khalil",
-      role: "Conference Chair, An-Najah University",
-      rating: 5,
-    },
-    {
-      quote:
-        "As a student organizer, I published my first event in under 10 minutes. The platform is incredibly intuitive and professional.",
-      name: "Sara Nasser",
-      role: "Student Event Organizer",
-      rating: 5,
-    },
-    {
-      quote:
-        "The admin dashboard gives me complete visibility. I can moderate content, manage users, and track growth in real time.",
-      name: "Omar Habash",
-      role: "Platform Administrator",
-      rating: 5,
-    },
-    {
-      quote:
-        "The payment system is seamless. Stripe integration works perfectly, and having local payment options like bank transfer is a huge plus.",
-      name: "Layla Barakat",
-      role: "Event Coordinator, TechStart",
-      rating: 5,
-    },
-    {
-      quote:
-        "Registering for events is so smooth. I get my QR ticket instantly and the waitlist feature notified me the moment a spot opened.",
-      name: "Yousef Mansour",
-      role: "Regular Attendee",
-      rating: 5,
-    },
-    {
-      quote:
-        "We moved from spreadsheets to Evenza and never looked back. The analytics and attendee management features are exactly what we needed.",
-      name: "Rania Khouri",
-      role: "HR & Events, PALTEL Group",
-      rating: 5,
-    },
-  ];
-
-  return (
-    <section className="py-28 bg-white">
-      <div className="w-full flex justify-center">
-        <div className="w-full max-w-7xl px-6">
-          {" "}
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-50 border border-orange-100 mb-6">
-              <Quote className="w-4 h-4 text-orange-600" />
-              <span className="text-sm font-semibold text-orange-600 tracking-wide">
-                TESTIMONIALS
-              </span>
-            </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-5">
-              Loved by{" "}
-              <span className="text-orange-600">
-                Organizers &amp; Attendees
-              </span>
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              See what our community says about their Evenza experience.
-            </p>
-          </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={staggerContainer}
-            className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            {testimonials.map((t, i) => (
-              <motion.div
-                key={i}
-                custom={i}
-                className="bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:border-orange-200 hover:shadow-lg transition-all duration-300"
-              >
-                <div className="flex gap-1 mb-4">
-                  {Array.from({ length: t.rating }).map((_, j) => (
-                    <Star
-                      key={j}
-                      className="w-4 h-4 fill-orange-400 text-orange-400"
-                    />
-                  ))}
-                </div>
-                <p className="text-gray-700 leading-relaxed mb-6 text-sm">
-                  &ldquo;{t.quote}&rdquo;
-                </p>
-                <div className="border-t border-gray-200 pt-4">
-                  <div className="font-semibold text-gray-900 text-sm">
-                    {t.name}
-                  </div>
-                  <div className="text-xs text-gray-500">{t.role}</div>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ════════════════════════════════════════════════════════════
-// 9. PRICING PREVIEW
-// ════════════════════════════════════════════════════════════
 function PricingPreviewSection() {
   const plans = [
     {
       name: "Free",
+      desc: "For attendees and casual users getting started.",
       price: "$0",
       period: "forever",
-      desc: "For attendees",
       features: [
         "Browse all events",
         "Register for free events",
@@ -1450,30 +1298,32 @@ function PricingPreviewSection() {
         "Submit feedback & reviews",
         "In-app notifications",
       ],
-      cta: "Sign Up Free",
+      cta: "Get Started",
+      ctaStyle: "outline" as const,
       highlighted: false,
     },
     {
       name: "Organizer",
+      desc: "For event creators who need full control over their events.",
       price: "$0",
       period: "while in beta",
-      desc: "For event creators",
       features: [
         "Create unlimited events",
         "Sell paid tickets via Stripe",
         "Attendee management tools",
-        "QR check-in scanner",
         "Analytics dashboard",
         "Waitlist management",
+        "Revenue tracking",
       ],
       cta: "Start Organizing",
+      ctaStyle: "solid" as const,
       highlighted: true,
     },
     {
       name: "Enterprise",
+      desc: "For large organizations with advanced needs.",
       price: "Custom",
       period: "",
-      desc: "For large organizations",
       features: [
         "Everything in Organizer",
         "Custom branding & themes",
@@ -1482,204 +1332,656 @@ function PricingPreviewSection() {
         "Dedicated account manager",
         "SLA guarantee",
       ],
-      cta: "Contact Us",
+      cta: "Contact Sales",
+      ctaStyle: "outline" as const,
       highlighted: false,
     },
   ];
 
   return (
-    <section className="py-28 bg-gray-50">
-      <div className="w-full flex justify-center">
-        <div className="w-full max-w-7xl px-6">
-          {" "}
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="text-center mb-16"
+    <section
+      style={{
+        padding: "120px 0",
+        fontFamily: "'Quicksand', sans-serif",
+        position: "relative",
+        overflow: "hidden",
+        // Warm tinted background
+        background: "#fafaf8",
+      }}
+    >
+      {/* ── Decorative background elements ── */}
+
+      {/* Soft grid pattern */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage:
+            "linear-gradient(rgba(0,0,0,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px)",
+          backgroundSize: "48px 48px",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* Top-right decorative circle */}
+      <div
+        style={{
+          position: "absolute",
+          top: "-80px",
+          right: "-80px",
+          width: "300px",
+          height: "300px",
+          borderRadius: "50%",
+          border: "1px solid rgba(249,115,22,0.08)",
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          top: "-40px",
+          right: "-40px",
+          width: "210px",
+          height: "210px",
+          borderRadius: "50%",
+          border: "1px solid rgba(249,115,22,0.05)",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* Bottom-left decorative circle */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "-60px",
+          left: "-60px",
+          width: "250px",
+          height: "250px",
+          borderRadius: "50%",
+          border: "1px solid rgba(0,0,0,0.03)",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* Warm glow behind cards */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -40%)",
+          width: "700px",
+          height: "500px",
+          background:
+            "radial-gradient(ellipse, rgba(249,115,22,0.06) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }}
+      />
+
+      <div
+        style={{
+          maxWidth: "1100px",
+          margin: "0 auto",
+          padding: "0 32px",
+          position: "relative",
+        }}
+      >
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: "56px" }}>
+          <h2
+            style={{
+              fontSize: "clamp(2rem, 4.5vw, 3rem)",
+              fontWeight: 700,
+              color: "#1a1a1a",
+              lineHeight: 1.15,
+              margin: "0 0 14px 0",
+              letterSpacing: "-0.02em",
+            }}
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-5">
-              Simple, <span className="text-orange-600">Transparent</span>{" "}
-              Pricing
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Free for attendees. Affordable for organizers. No hidden fees
-              ever.
-            </p>
-          </motion.div>
-          <div className="grid md:grid-cols-3 gap-8 items-start">
-            {plans.map((plan, i) => (
-              <motion.div
+            Choose Your Plan
+          </h2>
+          <p
+            style={{
+              fontSize: "16px",
+              color: "#999",
+              maxWidth: "380px",
+              margin: "0 auto",
+              lineHeight: 1.6,
+            }}
+          >
+            Affordable and adaptable pricing to suit your goals.
+          </p>
+        </div>
+
+        {/* Cards container */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "0",
+            alignItems: "stretch",
+            // Outer wrapper shadow for depth
+            filter: "drop-shadow(0 4px 20px rgba(0,0,0,0.04))",
+          }}
+          className="grid-cols-1 md:grid-cols-3"
+        >
+          {plans.map((plan, i) => {
+            const isLeft = i === 0;
+            const isRight = i === 2;
+            const isMid = plan.highlighted;
+
+            return (
+              <div
                 key={i}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                custom={i}
-                className={`rounded-2xl p-8 border relative ${
-                  plan.highlighted
-                    ? "bg-gradient-to-b from-orange-500 to-orange-600 text-white border-orange-500 shadow-xl shadow-orange-500/20 md:scale-105 md:-my-4"
-                    : "bg-white text-gray-900 border-gray-200"
-                }`}
+                style={{
+                  background: isMid
+                    ? "linear-gradient(180deg, #ffffff 0%, #fafcff 100%)"
+                    : "#fff",
+                  border: isMid ? "2px solid #1a1a2e" : "1px solid #e0ddd8",
+                  borderRadius: isMid
+                    ? "20px"
+                    : isLeft
+                      ? "20px 0 0 20px"
+                      : isRight
+                        ? "0 20px 20px 0"
+                        : "0",
+                  padding: isMid ? "36px 36px 32px" : "32px 32px",
+                  display: "flex",
+                  flexDirection: "column",
+                  position: "relative",
+                  zIndex: isMid ? 3 : 1,
+                  marginTop: isMid ? "-16px" : "0",
+                  marginBottom: isMid ? "-16px" : "0",
+                  boxShadow: isMid
+                    ? "0 20px 60px rgba(26,26,46,0.12), 0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)"
+                    : "inset 0 1px 0 rgba(255,255,255,0.6)",
+                  transition:
+                    "transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s",
+                }}
+                onMouseEnter={(e) => {
+                  if (isMid) {
+                    e.currentTarget.style.transform = "translateY(-4px)";
+                    e.currentTarget.style.boxShadow =
+                      "0 28px 70px rgba(26,26,46,0.16), 0 8px 24px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)";
+                  } else {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow =
+                      "0 12px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = isMid
+                    ? "0 20px 60px rgba(26,26,46,0.12), 0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)"
+                    : "inset 0 1px 0 rgba(255,255,255,0.6)";
+                }}
               >
-                {plan.highlighted && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 bg-amber-400 text-amber-900 text-xs font-bold rounded-full tracking-wider">
-                    MOST POPULAR
+                {/* Corner ornament on highlighted card */}
+                {isMid && (
+                  <>
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "16px",
+                        right: "16px",
+                        width: "48px",
+                        height: "48px",
+                        borderRadius: "50%",
+                        border: "1px solid rgba(249,115,22,0.1)",
+                        pointerEvents: "none",
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "24px",
+                        right: "24px",
+                        width: "32px",
+                        height: "32px",
+                        borderRadius: "50%",
+                        border: "1px solid rgba(249,115,22,0.06)",
+                        pointerEvents: "none",
+                      }}
+                    />
+                  </>
+                )}
+
+                {/* Recommended badge */}
+                {isMid && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "-14px",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      padding: "6px 20px",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      letterSpacing: "0.04em",
+                      color: "#fff",
+                      background:
+                        "linear-gradient(135deg, #1a1a2e 0%, #2d2d4e 100%)",
+                      borderRadius: "100px",
+                      whiteSpace: "nowrap",
+                      boxShadow: "0 4px 12px rgba(26,26,46,0.2)",
+                    }}
+                  >
+                    Recommended for you
                   </div>
                 )}
 
-                <div className="text-sm font-semibold mb-1 opacity-80 uppercase tracking-wider">
+                {/* Plan name */}
+                <h3
+                  style={{
+                    fontSize: isMid ? "24px" : "22px",
+                    fontWeight: 700,
+                    color: "#1a1a1a",
+                    margin: "0 0 6px 0",
+                  }}
+                >
                   {plan.name}
-                </div>
-                <div className="flex items-baseline gap-1 mb-1">
-                  <span className="text-4xl font-bold">{plan.price}</span>
+                </h3>
+
+                <p
+                  style={{
+                    fontSize: "13px",
+                    color: "#aaa",
+                    lineHeight: 1.5,
+                    margin: "0 0 28px 0",
+                  }}
+                >
+                  {plan.desc}
+                </p>
+
+                {/* Price */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "baseline",
+                    gap: "4px",
+                    marginBottom: "20px",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: isMid ? "48px" : "42px",
+                      fontWeight: 700,
+                      color: "#1a1a1a",
+                      letterSpacing: "-0.04em",
+                      lineHeight: 1,
+                    }}
+                  >
+                    {plan.price}
+                  </span>
                   {plan.period && (
                     <span
-                      className={`text-sm ${plan.highlighted ? "text-orange-100" : "text-gray-500"}`}
+                      style={{
+                        fontSize: "14px",
+                        color: "#bbb",
+                        fontWeight: 500,
+                      }}
                     >
                       /{plan.period}
                     </span>
                   )}
                 </div>
+
+                {/* Divider with gradient */}
+                <div
+                  style={{
+                    height: "1px",
+                    background: isMid
+                      ? "linear-gradient(90deg, transparent, rgba(249,115,22,0.15), transparent)"
+                      : "linear-gradient(90deg, transparent, #e5e5e0, transparent)",
+                    marginBottom: "24px",
+                  }}
+                />
+
+                {/* What's included */}
                 <p
-                  className={`text-sm mb-6 ${plan.highlighted ? "text-orange-100" : "text-gray-500"}`}
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    color: "#1a1a1a",
+                    margin: "0 0 18px 0",
+                  }}
                 >
-                  {plan.desc}
+                  What&apos;s included:
                 </p>
-                <ul className="space-y-3 mb-8">
+
+                {/* Features */}
+                <ul
+                  style={{
+                    listStyle: "none",
+                    padding: 0,
+                    margin: "0 0 36px 0",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "14px",
+                    flex: 1,
+                  }}
+                >
                   {plan.features.map((f, j) => (
-                    <li key={j} className="flex items-center gap-2 text-sm">
-                      <CheckCircle2
-                        className={`w-4 h-4 flex-shrink-0 ${plan.highlighted ? "text-orange-200" : "text-orange-500"}`}
-                      />
+                    <li
+                      key={j}
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "12px",
+                        fontSize: "14px",
+                        color: "#555",
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {/* Checkmark with colored background */}
+                      <span
+                        style={{
+                          flexShrink: 0,
+                          width: "20px",
+                          height: "20px",
+                          borderRadius: "50%",
+                          background: isMid
+                            ? "rgba(249,115,22,0.1)"
+                            : "rgba(45,106,79,0.08)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          marginTop: "1px",
+                        }}
+                      >
+                        <svg
+                          width="11"
+                          height="11"
+                          viewBox="0 0 16 16"
+                          fill="none"
+                        >
+                          <path
+                            d="M13.3 4.3L6.3 11.3L2.7 7.7"
+                            stroke={isMid ? "#ea580c" : "#2d6a4f"}
+                            strokeWidth="2.2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </span>
                       {f}
                     </li>
                   ))}
                 </ul>
+
+                {/* CTA */}
                 <Link
                   href={plan.name === "Enterprise" ? "/contact" : "/sign-up"}
-                  className={`block text-center py-3 rounded-full font-semibold text-sm transition-all ${
-                    plan.highlighted
-                      ? "bg-white text-orange-600 hover:bg-orange-50 shadow-lg"
-                      : "bg-orange-500 text-white hover:bg-orange-600"
-                  }`}
+                  style={{
+                    display: "block",
+                    textAlign: "center",
+                    padding: "15px 0",
+                    fontSize: "14px",
+                    fontWeight: 700,
+                    fontFamily: "'Quicksand', sans-serif",
+                    borderRadius: "12px",
+                    textDecoration: "none",
+                    transition: "all 0.3s cubic-bezier(0.22, 1, 0.36, 1)",
+                    ...(plan.ctaStyle === "solid"
+                      ? {
+                          background:
+                            "linear-gradient(135deg, #1a1a2e 0%, #2d2d4e 100%)",
+                          color: "#fff",
+                          border: "none",
+                          boxShadow:
+                            "0 4px 16px rgba(26,26,46,0.2), inset 0 1px 0 rgba(255,255,255,0.1)",
+                        }
+                      : {
+                          background: "transparent",
+                          color: "#1a1a1a",
+                          border: "1.5px solid #d5d2cd",
+                        }),
+                  }}
+                  onMouseEnter={(e) => {
+                    if (plan.ctaStyle === "solid") {
+                      e.currentTarget.style.boxShadow =
+                        "0 8px 24px rgba(26,26,46,0.3), inset 0 1px 0 rgba(255,255,255,0.1)";
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                    } else {
+                      e.currentTarget.style.borderColor = "#1a1a1a";
+                      e.currentTarget.style.background = "rgba(26,26,26,0.03)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (plan.ctaStyle === "solid") {
+                      e.currentTarget.style.boxShadow =
+                        "0 4px 16px rgba(26,26,46,0.2), inset 0 1px 0 rgba(255,255,255,0.1)";
+                      e.currentTarget.style.transform = "translateY(0)";
+                    } else {
+                      e.currentTarget.style.borderColor = "#d5d2cd";
+                      e.currentTarget.style.background = "transparent";
+                    }
+                  }}
                 >
                   {plan.cta}
                 </Link>
-              </motion.div>
-            ))}
-          </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
   );
 }
-
 // ════════════════════════════════════════════════════════════
 // 10. FAQ
 // ════════════════════════════════════════════════════════════
+
 function FAQSection() {
   const faqs = [
     {
       q: "Is Evenza free to use?",
       a: "Yes! Attendees can browse, register, and attend events completely free. Organizers can also create events for free during our beta period. We plan to introduce affordable organizer plans in the future.",
+      icon: <CreditCard style={{ width: "18px", height: "18px" }} />,
     },
     {
       q: "How do QR code tickets work?",
       a: "When you register for an event (free or paid), a unique QR code ticket is automatically generated and saved to your account. At the event venue, the organizer scans your QR code using the built-in scanner to validate your entry. Each code can only be used once.",
+      icon: <Ticket style={{ width: "18px", height: "18px" }} />,
     },
     {
       q: "Can I create both free and paid events?",
       a: "Absolutely. Organizers can create free events where registration is instant, or paid events with Stripe checkout for card payments. We also support bank transfers, cash payments, and local gateways like JawwalPay.",
+      icon: <CalendarCheck style={{ width: "18px", height: "18px" }} />,
     },
     {
       q: "What happens if an event is full?",
       a: "If the organizer enables the waitlist feature, you can join the waiting queue. When a spot opens up due to a cancellation, the next person in line is automatically notified and gets the opportunity to register.",
+      icon: <Users style={{ width: "18px", height: "18px" }} />,
     },
     {
       q: "How does the feedback system work?",
       a: "After an event ends, attendees can leave a star rating (1-5) and a written review. All feedback goes through admin moderation before being displayed publicly on the event page. This ensures quality and prevents spam.",
+      icon: <Star style={{ width: "18px", height: "18px" }} />,
     },
     {
       q: "Is my payment information secure?",
       a: "Yes. All payments are processed through Stripe with industry-standard PCI DSS compliance and 256-bit SSL encryption. We never store your card details on our servers. Stripe handles all sensitive payment data.",
+      icon: <Lock style={{ width: "18px", height: "18px" }} />,
     },
     {
       q: "Can I cancel my registration?",
       a: "Yes, you can cancel your registration at any time before the event starts. For free events, the cancellation is instant. For paid events, refund policies are set by the event organizer.",
+      icon: <Clock style={{ width: "18px", height: "18px" }} />,
     },
     {
       q: "What kind of events can I create?",
       a: "Any kind! Conferences, workshops, webinars, meetups, fundraisers, university events, corporate training, networking sessions — both online and in-person. The platform adapts to your event type.",
+      icon: <Globe style={{ width: "18px", height: "18px" }} />,
     },
   ];
 
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <section className="py-28">
-      <div className="w-full flex justify-center">
-        <div className="w-full max-w-7xl px-6">
-          {" "}
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="text-center mb-16"
+    <section
+      style={{
+        padding: "120px 0",
+        background: "#fff",
+        fontFamily: "'Quicksand', sans-serif",
+      }}
+    >
+      <div style={{ maxWidth: "720px", margin: "0 auto", padding: "0 32px" }}>
+        {/* Header */}
+        <div style={{ marginBottom: "48px" }}>
+          <h2
+            style={{
+              fontSize: "clamp(1.8rem, 3.5vw, 2.5rem)",
+              fontWeight: 700,
+              color: "#1a1a1a",
+              lineHeight: 1.2,
+              margin: "0 0 12px 0",
+              fontStyle: "italic",
+              letterSpacing: "-0.02em",
+            }}
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-5">
-              Frequently Asked{" "}
-              <span className="text-orange-600">Questions</span>
-            </h2>
-            <p className="text-lg text-gray-600">
-              Got questions? We&apos;ve got answers.
-            </p>
-          </motion.div>
-          <div className="space-y-3">
-            {faqs.map((faq, i) => (
-              <motion.div
+            Frequently asked questions
+          </h2>
+          <p
+            style={{
+              fontSize: "15px",
+              color: "#999",
+              lineHeight: 1.6,
+              margin: 0,
+            }}
+          >
+            Can&apos;t find what you&apos;re looking for?{" "}
+            <Link
+              href="/contact"
+              style={{
+                color: "#1a1a1a",
+                fontWeight: 600,
+                textDecoration: "underline",
+                textUnderlineOffset: "3px",
+                textDecorationColor: "#ddd",
+              }}
+            >
+              Contact our team
+            </Link>{" "}
+            for help.
+          </p>
+        </div>
+
+        {/* FAQ items */}
+        <div>
+          {faqs.map((faq, i) => {
+            const isOpen = openIndex === i;
+            return (
+              <div
                 key={i}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                custom={i * 0.5}
+                style={{
+                  borderBottom:
+                    i < faqs.length - 1 ? "1px solid #f0f0ec" : "none",
+                }}
               >
                 <button
-                  onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                  className={`w-full flex items-center justify-between p-5 rounded-xl border text-left transition-all ${
-                    openIndex === i
-                      ? "bg-orange-50 border-orange-200 shadow-sm"
-                      : "bg-gray-50 border-gray-100 hover:bg-orange-50/50 hover:border-orange-100"
-                  }`}
+                  onClick={() => setOpenIndex(isOpen ? null : i)}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "16px",
+                    padding: "20px 0",
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    fontFamily: "'Quicksand', sans-serif",
+                    transition: "opacity 0.2s",
+                  }}
                 >
-                  <span className="font-semibold text-gray-900 pr-4">
+                  {/* Icon */}
+                  <span
+                    style={{
+                      flexShrink: 0,
+                      width: "40px",
+                      height: "40px",
+                      borderRadius: "12px",
+                      background: isOpen ? "rgba(249,115,22,0.08)" : "#f8f8f6",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: isOpen ? "#220d01" : "#bbb",
+                      transition: "background 0.25s, color 0.25s",
+                    }}
+                  >
+                    {faq.icon}
+                  </span>
+
+                  {/* Question */}
+                  <span
+                    style={{
+                      flex: 1,
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      color: "#1a1a1a",
+                      lineHeight: 1.4,
+                    }}
+                  >
                     {faq.q}
                   </span>
-                  <ChevronRight
-                    className={`w-5 h-5 flex-shrink-0 transition-transform duration-300 ${
-                      openIndex === i
-                        ? "rotate-90 text-orange-500"
-                        : "text-gray-400"
-                    }`}
-                  />
+
+                  {/* Chevron */}
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    style={{
+                      flexShrink: 0,
+                      transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                      transition:
+                        "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)",
+                      color: isOpen ? "#ea580c" : "#ccc",
+                    }}
+                  >
+                    <path
+                      d="M5 7.5L10 12.5L15 7.5"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </button>
-                <motion.div
-                  initial={false}
-                  animate={{
-                    height: openIndex === i ? "auto" : 0,
-                    opacity: openIndex === i ? 1 : 0,
+
+                {/* Answer — CSS-only expand */}
+                <div
+                  style={{
+                    maxHeight: isOpen ? "300px" : "0",
+                    opacity: isOpen ? 1 : 0,
+                    overflow: "hidden",
+                    transition:
+                      "max-height 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease",
                   }}
-                  transition={{ duration: 0.3 }}
-                  className="overflow-hidden"
                 >
-                  <div className="px-5 pb-4 pt-3">
-                    <p className="text-gray-600 leading-relaxed text-sm">
+                  <div
+                    style={{
+                      paddingLeft: "56px",
+                      paddingBottom: "20px",
+                      paddingRight: "32px",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        color: "#777",
+                        lineHeight: 1.75,
+                        margin: 0,
+                      }}
+                    >
                       {faq.a}
                     </p>
                   </div>
-                </motion.div>
-              </motion.div>
-            ))}
-          </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -1707,9 +2009,7 @@ function CTASection() {
           {" "}
           <h2 className="text-2xl md:text-4xl font-bold mb-6 leading-tight">
             Ready to Create Your
-            <span className=" text-orange">
-              Next Great Event?
-            </span>
+            <span className=" text-orange">Next Great Event?</span>
           </h2>
           <p className="text-xl text-gray-700 max-w-2xl mx-auto mb-12 leading-relaxed">
             Whether you&apos;re hosting or attending, your next unforgettable

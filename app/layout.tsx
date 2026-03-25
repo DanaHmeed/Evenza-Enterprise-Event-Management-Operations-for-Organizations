@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import "@/styles/globals.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
-import "@/styles/FeaturesShowcase.css";
 
 export const metadata: Metadata = {
   title: {

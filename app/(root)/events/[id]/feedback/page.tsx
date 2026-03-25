@@ -1,13 +1,15 @@
+// app/(root)/events/[id]/feedback/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, use } from "react";
 import { useRouter } from "next/navigation";
 
 export default function FeedbackPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = use(params);
   const router = useRouter();
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
@@ -27,7 +29,7 @@ export default function FeedbackPage({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          eventId: params.id,
+          eventId: id,
           rating,
           comment: comment.trim() || undefined,
         }),
@@ -41,7 +43,7 @@ export default function FeedbackPage({
 
       setSuccess(true);
       setTimeout(() => {
-        router.push(`/events/${params.id}`);
+        router.push(`/events/${id}`);
       }, 2000);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";

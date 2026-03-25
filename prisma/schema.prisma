@@ -91,6 +91,8 @@ model Event {
   @@index([status])
   @@index([organizerId])
   @@index([isFeatured])
+  @@index([title])
+
 }
 
 model Category {

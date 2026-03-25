@@ -1,18 +1,38 @@
+// app/(root)/events/page.tsx
 import { Suspense } from "react";
 import prisma from "@/lib/db/prisma";
+import { unstable_cache } from "next/cache";
 import EventsClient from "./EventsClient";
+import EventsLoadingSkeleton from  "./EventsLoadingSkeleton";
 
 interface PageProps {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }
 
-export default async function EventsPage({ searchParams }: PageProps) {
-  const params = await searchParams;
-  const search = params.search || "";
-  const categoryId = params.categoryId || "";
-  const page = parseInt(params.page || "1");
-  const pageSize = 12;
+// ── Cache categories — they rarely change ──
+const getCategories = unstable_cache(
+  async () => {
+    return prisma.category.findMany({
+      select: { id: true, name: true, slug: true, color: true },
+      orderBy: { name: "asc" },
+    });
+  },
+  ["event-categories"],
+  { revalidate: 300 } // 5 minutes
+);
 
+// ── Data fetching extracted into its own component so Suspense works ──
+async function EventsData({
+  search,
+  categoryId,
+  page,
+  pageSize,
+}: {
+  search: string;
+  categoryId: string;
+  page: number;
+  pageSize: number;
+}) {
   const where: Record<string, unknown> = { status: "PUBLISHED" };
 
   if (search) {
@@ -28,7 +48,21 @@ export default async function EventsPage({ searchParams }: PageProps) {
   const [events, total, categories] = await Promise.all([
     prisma.event.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        summary: true,
+        banner: true,
+        startDate: true,
+        endDate: true,
+        eventType: true,
+        price: true,
+        currency: true,
+        isOnline: true,
+        city: true,
+        venueName: true,
+        status: true,
         category: {
           select: { id: true, name: true, slug: true, color: true },
         },
@@ -39,10 +73,7 @@ export default async function EventsPage({ searchParams }: PageProps) {
       take: pageSize,
     }),
     prisma.event.count({ where }),
-    prisma.category.findMany({
-      select: { id: true, name: true, slug: true, color: true },
-      orderBy: { name: "asc" },
-    }),
+    getCategories(),
   ]);
 
   const serializedEvents = events.map((e) => ({
@@ -65,134 +96,39 @@ export default async function EventsPage({ searchParams }: PageProps) {
   }));
 
   return (
-    <Suspense fallback={<EventsLoadingSkeleton />}>
-      <EventsClient
-        initialEvents={serializedEvents}
-        categories={categories}
-        initialSearch={search}
-        initialCategory={categoryId}
-        pagination={{
-          page,
-          pageSize,
-          total,
-          totalPages: Math.ceil(total / pageSize),
-        }}
-      />
-    </Suspense>
+    <EventsClient
+      initialEvents={serializedEvents}
+      categories={categories}
+      initialSearch={search}
+      initialCategory={categoryId}
+      pagination={{
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize),
+      }}
+    />
   );
 }
 
-function EventsLoadingSkeleton() {
+export default async function EventsPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const search = params.search || "";
+  const categoryId = params.categoryId || "";
+  const page = parseInt(params.page || "1");
+  const pageSize = 12;
+
+  // Suspense key forces re-suspension when params change
+  const suspenseKey = `${search}-${categoryId}-${page}`;
+
   return (
-    <section
-      style={{
-        minHeight: "100vh",
-        background: "#fafaf8",
-        fontFamily: "'DM Sans', sans-serif",
-      }}
-    >
-      <div style={{ background: "#fff", borderBottom: "1px solid #eee" }}>
-        <div
-          style={{
-            maxWidth: "1400px",
-            margin: "0 auto",
-            padding: "80px 48px 48px",
-          }}
-        >
-          <div
-            className="flex items-center"
-            style={{ gap: "12px", marginBottom: "24px" }}
-          >
-            <div
-              className="animate-pulse"
-              style={{ width: "32px", height: "2px", background: "#f0f0ec" }}
-            />
-            <div
-              className="animate-pulse"
-              style={{
-                width: "60px",
-                height: "10px",
-                background: "#f0f0ec",
-                borderRadius: "2px",
-              }}
-            />
-          </div>
-          <div
-            className="animate-pulse"
-            style={{
-              height: "40px",
-              width: "280px",
-              background: "#f0f0ec",
-              borderRadius: "4px",
-              marginBottom: "12px",
-            }}
-          />
-          <div
-            className="animate-pulse"
-            style={{
-              height: "16px",
-              width: "360px",
-              background: "#f5f5f0",
-              borderRadius: "3px",
-            }}
-          />
-          <div
-            className="animate-pulse"
-            style={{
-              marginTop: "40px",
-              height: "44px",
-              width: "420px",
-              maxWidth: "100%",
-              background: "#f5f5f0",
-              borderRadius: "4px",
-              border: "1px solid #eee",
-            }}
-          />
-        </div>
-      </div>
-      <div
-        style={{
-          maxWidth: "1400px",
-          margin: "0 auto",
-          padding: "48px 48px 96px",
-        }}
-      >
-        <div
-          className="grid"
-          style={{
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-            gap: "48px 32px",
-          }}
-        >
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i}>
-              <div
-                className="animate-pulse"
-                style={{
-                  aspectRatio: "16 / 10",
-                  background: "#efefe8",
-                  borderRadius: "6px",
-                  marginBottom: "16px",
-                }}
-              />
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                <div
-                  className="animate-pulse"
-                  style={{ height: "10px", width: "80px", background: "#efefe8", borderRadius: "2px" }}
-                />
-                <div
-                  className="animate-pulse"
-                  style={{ height: "14px", width: "85%", background: "#efefe8", borderRadius: "2px" }}
-                />
-                <div
-                  className="animate-pulse"
-                  style={{ height: "10px", width: "60%", background: "#f5f5f0", borderRadius: "2px" }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
+    <Suspense key={suspenseKey} fallback={<EventsLoadingSkeleton />}>
+      <EventsData
+        search={search}
+        categoryId={categoryId}
+        page={page}
+        pageSize={pageSize}
+      />
+    </Suspense>
   );
 }

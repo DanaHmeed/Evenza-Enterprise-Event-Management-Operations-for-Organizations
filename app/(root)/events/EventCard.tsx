@@ -1,7 +1,9 @@
-// components/events/EventCard.tsx
+// app/(root)/events/EventCard.tsx
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Calendar, MapPin, Globe, ArrowUpRight } from "lucide-react";
 
 interface EventCardProps {
@@ -30,7 +32,7 @@ interface EventCardProps {
   };
 }
 
-export default function EventCard({ event }: EventCardProps) {
+function EventCard({ event }: EventCardProps) {
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
     const month = d
@@ -67,6 +69,7 @@ export default function EventCard({ event }: EventCardProps) {
       href={`/events/${event.id}`}
       className="group relative flex flex-col"
       style={{ opacity: isPast || isCancelled ? 0.55 : 1 }}
+      prefetch={false}
     >
       {/* ── Image ── */}
       <div
@@ -74,10 +77,13 @@ export default function EventCard({ event }: EventCardProps) {
         style={{ aspectRatio: "16 / 10", borderRadius: "6px" }}
       >
         {event.banner ? (
-          <img
+          <Image
             src={event.banner}
             alt={event.title}
-            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+            loading="lazy"
           />
         ) : (
           <div
@@ -271,3 +277,5 @@ export default function EventCard({ event }: EventCardProps) {
     </Link>
   );
 }
+
+export default memo(EventCard);

@@ -27,8 +27,10 @@ export default function Navbar() {
   const [accountOpen, setAccountOpen] = useState(false);
   const accountRef = useRef<HTMLDivElement | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -60,6 +62,7 @@ export default function Navbar() {
     };
     fetchRole();
   }, [isSignedIn, user]);
+  
 
   const isAdmin = userRole === "ADMIN";
   const isOrganizer = userRole === "ORGANIZER" || isAdmin;
@@ -111,8 +114,8 @@ export default function Navbar() {
 
           {/* Right Side */}
           <div className="hidden lg:flex items-center gap-3">
-            {!isLoaded ? (
-              <div className="w-20 h-9 bg-gray-100 rounded-full animate-pulse" />
+{!mounted || !isLoaded ? (
+                <div className="w-20 h-9 bg-gray-100 rounded-full animate-pulse" />
             ) : !isSignedIn ? (
               <>
                 <Link href="/sign-in">
@@ -586,8 +589,14 @@ function DropdownLink({
         textDecoration: "none",
         transition: "background 0.15s, color 0.15s",
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = "#fafaf8"; e.currentTarget.style.color = "#1a1a1a"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#555"; }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "#fafaf8";
+        e.currentTarget.style.color = "#1a1a1a";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "transparent";
+        e.currentTarget.style.color = "#555";
+      }}
     >
       <span style={{ color: "#aaa", display: "flex" }}>{icon}</span>
       {label}

@@ -6,37 +6,19 @@ import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
 import Link from "next/link";
 import Image from "next/image";
-import { AlignCenter, Link2, Video } from "lucide-react";
 import { useScroll, useTransform, motion } from "framer-motion";
 import { useRef, useState } from "react";
 import {
   CalendarCheck,
   Ticket,
-  ShieldCheck,
   Users,
   CreditCard,
-  ScanLine,
-  ArrowRight,
-  TrendingUp,
   Globe,
-  BarChart3,
-  Bell,
   Star,
   CheckCircle2,
-  Zap,
   Lock,
-  Headphones,
-  ChevronRight,
-  Quote,
-  MapPin,
   Clock,
-  Search,
-  Filter,
-  Layers,
-  MessageSquare,
-  Eye,
 } from "lucide-react";
-import { styleText } from "node:util";
 
 // Stagger container variants for feature cards
 const staggerContainer = {
@@ -80,67 +62,153 @@ function HeroSection() {
     offset: ["start start", "end start"],
   });
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-  const y = useTransform(scrollYProgress, [0, 0.5], [0, 100]);
-
+  const y = useTransform(scrollYProgress, [0, 0.5], [0, 80]);
+ 
   return (
     <section
       ref={ref}
-      className="relative min-h-screen flex items-center justify-center bg-[#020617] text-white overflow-hidden py-20"
+      style={{
+        position: "relative",
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#06060a",
+        overflow: "hidden",
+        //fontFamily: "'Quicksand', sans-serif",
+      }}
     >
-      {/* Animated blobs */}
-      <div className="absolute inset-0">
-        <motion.div
-          animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute -top-1/2 -right-1/4 w-[800px] h-[800px] bg-gradient-to-br from-orange-500/20 via-orange-600/10 to-transparent rounded-full blur-3xl"
+      {/* Background — subtle grid + single warm glow */}
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+        {/* Grid */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px)",
+            backgroundSize: "72px 72px",
+          }}
         />
-        <motion.div
-          animate={{ scale: [1, 1.3, 1], rotate: [0, -90, 0] }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute -bottom-1/2 -left-1/4 w-[900px] h-[900px] bg-gradient-to-tr from-orange-400/15 via-amber-500/10 to-transparent rounded-full blur-3xl"
+        {/* Single centered glow */}
+        <div
+          style={{
+            position: "absolute",
+            top: "45%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "800px",
+            height: "600px",
+            background: "radial-gradient(ellipse, rgba(234,88,12,0.07) 0%, transparent 65%)",
+          }}
         />
-        <motion.div
-          animate={{ scale: [1, 1.15, 1] }}
-          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-          className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-gradient-to-r from-rose-500/5 to-orange-500/10 rounded-full blur-3xl"
+        {/* Top edge fade */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "200px",
+            background: "linear-gradient(to bottom, #06060a, transparent)",
+          }}
         />
-        {/* Grid overlay */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]" />
       </div>
-
+       <div
+          style={{
+            position: "absolute",
+            bottom: "-15%",
+            left: "-5%",
+            width: "400px",
+            height: "700px",
+            background: "radial-gradient(circle, rgba(248, 96, 15, 0.25) 0%, rgba(226, 120, 45, 0.12) 35%, rgba(123, 69, 248, 0.04) 60%, transparent 80%)",
+            //borderRadius: "20%",
+            filter: "blur(60px)",
+            pointerEvents: "none",
+          }}
+        />
+ 
       <motion.div
         style={{ opacity, y }}
-        className="relative z-10 max-w-6xl mx-auto text-center px-6"
+        className="relative z-10"
       >
-        {/* Headline */}
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.8 }}
-          className="text-4xl text-white md:text-6xl font-bold  leading-[1.08] mb-8 tracking-tight"
+        <div
+          style={{
+            maxWidth: "800px",
+            margin: "0 auto",
+            textAlign: "center",
+            padding: "0 32px",
+          }}
         >
-          WHERE EVERY EVENT FINDS IT’S AUDIENCE. <br />
-          <span className="relative inline-block mt-2 mb-20">
-            <span className="text-[27px] bg-gradient-to-r from-orange-400 via-white to-white bg-clip-text text-transparent font-[Quicksand]">
-              Create. Host. Experience. All in one place.
+          {/* Eyebrow */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.6 }}
+          >
+            <span
+              style={{
+                display: "inline-block",
+                fontSize: "11px",
+                fontWeight: 700,
+                letterSpacing: "0.3em",
+                textTransform: "uppercase",
+                color: "#ea580c",
+                marginBottom: "28px",
+              }}
+            >
+              Event Management Platform
             </span>
-            {/* Subtitle */}
-            <p className="text-gray-500 text-lg md:text-xl max-w-2xl text-center mx-auto mb-20 font-[Quicksand]">
-              Plan, launch, and scale events with precision. Evenza gives
-              organizers complete control and gives audiences seamless access to
-              experiences that matter. Built to support growth, engagement, and
-              impact at every stage.
-            </p>
-            <motion.div
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 1 }}
-              transition={{ delay: 0.8, duration: 0.8 }}
-              className="absolute bottom-2 left-0 right-0 h-3"
-            />
-          </span>
-        </motion.h1>
-
-        {/* CTA */}
+          </motion.div>
+ 
+          {/* Headline */}
+          <motion.h1
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.7 }}
+            style={{
+              fontSize: "clamp(2.5rem, 6vw, 4.25rem)",
+              fontWeight: 700,
+              lineHeight: 1.08,
+              letterSpacing: "-0.03em",
+              color: "#fff",
+              margin: "0 0 24px 0",
+            }}
+          >
+              WHERE EVERY EVENT
+            <br />
+            FINDS ITS{" "}
+            <span
+              style={{
+                background: "linear-gradient(135deg, #ea580c, #f97316, #fb923c)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              AUDIENCE
+            </span>
+          </motion.h1>
+ 
+          {/* Subtitle */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35, duration: 0.7 }}
+            style={{
+              fontSize: "17px",
+              lineHeight: 1.7,
+              color: "rgba(255,255,255,0.35)",
+              maxWidth: "520px",
+              margin: "0 auto 48px",
+            }}
+          >
+            Plan, launch, and scale events with precision. Complete control
+            for organizers, seamless access for attendees.
+          </motion.p>
+ 
+          {/* CTA buttons */}
+          
         <Link href="/events" className="mb-[48px] inline-block">
           <button className="explore-button mb-48px font-[Quicksand]">
             <span className="explore-button__icon-wrapper">
@@ -164,162 +232,333 @@ function HeroSection() {
             </span>
             Explore Evenza
           </button>
-        </Link>
-
-        {/* Hero Stats */}
+        </Link> 
+          {/* Trust indicators */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8, duration: 0.6 }}
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              gap: "32px",
+              marginTop: "56px",
+              flexWrap: "wrap",
+            }}
+          >
+            {[
+              "Free to start",
+              "No credit card needed",
+              "Setup in minutes",
+            ].map((text, i) => (
+              <span
+                key={i}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  fontSize: "12px",
+                  color: "rgba(255, 255, 255, 0.56)",
+                  fontWeight: 500,
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                  <path
+                    d="M13.3 4.3L6.3 11.3L2.7 7.7"
+                    stroke="rgba(234,88,12,0.5)"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                {text}
+              </span>
+            ))}
+          </motion.div>
+        </div>
       </motion.div>
-
+ 
       {/* Scroll indicator */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.2 }}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2"
+        style={{
+          position: "absolute",
+          bottom: "40px",
+          left: "50%",
+          transform: "translateX(-50%)",
+        }}
       >
         <motion.div
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className="w-6 h-10 rounded-full border-2 border-orange-500/30 flex items-start justify-center p-2"
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+          style={{
+            width: "24px",
+            height: "40px",
+            borderRadius: "12px",
+            border: "1.5px solid rgba(255,255,255,0.08)",
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "center",
+            paddingTop: "8px",
+          }}
         >
-          <motion.div
-            animate={{ y: [0, 12, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="w-1.5 h-1.5 rounded-full bg-orange-500"
+          <div
+            style={{
+              width: "3px",
+              height: "8px",
+              borderRadius: "2px",
+              background: "rgba(234,88,12,0.4)",
+            }}
           />
         </motion.div>
       </motion.div>
     </section>
   );
 }
-
+ 
 // ════════════════════════════════════════════════════════════
-// 2. FEATURES SHOWCASE
-
-const features = [
-  {
-    title: "IN PERSON EVENTS",
-    description:
-      "Host unforgettable on-site experiences with rich event pages with media, categories, and SEO-friendly slugs.",
-    glow: "rgba(249,115,22,0.15)",
-    bg: "/images/card1.png",
-    icon: <Users size={26} strokeWidth={2} />,
-  },
-  {
-    title: "VIRTUAL EVENTS",
-    description:
-      "Host online events with meeting link integration. Attendees receive instant QR code tickets for seamless access.",
-    glow: "rgba(249,115,22,0.15)",
-    bg: "/images/card2.png",
-    icon: <Video size={26} strokeWidth={2} />,
-  },
-  {
-    title: "HYBRID EVENTS",
-    description:
-      "Combine physical and virtual elements. Manage registrations, ticketing, and check-ins for both audiences in one place.",
-    glow: "rgba(249,115,22,0.15)",
-    bg: "/images/card3.png",
-    icon: <Link2 size={26} strokeWidth={2} />,
-  },
-];
-
-const containerVariants = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.12 },
-  },
-};
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 40 },
-  visible: {
-    opacity: 1,
-    y: 2,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const },
-  },
-};
-
-export function FeaturesShowcase() {
+// 2. FEATURES SHOWCASE — Icon-forward bento grid
+// ════════════════════════════════════════════════════════════
+function FeaturesShowcase() {
+  const features = [
+    {
+      title: "In-Person Events",
+      desc: "Rich event pages with media galleries, venue maps, capacity controls, and on-site check-in tools.",
+      icon: (
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      ),
+      accent: "#ea580c",
+      size: "large", // spans 2 cols
+    },
+    {
+      title: "Virtual Events",
+      desc: "Meeting link integration with instant ticket delivery. Global reach, no venue needed.",
+      icon: (
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="23 7 16 12 23 17 23 7" />
+          <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+        </svg>
+      ),
+      accent: "#3b82f6",
+      size: "normal",
+    },
+    {
+      title: "Hybrid Events",
+      desc: "Combine physical and virtual. Unified registration and ticketing for both audiences.",
+      icon: (
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+        </svg>
+      ),
+      accent: "#8b5cf6",
+      size: "normal",
+    },
+    {
+      title: "Secure Payments",
+      desc: "Stripe-powered checkout with SSL encryption. Support for free events, paid tickets, and local payment methods.",
+      icon: (
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+          <line x1="1" y1="10" x2="23" y2="10" />
+        </svg>
+      ),
+      accent: "#059669",
+      size: "normal",
+    },
+    {
+      title: "Real-Time Analytics",
+      desc: "Track registrations, revenue, attendance rates, and attendee engagement from a live dashboard.",
+      icon: (
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10" />
+          <line x1="12" y1="20" x2="12" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="14" />
+        </svg>
+      ),
+      accent: "#ea580c",
+      size: "large",
+    },
+  ];
+ 
   return (
-    <section className="relative bg-[#0a0a0f] overflow-hidden min-h-[100svh] flex items-center justify-center">
-      {/* Top gradient border */}
-      {/* Background glow */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-purple-500/[0.03] rounded-full blur-[100px]" />
-      </div>
-
-      <div className="relative max-w-7xl mx-auto w-full flex flex-col items-center justify-center gap-16 px-8">
+    <section
+      style={{
+        padding: "120px 0",
+        background: "#06060a",
+        fontFamily: "'Quicksand', sans-serif",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* Subtle background glow */}
+      <div
+        style={{
+          position: "absolute",
+          top: "30%",
+          right: "10%",
+          width: "500px",
+          height: "500px",
+          background: "radial-gradient(circle, rgba(234,88,12,0.03) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }}
+      />
+ 
+      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 32px", position: "relative" }}>
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center"
-        >
-          <p className="text-xs font-bold tracking-[0.3em] text-orange-400 uppercase mb-4">
-            PLATFORM FEATURES
+        <div style={{ marginBottom: "64px", maxWidth: "500px" }}>
+          <p
+            style={{
+              fontSize: "11px",
+              fontWeight: 700,
+              letterSpacing: "0.3em",
+              textTransform: "uppercase",
+              color: "#ea580c",
+              marginBottom: "16px",
+            }}
+          >
+            Platform Features
           </p>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight font-quicksand">
-            Everything you need to run
-            <br />
-            <span className="text-[#f97316]">world-class events</span>
+          <h2
+            style={{
+              fontSize: "clamp(1.75rem, 3.5vw, 2.5rem)",
+              fontWeight: 700,
+              color: "#fff",
+              lineHeight: 1.2,
+              margin: "0 0 14px 0",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Everything you need to run{" "}
+            <span style={{ color: "#ea580c" }}>world-class events</span>
           </h2>
-        </motion.div>
-
-        {/* Cards */}
-        <motion.div
-          className="features-grid font-[quicksand]"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
+          <p
+            style={{
+              fontSize: "15px",
+              color: "rgba(255,255,255,0.3)",
+              lineHeight: 1.7,
+              margin: 0,
+            }}
+          >
+            From registration to check-in, payments to analytics — one
+            platform handles it all.
+          </p>
+        </div>
+ 
+        {/* Bento grid */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "16px",
+          }}
+          className="grid-cols-1 md:grid-cols-3"
         >
-          {features.map((feature, i) => (
-            <motion.div key={i} variants={cardVariants} className="feat-card">
-              <div className="feat-card__inner font-[Quicksand]">
-                {/* Background image */}
-                <div
-                  className="feat-card__bg"
-                  style={{ backgroundImage: `url(${feature.bg})` }}
-                />
-
-                {/* Dark overlay + noise */}
-                <div className="feat-card__overlay" />
-
-                {/* Content */}
-                <div className="feat-card__content">
-                  {/* Icon + Title */}
-                  <div className="feat-card__head">
-                    <div className="feat-card__icon">{feature.icon}</div>
-                    <h3 className="feat-card__title font-quicksand">
-                      {feature.title}
-                    </h3>
-                  </div>
-
-                  {/* Gold divider */}
-                  <div className="feat-card__divider" />
-
-                  {/* Description */}
-                  <p className="feat-card__desc">{feature.description}</p>
-
-                  {/* Hover CTA */}
-                  <div className="feat-card__cta">Explore</div>
-                </div>
-
-                {/* Corner ornament */}
-                <div className="feat-card__ornament" />
+          {features.map((f, i) => (
+            <div
+              key={i}
+              style={{
+                gridColumn: f.size === "large" ? "span 2" : "span 1",
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid rgba(255,255,255,0.05)",
+                borderRadius: "16px",
+                padding: f.size === "large" ? "40px" : "32px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "20px",
+                transition: "border-color 0.3s, background 0.3s",
+                cursor: "default",
+                position: "relative",
+                overflow: "hidden",
+              }}
+              className={f.size === "large" ? "md:col-span-2" : ""}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = `${f.accent}30`;
+                e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                const glow = e.currentTarget.querySelector("[data-glow]") as HTMLElement;
+                if (glow) glow.style.opacity = "1";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+                e.currentTarget.style.background = "rgba(255,255,255,0.02)";
+                const glow = e.currentTarget.querySelector("[data-glow]") as HTMLElement;
+                if (glow) glow.style.opacity = "0";
+              }}
+            >
+              {/* Hover glow in corner */}
+              <div
+                data-glow
+                style={{
+                  position: "absolute",
+                  top: "-40px",
+                  right: "-40px",
+                  width: "160px",
+                  height: "160px",
+                  background: `radial-gradient(circle, ${f.accent}10, transparent 70%)`,
+                  opacity: 0,
+                  transition: "opacity 0.4s",
+                  pointerEvents: "none",
+                }}
+              />
+ 
+              {/* Icon */}
+              <div
+                style={{
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "12px",
+                  background: `${f.accent}12`,
+                  border: `1px solid ${f.accent}20`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: f.accent,
+                }}
+              >
+                {f.icon}
               </div>
-            </motion.div>
+ 
+              {/* Text */}
+              <div>
+                <h3
+                  style={{
+                    fontSize: f.size === "large" ? "20px" : "17px",
+                    fontWeight: 700,
+                    color: "#fff",
+                    margin: "0 0 8px 0",
+                  }}
+                >
+                  {f.title}
+                </h3>
+                <p
+                  style={{
+                    fontSize: "14px",
+                    color: "rgba(255,255,255,0.35)",
+                    lineHeight: 1.7,
+                    margin: 0,
+                    maxWidth: f.size === "large" ? "480px" : "none",
+                  }}
+                >
+                  {f.desc}
+                </p>
+              </div>
+            </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );
 }
 
 // ════════════════════════════════════════════════════════════
-// 2. INTELLIGENT WORKFLOW — Image + Text
+// 3. INTELLIGENT WORKFLOW — Image + Text
 export function IntelligentWorkflow() {
   return (
     <section className=" inet relative overflow-hidden py-80 bg-white">
@@ -1836,7 +2075,7 @@ function FAQSection() {
               color: "#1a1a1a",
               lineHeight: 1.2,
               margin: "0 0 12px 0",
-              fontStyle: "italic",
+              //fontStyle: "italic",
               letterSpacing: "-0.02em",
             }}
           >

@@ -26,14 +26,13 @@ const footerLinks = {
   Company: [
     { label: "About", href: "/about" },
     { label: "Contact", href: "/contact" },
-    { label: "Terms of Service", href: "/terms-of-service" },
+    { label: "Terms of Service", href: "/terms" },
     { label: "Privacy Policy", href: "/privacy" },
   ],
   Support: [
     { label: "Help Center", href: "/contact" },
     { label: "Report an Issue", href: "/contact" },
-    { label: "Feedback", href: "/contact" },
-    { label: "FAQs", href: "/contact" },
+    { label: "FAQs", href: "/#faq" },
   ],
 };
 

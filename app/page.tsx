@@ -2058,7 +2058,7 @@ function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <section
+    <section id="faq" 
       style={{
         padding: "120px 0",
         fontFamily: "'Quicksand', sans-serif",

@@ -19,7 +19,6 @@ import {
   Lock,
   Clock,
 } from "lucide-react";
-
 // Stagger container variants for feature cards
 const staggerContainer = {
   hidden: {},
@@ -33,7 +32,7 @@ export default function LandingPage() {
   return (
     <>
       <Navbar />
-      <main className="bg-gradient-to-r from-[#fbfaf8] to-[#fffffe]">
+      <main className="bg-gradient-to-r from-[#fff] to-[#fffffe]">
         {" "}
         <HeroSection />
         <div className="flex flex-col gap-20">
@@ -1323,37 +1322,38 @@ function EventTypesSection() {
     {
       title: "Conferences & Summits",
       desc: "Multi-day professional events with speaker management and session scheduling.",
-      image: "/images/type-conference.png",
+      image: "/images/Conferences.jpg",
       color: "#1a1a2e",
     },
     {
       title: "Workshops & Training",
       desc: "Hands-on learning with limited capacity and approval-based registration.",
-      image: "/images/type-workshop.png",
+      image: "/images/Workshops.jpg",
       color: "#1a2e1a",
     },
-    {
-      title: "Networking & Meetups",
-      desc: "Community gatherings with free or paid entry and check-in tracking.",
-      image: "/images/type-meetup.png",
-      color: "#2e1a1a",
-    },
+   
     {
       title: "Webinars & Online",
       desc: "Virtual events with meeting link integration. No venue, global reach.",
-      image: "/images/type-webinar.png",
+      image: "/images/Webinars.png",
       color: "#1a1a2e",
+    },
+     {
+      title: "Networking & Meetups",
+      desc: "Community gatherings with free or paid entry and check-in tracking.",
+      image: "/images/Networking.jpg",
+      color: "#2e1a1a",
     },
     {
       title: "Fundraisers & Galas",
       desc: "Paid events with ticket management, revenue tracking, and receipts.",
-      image: "/images/type-gala.png",
+      image: "/images/Fundraisers.png",
       color: "#2e1a2e",
     },
     {
       title: "Campus Events",
       desc: "Student-run events with admin oversight, waitlists, and feedback.",
-      image: "/images/type-campus.png",
+      image: "/images/Campus.png",
       color: "#1a2e2e",
     },
   ];
@@ -1544,8 +1544,8 @@ function PricingPreviewSection() {
     {
       name: "Organizer",
       desc: "For event creators who need full control over their events.",
-      price: "$0",
-      period: "while in beta",
+      price: "$25",
+      period: "per month",
       features: [
         "Create unlimited events",
         "Sell paid tickets via Stripe",
@@ -2061,7 +2061,6 @@ function FAQSection() {
     <section
       style={{
         padding: "120px 0",
-        background: "#fff",
         fontFamily: "'Quicksand', sans-serif",
       }}
     >
@@ -2230,47 +2229,582 @@ function FAQSection() {
 // ════════════════════════════════════════════════════════════
 // 11. FINAL CTA
 // ════════════════════════════════════════════════════════════
-function CTASection() {
+// components/landing/CTASection.tsx
+
+const features = [
+  "Create registration pages in minutes — no coding needed.",
+  "Automatically send calendar invites to boost attendance.",
+  "Enable waitlists to manage exclusive access.",
+];
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 28 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, delay: i * 0.1, ease: [0.25, 0.46, 0.45, 0.94] },
+  }),
+};
+
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.92, y: 40 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: { duration: 0.7, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] },
+  },
+};
+
+ function CTASection() {
   return (
-    <section className="relative py-32 text-gray-700 overflow-hidden">
-      <div className="absolute inset-0">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[120px]" />
-        <div className="absolute top-0 left-0 w-full h-px" />
-      </div>
+    <section
+      className="relative overflow-hidden"
+      style={{
+        padding: "120px 0",
+        fontFamily: "'DM Sans', sans-serif",
+      }}
+    >
+      {/* Subtle background texture */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 60% at 70% 50%, rgba(234,88,12,0.04) 0%, transparent 70%)",
+        }}
+      />
 
       <motion.div
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true }}
-        className="w-full flex justify-center"
+        viewport={{ once: true, margin: "-80px" }}
+        className="relative"
+        style={{
+          maxWidth: "1280px",
+          margin: "0 auto",
+          padding: "0 48px",
+        }}
       >
-        <div className=" w-full max-w-4xl px-6">
-          {" "}
-          <h2 className="text-2xl md:text-4xl font-bold mb-6 leading-tight">
-            Ready to Create Your
-            <span className=" text-orange">Next Great Event?</span>
-          </h2>
-          <p className="text-xl text-gray-700 max-w-2xl mx-auto mb-12 leading-relaxed">
-            Whether you&apos;re hosting or attending, your next unforgettable
-            experience starts here. Get started in minutes — completely free.
-          </p>
-          {/* Mini trust bar */}
-          <div className="mt-16 flex flex-wrap justify-center gap-8 text-sm text-gray-700">
-            <span className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-orange-400" />
-              Free to start
-            </span>
-            <span className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-orange-400" />
-              No credit card required
-            </span>
-            <span className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-orange-400" />
-              Setup in under 5 minutes
-            </span>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "80px",
+            alignItems: "center",
+          }}
+          className="lg:grid-cols-2 grid-cols-1"
+        >
+          {/* ── Left: Text Content ── */}
+          <div>
+            {/* Eyebrow */}
+            <motion.div
+              custom={0}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                marginBottom: "28px",
+              }}
+            >
+              <div
+                style={{
+                  width: "28px",
+                  height: "2px",
+                  background: "#ea580c",
+                }}
+              />
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.18em",
+                  color: "#ea580c",
+                }}
+              >
+                Get Started
+              </span>
+            </motion.div>
+
+            {/* Heading */}
+            <motion.h2
+              custom={1}
+              style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontSize: "clamp(1.75rem, 3.5vw, 2.75rem)",
+                fontWeight: 700,
+                lineHeight: 1.15,
+                letterSpacing: "-0.02em",
+                color: "#1a1a1a",
+                margin: "0 0 20px 0",
+              }}
+            >
+              Set up and host your events{" "}
+              <span style={{ color: "#ea580c" }}>with ease.</span>
+            </motion.h2>
+
+            {/* Subtitle */}
+            <motion.p
+              custom={2}
+              style={{
+                fontSize: "16px",
+                lineHeight: 1.7,
+                color: "#666",
+                maxWidth: "440px",
+                margin: "0 0 40px 0",
+              }}
+            >
+              Manage events with simplified set-up and streamlined
+              registration. Get started in minutes — completely free.
+            </motion.p>
+
+            {/* Feature list */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "20px",
+                marginBottom: "48px",
+              }}
+            >
+              {features.map((feature, i) => (
+                <motion.div
+                  key={i}
+                  custom={3 + i}
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "14px",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "24px",
+                      height: "24px",
+                      borderRadius: "50%",
+                      background: "#ea580c",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      marginTop: "1px",
+                    }}
+                  >
+                    <CheckCircle2
+                      style={{
+                        width: "14px",
+                        height: "14px",
+                        color: "#fff",
+                      }}
+                    />
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "15px",
+                      lineHeight: 1.6,
+                      color: "#333",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {feature}
+                  </span>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* CTA Buttons */}
+            <motion.div
+              custom={6}
+              style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}
+            >
+              <Link
+                href="/events"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  padding: "14px 32px",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  fontFamily: "Quicksand",
+                  color: "#fff",
+                  background: "#ea580c",
+                  borderRadius: "6px",
+                  textDecoration: "none",
+                  transition: "all 0.25s ease",
+                  boxShadow: "0 2px 12px rgba(234,88,12,0.25)",
+                }}
+                className="hover:shadow-lg"
+              >
+                Browse Events
+              </Link>
+              <Link
+                href="/organizer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "14px 28px",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  fontFamily: "Quicksand",
+                  color: "#1a1a1a",
+                  background: "transparent",
+                  border: "1px solid #d4d4d0",
+                  borderRadius: "6px",
+                  textDecoration: "none",
+                  transition: "all 0.25s ease",
+                }}
+              >
+                Create an Event
+              </Link>
+            </motion.div>
           </div>
+
+          {/* ── Right: Product Mockup ── */}
+          <motion.div className="relative hidden lg:block">
+            {/* Orange background container */}
+            <div
+              style={{
+                position: "relative",
+                // image as background from public folder, set to cover and centered
+                backgroundPosition: "center",
+                borderRadius: "20px",
+                padding: "32px 28px 28px",
+                boxShadow:
+                  "0 25px 60px -12px rgba(234,88,12,0.3), 0 0 0 1px rgba(234,88,12,0.1)",
+              }}
+            >
+              {/* Decorative dots */}
+              <div
+                className="absolute pointer-events-none"
+                style={{
+                  top: "-20px",
+                  right: "-20px",
+                  width: "80px",
+                  height: "80px",
+                  backgroundImage:
+                    "radial-gradient(circle, rgba(255,255,255,0.2) 1px, transparent 1px)",
+                  backgroundSize: "8px 8px",
+                }}
+              />
+
+              {/* Browser-style mockup frame */}
+              <div
+                style={{
+                  background: "#fff",
+                  borderRadius: "12px",
+                  overflow: "hidden",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+                }}
+              >
+                {/* Browser bar */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "10px 14px",
+                    background: "#f8f8f6",
+                    borderBottom: "1px solid #eee",
+                  }}
+                >
+                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#ff5f57" }} />
+                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#febc2e" }} />
+                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#28c840" }} />
+                  <div
+                    style={{
+                      flex: 1,
+                      marginLeft: "12px",
+                      padding: "4px 12px",
+                      fontSize: "10px",
+                      color: "#999",
+                      background: "#fff",
+                      borderRadius: "4px",
+                      border: "1px solid #eee",
+                    }}
+                  >
+                    evenza.app/events/create
+                  </div>
+                </div>
+
+                {/* Mock content — two-pane editor layout */}
+                <div style={{ display: "flex", minHeight: "320px" , fontFamily: "'Quicksand'"}}>
+                  {/* Left pane: form controls */}
+                  <div
+                    style={{
+                      width: "48%",
+                      padding: "20px 18px",
+                      borderRight: "1px solid #f0f0ec",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "16px",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
+                      <span style={{ fontSize: "11px", color: "#999" }}>←</span>
+                      <span style={{ fontSize: "12px", fontWeight: 700, color: "#1a1a1a" }}>
+                        Event Setup
+                      </span>
+                    </div>
+
+                    {/* Tab row */}
+                    <div style={{ display: "flex", gap: "4px" }}>
+                      {["Content", "Styles", "Settings"].map((tab, i) => (
+                        <div
+                          key={tab}
+                          style={{
+                            padding: "5px 12px",
+                            fontSize: "10px",
+                            fontWeight: 600,
+                            borderRadius: "4px",
+                            background: i === 0 ? "#1a1a1a" : "#f5f5f0",
+                            color: i === 0 ? "#fff" : "#888",
+                          }}
+                        >
+                          {tab}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Form fields */}
+                    <MockField label="Event Title">
+                      <div style={{ padding: "7px 10px", background: "#fef2f2", borderRadius: "4px", fontSize: "10px", color: "#ea580c", fontWeight: 500 }}>
+                        Tech Conference 2026
+                      </div>
+                    </MockField>
+
+                    <MockField label="Date & Time">
+                      <div style={{ padding: "7px 10px", background: "#fef2f2", borderRadius: "4px", fontSize: "10px", color: "#ea580c", fontWeight: 500 }}>
+                        March 28, 6:30 PM
+                      </div>
+                    </MockField>
+
+                    <MockField label="Location">
+                      <div style={{ padding: "7px 10px", background: "#f5f5f0", borderRadius: "4px", fontSize: "10px", color: "#666" }}>
+                        Convention Center, Hall B
+                      </div>
+                    </MockField>
+
+                    {/* Toggle row */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: "10px", fontWeight: 600, color: "#555" }}>Waitlist</span>
+                      <div
+                        style={{
+                          width: "32px",
+                          height: "18px",
+                          borderRadius: "9px",
+                          background: "#ea580c",
+                          position: "relative",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "14px",
+                            height: "14px",
+                            borderRadius: "50%",
+                            background: "#fff",
+                            position: "absolute",
+                            top: "2px",
+                            right: "2px",
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Button */}
+                    <div
+                      style={{
+                        marginTop: "auto",
+                        padding: "8px 0",
+                        textAlign: "center",
+                        fontSize: "10px",
+                        fontWeight: 700,
+                        color: "#fff",
+                        background: "#ea580c",
+                        borderRadius: "5px",
+                      }}
+                    >
+                      Publish Event
+                    </div>
+                  </div>
+
+                  {/* Right pane: preview */}
+                  <div
+                    style={{
+                      width: "52%",
+                      position: "relative",
+                      overflow: "hidden",
+                      minHeight: "320px",
+                    }}
+                  >
+                   {/* Background image */}
+                    <Image
+                      src="/images/conference.png"
+                      alt="Event preview"
+                      fill
+                      sizes="300px"
+                      className="object-cover"
+                    />
+
+                    {/* Overlay content */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "flex-end",
+                        padding: "20px",
+                        background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.1) 60%)",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "9px",
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.12em",
+                          color: "rgba(255,255,255,0.6)",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        Live Preview
+                      </span>
+                      <span
+                        style={{
+                          fontFamily:'Quicksand',
+                          fontSize: "16px",
+                          fontWeight: 700,
+                          color: "#fff",
+                          lineHeight: 1.25,
+                          marginBottom: "8px",
+                        }}
+                      >
+                        Tech Conference
+                        <br />
+                        2026
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "9px",
+                          color: "rgba(255,255,255,0.5)",
+                          marginBottom: "12px",
+                        }}
+                      >
+                        March 28 · Convention Center
+                      </span>
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          alignSelf: "flex-start",
+                          padding: "6px 16px",
+                          fontSize: "9px",
+                          fontWeight: 700,
+                          color: "#fff",
+                          background: "#ea580c",
+                          borderRadius: "4px",
+                        }}
+                      >
+                        Register
+                      </div>
+                    </div>
+
+                    {/* Decorative geometric shapes */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "20px",
+                        right: "20px",
+                        width: "40px",
+                        height: "40px",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: "50%",
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "45px",
+                        right: "40px",
+                        width: "20px",
+                        height: "20px",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                        borderRadius: "50%",
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Floating badge */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.8, duration: 0.5 }}
+              style={{
+                position: "absolute",
+                bottom: "-16px",
+                left: "-24px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "10px 18px",
+                background: "#fff",
+                borderRadius: "8px",
+                boxShadow: "0 8px 30px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04)",
+              }}
+            >
+              <div
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "50%",
+                  background: "rgba(45,106,79,0.1)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <CheckCircle2 style={{ width: "14px", height: "14px", color: "#2d6a4f" }} />
+              </div>
+              <div>
+                <p style={{ fontSize: "11px", fontWeight: 700, color: "#1a1a1a", margin: 0 , fontFamily:'Quicksand'}}>
+                  Setup in under 5 min
+                </p>
+                <p style={{ fontSize: "9px", color: "#999", margin: 0 , fontFamily:'Quicksand'}}>
+                  No credit card required
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
         </div>
       </motion.div>
     </section>
+  );
+}
+
+/* ─── Tiny helper for mock form fields ─── */
+function MockField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <span
+        style={{
+          display: "block",
+          fontSize: "9px",
+          fontWeight: 700,
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          color: "#999",
+          marginBottom: "4px",
+        }}
+      >
+        {label}
+      </span>
+      {children}
+    </div>
   );
 }

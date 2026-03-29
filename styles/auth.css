@@ -1,5 +1,18 @@
-/* Auth Page Styles */
+/* Prevent auth card from collapsing during Clerk's internal transitions */
 .auth-card {
-  position: relative;
-  z-index: 10;
+  max-width: 28rem;
+  min-height: 24rem; /* prevents height collapse flash */
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+/* Keep Clerk's root container from shrinking to 0 during route transition */
+.cl-rootBox {
+  min-height: 20rem;
+  width: 100%;
+}
+
+.cl-card {
+  width: 100%;
 }

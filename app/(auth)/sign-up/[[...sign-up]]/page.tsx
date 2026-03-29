@@ -1,20 +1,23 @@
 // app/(auth)/sign-up/[[...sign-up]]/page.tsx
+"use client";
+
 import { SignUp } from "@clerk/nextjs";
+import "@/styles/auth.css";
 
 export default function SignUpPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <SignUp
-        appearance={{
-          variables: {
-            colorPrimary: "#c65504", // orange
-          },
-          elements: {
-            card: "shadow-xl border rounded-xl",
-          },
-        }}
-        redirectUrl="/sign-up/sso-callback"
-      />
-    </div>
+    <SignUp
+      appearance={{
+        variables: {
+          colorPrimary: "#c65504",
+        },
+        elements: {
+          card: "shadow-xl border rounded-xl glass-card",
+          formButtonPrimary: "transition-all duration-150",
+        },
+      }}
+      fallbackRedirectUrl="/"
+      signInUrl="/sign-in"
+    />
   );
 }

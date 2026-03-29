@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import "../../styles/auth.css";
@@ -31,26 +30,11 @@ export default function AuthLayout({
         Back
       </Link>
 
-      {/* Content */}
-      <div className="relative z-10 min-h-screen flex flex-col items-center px-6">
-        <div className="h-16" />
-
-        {/* Logo */}
-        <div className="flex justify-center">
-          <Image
-            src="/icons/Variant2.png"
-            alt="Evenza Logo"
-            width={210}
-            height={80}
-            priority
-          />
-        </div>
-
-        {/* Card */}
+      {/* Content — card stays visible until navigation completes */}
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6">
         <div className="auth-card w-full">
           {children}
         </div>
-        <div className="h-1" />
       </div>
     </div>
   );

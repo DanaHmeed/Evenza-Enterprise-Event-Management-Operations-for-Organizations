@@ -1,33 +1,35 @@
 // app/(root)/profile/page.tsx
+//
+// 1. Single API call via /profile-summary (was 2 parallel calls)
+// 2. next/image for avatar & event banners (auto-resize, lazy load, WebP)
+// 3. Memoized date formatting
+// 4. Reduced re-renders with stable references
+
 "use client";
 import "@/styles/globals.css";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Mail,
   Calendar,
   Ticket,
   CalendarDays,
-  Star,
   Loader2,
   MapPin,
   Globe,
   Pencil,
-  Check,
-  X,
   ChevronRight,
   CreditCard,
   Phone,
-  User,
   Briefcase,
   Building2,
   Clock,
   Shield,
   Crown,
   Sparkles,
-  ExternalLink,
   Save,
 } from "lucide-react";
 
@@ -123,15 +125,14 @@ export default function ProfilePage() {
       router.replace("/sign-in?redirect_url=/profile");
       return;
     }
+
+    // ✅ OPTIMIZATION: Single API call instead of two parallel calls
     const fetchData = async () => {
       try {
-        const [profileRes, regsRes] = await Promise.all([
-          fetch(`/api/users/${user?.id}`),
-          fetch(`/api/users/${user?.id}/registrations`),
-        ]);
-        if (profileRes.ok) {
-          const data = await profileRes.json();
-          const p = data.data || data;
+        const res = await fetch(`/api/users/${user?.id}/profile-summary`);
+        if (res.ok) {
+          const data = await res.json();
+          const p = data.data.profile;
           setProfile(p);
           setForm({
             name: p.name || "",
@@ -143,10 +144,7 @@ export default function ProfilePage() {
             industry: p.industry || "",
             experience: p.experience || "",
           });
-        }
-        if (regsRes.ok) {
-          const data = await regsRes.json();
-          setRecentEvents((data.data || []).slice(0, 4));
+          setRecentEvents(data.data.recentRegistrations || []);
         }
       } catch {
         console.error("Failed to load profile");
@@ -157,7 +155,7 @@ export default function ProfilePage() {
     fetchData();
   }, [isLoaded, isSignedIn, user, router]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!user?.id) return;
     setSaving(true);
     try {
@@ -167,8 +165,6 @@ export default function ProfilePage() {
         body: JSON.stringify(form),
       });
       if (res.ok) {
-        const data = await res.json();
-        const p = data.data || data;
         setProfile((prev) => (prev ? { ...prev, ...form } : prev));
         setEditing(false);
       }
@@ -177,9 +173,9 @@ export default function ProfilePage() {
     } finally {
       setSaving(false);
     }
-  };
+  }, [user?.id, form]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     if (!profile) return;
     setForm({
       name: profile.name || "",
@@ -192,11 +188,84 @@ export default function ProfilePage() {
       experience: profile.experience || "",
     });
     setEditing(false);
-  };
+  }, [profile]);
 
-  const updateField = (field: string, value: string) => {
+  const updateField = useCallback((field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
-  };
+  }, []);
+
+  // ── Memoized computations ──
+  const formatDate = useCallback(
+    (d: string) =>
+      new Date(d).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      }),
+    []
+  );
+
+  const memberSince = useMemo(() => {
+    if (!profile) return "";
+    const months = Math.floor(
+      (Date.now() - new Date(profile.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30)
+    );
+    if (months < 1) return "This month";
+    if (months < 12) return `${months} month${months > 1 ? "s" : ""}`;
+    const years = Math.floor(months / 12);
+    return `${years} year${years > 1 ? "s" : ""}`;
+  }, [profile?.createdAt]);
+
+  const navLinks = useMemo(() => {
+    if (!profile) return [];
+    const links = [
+      {
+        label: "My Tickets",
+        desc: "QR passes & entry codes",
+        href: "/my-tickets",
+        icon: <Ticket style={{ width: "18px", height: "18px" }} />,
+        count: profile._count?.tickets || 0,
+      },
+      {
+        label: "Event History",
+        desc: "All registrations by date",
+        href: "/profile/events",
+        icon: <CalendarDays style={{ width: "18px", height: "18px" }} />,
+        count: profile._count?.registrations || 0,
+      },
+      {
+        label: "Purchase History",
+        desc: "Orders & receipts",
+        href: "/orders",
+        icon: <CreditCard style={{ width: "18px", height: "18px" }} />,
+        count: profile._count?.orders || 0,
+      },
+    ];
+
+    if (profile.role === "ORGANIZER" || profile.role === "ADMIN") {
+      links.push({
+        label: "Organized Events",
+        desc: "Events you created",
+        href: "/organizer/events",
+        icon: <Calendar style={{ width: "18px", height: "18px" }} />,
+        count: profile._count?.organizedEvents || 0,
+      });
+    }
+    return links;
+  }, [profile]);
+
+  const stats = useMemo(() => {
+    if (!profile) return [];
+    const s = [
+      { label: "Registrations", value: profile._count?.registrations || 0 },
+      { label: "Tickets", value: profile._count?.tickets || 0 },
+      { label: "Reviews", value: profile._count?.feedbacks || 0 },
+    ];
+    if (profile.role !== "USER") {
+      s.push({ label: "Organized", value: profile._count?.organizedEvents || 0 });
+    }
+    return s;
+  }, [profile]);
 
   // ─── Loading ───
   if (!isLoaded || loading) {
@@ -224,55 +293,22 @@ export default function ProfilePage() {
   // ─── Role config ───
   const roleMap: Record<string, { icon: React.ReactNode; label: string }> = {
     ADMIN: { icon: <Crown style={{ width: "12px", height: "12px" }} />, label: "Administrator" },
-    ORGANIZER: { icon: <Sparkles style={{ width: "12px", height: "12px" }} />, label: "Event Organizer" },
+    ORGANIZER: {
+      icon: <Sparkles style={{ width: "12px", height: "12px" }} />,
+      label: "Event Organizer",
+    },
     USER: { icon: <Shield style={{ width: "12px", height: "12px" }} />, label: "Member" },
   };
   const rc = roleMap[profile.role] || roleMap.USER;
-
-  const formatDate = (d: string) =>
-    new Date(d).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-
-  const memberSince = () => {
-    const months = Math.floor(
-      (Date.now() - new Date(profile.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30)
-    );
-    if (months < 1) return "This month";
-    if (months < 12) return `${months} month${months > 1 ? "s" : ""}`;
-    const years = Math.floor(months / 12);
-    return `${years} year${years > 1 ? "s" : ""}`;
-  };
-
-  const navLinks = [
-    { label: "My Tickets", desc: "QR passes & entry codes", href: "/my-tickets", icon: <Ticket style={{ width: "18px", height: "18px" }} />, count: profile._count?.tickets || 0 },
-    { label: "Event History", desc: "All registrations by date", href: "/profile/events", icon: <CalendarDays style={{ width: "18px", height: "18px" }} />, count: profile._count?.registrations || 0 },
-    { label: "Purchase History", desc: "Orders & receipts", href: "/orders", icon: <CreditCard style={{ width: "18px", height: "18px" }} />, count: profile._count?.orders || 0 },
-  ];
-
-  if (profile.role === "ORGANIZER" || profile.role === "ADMIN") {
-    navLinks.push({
-      label: "Organized Events",
-      desc: "Events you created",
-      href: "/organizer/events",
-      icon: <Calendar style={{ width: "18px", height: "18px" }} />,
-      count: profile._count?.organizedEvents || 0,
-    });
-  }
-
-  const stats = [
-    { label: "Registrations", value: profile._count?.registrations || 0 },
-    { label: "Tickets", value: profile._count?.tickets || 0 },
-    { label: "Reviews", value: profile._count?.feedbacks || 0 },
-    ...(profile.role !== "USER"
-      ? [{ label: "Organized", value: profile._count?.organizedEvents || 0 }]
-      : []),
-  ];
 
   return (
     <div style={{ background: t.bg, fontFamily: t.sans, minHeight: "100vh" }}>
       {/* ═══════════════════════════════════
           HEADER
           ═══════════════════════════════════ */}
-      <div style={{ background: t.dark, height: "180px", position: "relative", overflow: "hidden" }}>
+      <div
+        style={{ background: t.dark, height: "180px", position: "relative", overflow: "hidden" }}
+      >
         <div
           style={{
             position: "absolute",
@@ -301,8 +337,16 @@ export default function ProfilePage() {
           }}
         >
           {/* Avatar + Name row */}
-          <div style={{ padding: "0 32px", display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "20px" }}>
-            {/* Avatar */}
+          <div
+            style={{
+              padding: "0 32px",
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "flex-end",
+              gap: "20px",
+            }}
+          >
+            {/* ✅ Avatar with next/image */}
             <div
               style={{
                 width: "96px",
@@ -313,13 +357,17 @@ export default function ProfilePage() {
                 marginTop: "-48px",
                 flexShrink: 0,
                 boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                position: "relative",
               }}
             >
               {profile.avatar || user?.imageUrl ? (
-                <img
-                  src={profile.avatar || user?.imageUrl}
+                <Image
+                  src={profile.avatar || user?.imageUrl || ""}
                   alt={profile.name}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  width={96}
+                  height={96}
+                  style={{ objectFit: "cover" }}
+                  priority // Above the fold — load immediately
                 />
               ) : (
                 <div
@@ -332,7 +380,14 @@ export default function ProfilePage() {
                     justifyContent: "center",
                   }}
                 >
-                  <span style={{ fontSize: "32px", fontWeight: 700, color: "#fff", fontFamily: t.serif }}>
+                  <span
+                    style={{
+                      fontSize: "32px",
+                      fontWeight: 700,
+                      color: "#fff",
+                      fontFamily: t.serif,
+                    }}
+                  >
                     {profile.name?.charAt(0)?.toUpperCase()}
                   </span>
                 </div>
@@ -341,7 +396,9 @@ export default function ProfilePage() {
 
             {/* Name + role */}
             <div style={{ flex: 1, minWidth: 0, paddingBottom: "20px", paddingTop: "16px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}
+              >
                 <h1
                   style={{
                     fontFamily: t.serif,
@@ -374,7 +431,7 @@ export default function ProfilePage() {
                 </span>
               </div>
               <p style={{ fontSize: "13px", color: t.textMuted, margin: "4px 0 0" }}>
-                Member for {memberSince()} · Joined {formatDate(profile.createdAt)}
+                Member for {memberSince} · Joined {formatDate(profile.createdAt)}
               </p>
             </div>
 
@@ -421,7 +478,10 @@ export default function ProfilePage() {
                     }}
                   >
                     {saving ? (
-                      <Loader2 className="animate-spin" style={{ width: "14px", height: "14px" }} />
+                      <Loader2
+                        className="animate-spin"
+                        style={{ width: "14px", height: "14px" }}
+                      />
                     ) : (
                       <Save style={{ width: "14px", height: "14px" }} />
                     )}
@@ -458,7 +518,6 @@ export default function ProfilePage() {
 
           {/* ── FORM SECTIONS ── */}
           <div style={{ padding: "32px" }}>
-            {/* Basic Information */}
             <SectionHeader title="Basic Information" />
             <div
               className="grid sm:grid-cols-2 grid-cols-1"
@@ -497,7 +556,6 @@ export default function ProfilePage() {
               />
             </div>
 
-            {/* Professional Details */}
             <SectionHeader title="Professional Details" />
             <div
               className="grid sm:grid-cols-2 grid-cols-1"
@@ -536,7 +594,6 @@ export default function ProfilePage() {
               />
             </div>
 
-            {/* Bio */}
             <SectionHeader title="Bio" />
             {editing ? (
               <textarea
@@ -607,7 +664,16 @@ export default function ProfilePage() {
               >
                 {stat.value}
               </p>
-              <p style={{ fontSize: "11px", fontWeight: 500, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>
+              <p
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  color: t.textMuted,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  margin: 0,
+                }}
+              >
                 {stat.label}
               </p>
             </div>
@@ -683,11 +749,23 @@ export default function ProfilePage() {
             ═══════════════════════════════════ */}
         {recentEvents.length > 0 && (
           <div style={{ marginTop: "32px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: "16px",
+              }}
+            >
               <SectionHeader title="Recent Activity" noMargin />
               <Link
                 href="/profile/events"
-                style={{ fontSize: "12px", fontWeight: 600, color: t.accent, textDecoration: "none" }}
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: t.accent,
+                  textDecoration: "none",
+                }}
               >
                 View all
               </Link>
@@ -718,7 +796,7 @@ export default function ProfilePage() {
                     onMouseEnter={(e) => (e.currentTarget.style.borderColor = t.border)}
                     onMouseLeave={(e) => (e.currentTarget.style.borderColor = t.borderLight)}
                   >
-                    {/* Thumbnail */}
+                    {/* ✅ Thumbnail with next/image */}
                     <div
                       style={{
                         width: "44px",
@@ -727,13 +805,16 @@ export default function ProfilePage() {
                         overflow: "hidden",
                         background: t.borderLight,
                         flexShrink: 0,
+                        position: "relative",
                       }}
                     >
                       {reg.event.banner ? (
-                        <img
+                        <Image
                           src={reg.event.banner}
                           alt=""
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          width={44}
+                          height={44}
+                          style={{ objectFit: "cover" }}
                         />
                       ) : (
                         <div
@@ -745,7 +826,9 @@ export default function ProfilePage() {
                             justifyContent: "center",
                           }}
                         >
-                          <CalendarDays style={{ width: "18px", height: "18px", color: t.textFaint }} />
+                          <CalendarDays
+                            style={{ width: "18px", height: "18px", color: t.textFaint }}
+                          />
                         </div>
                       )}
                     </div>
@@ -764,7 +847,9 @@ export default function ProfilePage() {
                       >
                         {reg.event.title}
                       </p>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "3px" }}>
+                      <div
+                        style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "3px" }}
+                      >
                         <span
                           style={{
                             width: "6px",
@@ -797,7 +882,9 @@ export default function ProfilePage() {
                       </div>
                     </div>
 
-                    <span style={{ fontSize: "12px", fontWeight: 500, color: t.textMuted, flexShrink: 0 }}>
+                    <span
+                      style={{ fontSize: "12px", fontWeight: 500, color: t.textMuted, flexShrink: 0 }}
+                    >
                       {new Date(reg.event.startDate).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
@@ -929,7 +1016,15 @@ function Field({
             {value || placeholder || "—"}
           </span>
           {disabled && (
-            <span style={{ fontSize: "10px", color: t.textFaint, background: t.borderLight, padding: "2px 6px", borderRadius: "3px" }}>
+            <span
+              style={{
+                fontSize: "10px",
+                color: t.textFaint,
+                background: t.borderLight,
+                padding: "2px 6px",
+                borderRadius: "3px",
+              }}
+            >
               Managed by auth
             </span>
           )}

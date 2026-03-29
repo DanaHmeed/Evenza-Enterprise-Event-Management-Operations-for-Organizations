@@ -20,8 +20,8 @@ const footerLinks = {
   Platform: [
     { label: "Browse Events", href: "/events" },
     { label: "Create an Event", href: "/sign-up" },
-    { label: "How It Works", href: "/about" },
-    { label: "For Organizers", href: "/about" },
+    { label: "How It Works", href: "/#how-it-works" },
+    { label: "For Organizers", href: "/#worflow" },
   ],
   Company: [
     { label: "About", href: "/about" },
@@ -30,7 +30,7 @@ const footerLinks = {
     { label: "Privacy Policy", href: "/privacy" },
   ],
   Support: [
-    { label: "Help Center", href: "/contact" },
+    { label: "Help Center", href: "/contact/#help" },
     { label: "Report an Issue", href: "/contact" },
     { label: "FAQs", href: "/#faq" },
   ],
@@ -134,14 +134,6 @@ export default function Footer() {
                   color: t.textSecondary,
                 }}
               >
-                <MapPin
-                  style={{
-                    width: "15px",
-                    height: "15px",
-                    color: t.textMuted,
-                  }}
-                />
-                Nablus, Palestine
               </div>
             </div>
           </div>
@@ -240,7 +232,7 @@ export default function Footer() {
               Privacy
             </Link>
             <Link
-              href="/terms-of-service"
+              href="/terms"
               style={{
                 fontSize: "13px",
                 color: t.textMuted,

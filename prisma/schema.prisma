@@ -133,6 +133,8 @@ model Registration {
   @@index([eventId])
   @@index([userId])
   @@index([status])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, status])
 }
 
 model Ticket {
@@ -159,6 +161,8 @@ model Ticket {
   @@index([userId])
   @@index([status])
   @@index([ticketNumber])
+  @@index([userId, createdAt(sort: Desc)])
+
 }
 
 model Order {
@@ -182,6 +186,8 @@ model Order {
   @@index([eventId])
   @@index([paymentStatus])
   @@index([stripeSessionId])
+  @@index([userId, createdAt(sort: Desc)])
+
 }
 
 model Feedback {
@@ -203,6 +209,8 @@ model Feedback {
   @@unique([userId, eventId])
   @@index([eventId])
   @@index([status])
+  @@index([userId, eventId])
+
 }
 
 model WaitlistEntry {

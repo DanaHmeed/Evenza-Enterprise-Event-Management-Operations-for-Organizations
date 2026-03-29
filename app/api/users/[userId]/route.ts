@@ -1,4 +1,9 @@
 // app/api/users/[userId]/route.ts
+//
+// - GET uses `select` instead of implicit select-all (excludes updatedAt etc.)
+// - Adds Cache-Control: private, s-maxage=60 for browser caching
+// - Cleaner response shape
+
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db/prisma";
 import { getCurrentUser } from "@/lib/auth/require-role";
@@ -24,7 +29,21 @@ export async function GET(request: NextRequest, { params }: Params) {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: {
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+        avatar: true,
+        bio: true,
+        isActive: true,
+        phone: true,
+        experience: true,
+        industry: true,
+        jobTitle: true,
+        location: true,
+        organization: true,
         _count: {
           select: {
             organizedEvents: true,
@@ -41,7 +60,12 @@ export async function GET(request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, data: user });
+    const response = NextResponse.json({ success: true, data: user });
+    response.headers.set(
+      "Cache-Control",
+      "private, s-maxage=60, stale-while-revalidate=120"
+    );
+    return response;
   } catch (error) {
     console.error("[USER_GET]", error);
     return NextResponse.json(
@@ -64,7 +88,6 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const isSelf = currentUser.userId === userId;
     const isAdmin = currentUser.role === "ADMIN";
 
-    // Must be self or admin
     if (!isSelf && !isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -72,7 +95,6 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const body = await request.json();
     const updateData: Record<string, unknown> = {};
 
-    // ── Fields any user can edit on their OWN profile ──
     const selfEditableFields = [
       "name",
       "phone",
@@ -87,14 +109,12 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (isSelf || isAdmin) {
       for (const field of selfEditableFields) {
         if (body[field] !== undefined) {
-          // Convert empty strings to null for cleanliness
           const val = typeof body[field] === "string" ? body[field].trim() : body[field];
           updateData[field] = val === "" ? null : val;
         }
       }
     }
 
-    // ── Validate user-editable fields ──
     if (updateData.name !== undefined && !updateData.name) {
       return NextResponse.json({ error: "Name cannot be empty" }, { status: 400 });
     }
@@ -103,7 +123,6 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Bio must be 500 characters or less" }, { status: 400 });
     }
 
-    // ── Admin-only fields ──
     if (isAdmin) {
       if (body.role) {
         if (!["USER", "ORGANIZER", "ADMIN"].includes(body.role)) {
@@ -127,7 +146,21 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: updateData,
-      include: {
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+        avatar: true,
+        bio: true,
+        isActive: true,
+        phone: true,
+        experience: true,
+        industry: true,
+        jobTitle: true,
+        location: true,
+        organization: true,
         _count: {
           select: {
             organizedEvents: true,
@@ -195,7 +228,10 @@ export async function DELETE(request: NextRequest, { params }: Params) {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: {
+      select: {
+        id: true,
+        email: true,
+        name: true,
         organizedEvents: {
           where: { status: "PUBLISHED" },
           select: { id: true },

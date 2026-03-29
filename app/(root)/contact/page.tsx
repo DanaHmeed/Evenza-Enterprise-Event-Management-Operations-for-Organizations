@@ -11,7 +11,6 @@ import {
   Globe,
   Clock,
   ArrowRight,
-  MessageSquare,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -393,6 +392,7 @@ export default function ContactPage() {
                 </span>
               </div>
               <h2
+                id="help"
                 style={{
                   fontFamily: t.serif,
                   fontSize: "clamp(1.4rem, 3vw, 2rem)",
@@ -425,7 +425,13 @@ export default function ContactPage() {
                 padding: "40px",
               }}
             >
-              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "24px",
+                }}
+              >
                 {/* Name + Email row */}
                 <div
                   className="grid sm:grid-cols-2 grid-cols-1"

@@ -208,7 +208,7 @@ function HeroSection() {
  
           {/* CTA buttons */}
           
-        <Link href="/events" className="mb-[48px] inline-block">
+        <Link href="/#platform" className="mb-[48px] inline-block">
           <button className="explore-button mb-48px font-[Quicksand]">
             <span className="explore-button__icon-wrapper">
               <svg
@@ -560,7 +560,8 @@ function FeaturesShowcase() {
 // 3. INTELLIGENT WORKFLOW — Image + Text
 export function IntelligentWorkflow() {
   return (
-    <section className=" inet relative overflow-hidden py-80 bg-white">
+    <section id= "worflow"
+    className="inet relative overflow-hidden py-80 bg-white">
       {/* Top spacing from previous section */}
       <div className="max-w-7xl mx-auto px-20 lg:px-20 grid lg:grid-cols-2 gap-24 items-center">
         {/* Left Image */}
@@ -806,7 +807,7 @@ function HowItWorksSection() {
   ];
 
   return (
-    <section
+    <section id= "how-it-works"
       style={{
         padding: "140px 0",
         background: "#0a0a0f",
@@ -1118,7 +1119,7 @@ function PlatformShowcaseSection() {
   ];
 
   return (
-    <section
+    <section id = "platform"
       style={{
         padding: "45px 0",
         background: "#fff",

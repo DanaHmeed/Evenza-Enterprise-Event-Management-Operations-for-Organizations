@@ -214,7 +214,7 @@ export default function ForgotPasswordPage() {
               </div>
               <h1
                 style={{
-                  fontFamily: t.serif,
+                  fontFamily: t.sans,
                   fontSize: '24px',
                   fontWeight: 600,
                   color: t.text,
@@ -442,7 +442,7 @@ export default function ForgotPasswordPage() {
                   fontFamily: 'Quicksand',
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = t.textSecondary)}
-                onMouseLeave={(e) => (e.currentTarget.style.color = t.textFaint)}
+                onMouseLeave={(e) => (e.currentTarget.style.color = t.text)}
               >
                 <ArrowLeft size={13} />
                 Back to sign in

@@ -1360,7 +1360,7 @@ function EventTypesSection() {
   ];
 
   return (
-    <section
+    <section id = "event-types"
       style={{
         padding: "140px 0",
         background: "#fff",

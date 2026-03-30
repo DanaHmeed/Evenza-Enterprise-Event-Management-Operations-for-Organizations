@@ -360,7 +360,7 @@ export default function AboutPage() {
       {/* ─────────────────────────────────
           WHAT EVENZA DOES (Capabilities)
           ───────────────────────────────── */}
-      <section
+      <section id = "capabilities"
         style={{
           background: t.surface,
           borderTop: `1px solid ${t.border}`,
@@ -478,7 +478,7 @@ export default function AboutPage() {
       {/* ─────────────────────────────────
           VALUES
           ───────────────────────────────── */}
-      <section
+      <section id = "values"
         style={{
           maxWidth: "1100px",
           margin: "0 auto",

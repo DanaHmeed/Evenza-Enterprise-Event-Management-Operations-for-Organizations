@@ -16,7 +16,6 @@ import {
   XCircle,
   Search,
   Star,
-  MessageSquare,
 } from "lucide-react";
 
 interface Registration {

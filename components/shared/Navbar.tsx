@@ -1,7 +1,8 @@
 // components/shared/Navbar.tsx
 "use client";
-
+import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useUser, SignOutButton } from "@clerk/nextjs";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -16,10 +17,492 @@ import {
   Ticket,
   Heart,
   User,
+  Star,
+  Shield,
+  MessageSquare,
+  HelpCircle,
+  ArrowRight,
+  BookSearch,
+  Handshake,
+  HeartPlus,
+  Computer,
+  Train,
+  PaintRoller,
+  Network,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import Button from "@/components/shared/button/Button";
 
+/* ═══════════════════════════════════════════
+   Mega-menu content config
+   ═══════════════════════════════════════════ */
+
+interface DropdownItem {
+  label: string;
+  desc: string;
+  href?: string;
+  icon: React.ReactNode;
+}
+
+interface DropdownSection {
+  title: string;
+  items: DropdownItem[];
+}
+
+const exploreDropdown: DropdownSection[] = [
+  {
+    title: "Discover",
+    items: [
+      {
+        label: "Business",
+        desc: " Conferences & meetups",
+        icon: <Handshake className="w-4 h-4" />,
+      },
+      {
+        label: "Social",
+        desc: "Find events near you",
+        icon: <Star className="w-4 h-4" />,
+      },
+      {
+        label: "Career",
+        desc: "What's happening soon",
+        icon: <Network className="w-4 h-4" />,
+      },
+      {
+        label: "Health & Wellness",
+        desc: "Well-being workshops",
+        icon: <HeartPlus className="w-4 h-4" />,
+      },
+    ],
+  },
+  {
+    title: "Categories",
+    items: [
+      {
+        label: "Tech & Innovation",
+        desc: "Cutting-edge conferences",
+        icon: <Computer className="w-4 h-4" />,
+      },
+      {
+        label: "Training",
+        desc: "Meetups & networking",
+        icon: <Train className="w-4 h-4" />,
+      },
+      {
+        label: "Education",
+        desc: "Hands-on learning",
+        icon: <BookSearch className="w-4 h-4" />,
+      },
+      {
+        label: "Arts & Culture",
+        desc: "Creative workshops",
+        icon: <PaintRoller className="w-4 h-4" />,
+      },
+    ],
+  },
+];
+
+const platformDropdown: DropdownSection[] = [
+  {
+    title: "For Attendees",
+    items: [
+      {
+        label: "How It Works",
+        desc: "Register, attend, enjoy",
+        href: "/#how-it-works",
+        icon: <HelpCircle className="w-4 h-4" />,
+      },
+      {
+        label: "who can use evenza?",
+        desc: "What attendees say",
+        href: "/#platform",
+        icon: <MessageSquare className="w-4 h-4" />,
+      },
+    ],
+  },
+  {
+    title: "For Organizers",
+    items: [
+      {
+        label: "Events Types",
+        desc: "Launch in minutes",
+        href: "/#event-types",
+        icon: <Calendar className="w-4 h-4" />,
+      },
+      {
+        label: "What we stand for?",
+        desc: "Mission, vision, values",
+        href: "/about/#values",
+        icon: <LayoutDashboard className="w-4 h-4" />,
+      },
+      {
+        label: "Everything you need",
+        desc: "Powerful tools for success",
+        href: "/about/#capabilities",
+        icon: <Shield className="w-4 h-4" />,
+      },
+    ],
+  },
+];
+
+/* ═══════════════════════════════════════════
+   Design tokens (matching profile page)
+   ═══════════════════════════════════════════ */
+const t = {
+  bg: "#fafaf8",
+  surface: "#fff",
+  border: "#e5e5e0",
+  borderLight: "#f0f0ec",
+  text: "#1a1a1a",
+  textSecondary: "#555",
+  textMuted: "#888",
+  textFaint: "#aaa",
+  accent: "#e63946",
+  accentSoft: "rgba(230,57,70,0.07)",
+  sans: "'DM Sans', sans-serif",
+};
+
+/* ═══════════════════════════════════════════
+   Mega Dropdown Component
+   ═══════════════════════════════════════════ */
+function MegaDropdown({
+  sections,
+  promoImage,
+  promoTitle,
+  promoDesc,
+  promoHref,
+  isOpen,
+  onClose,
+}: {
+  sections: DropdownSection[];
+  promoImage?: string;
+  promoTitle: string;
+  promoDesc: string;
+  promoHref: string;
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Dropdown panel */}
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+            style={{
+              position: "absolute",
+              left: "50%",
+              transform: "translateX(-50%)",
+              top: "calc(100% + 4px)",
+              width: "720px",
+              maxWidth: "calc(100vw - 48px)",
+              background: t.surface,
+              border: `1px solid ${t.border}`,
+              borderRadius: "8px",
+              boxShadow:
+                "0 16px 48px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04)",
+              overflow: "hidden",
+              zIndex: 50,
+              display: "flex",
+            }}
+          >
+            {/* Left — Promo Card */}
+            <div
+              style={{
+                width: "240px",
+                background: t.text,
+                padding: "0",
+                display: "flex",
+                flexDirection: "column",
+                flexShrink: 0,
+                position: "relative",
+                overflow: "hidden",
+              }}
+            >
+              {/* Image area */}
+              <div
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  height: "180px",
+                  overflow: "hidden",
+                }}
+              >
+                {promoImage ? (
+                  <Image
+                    src={promoImage}
+                    alt={promoTitle}
+                    fill
+                    style={{ objectFit: "cover", opacity: 0.85 }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      background:
+                        "linear-gradient(135deg, #1a1a2e 0%, #2d2d44 100%)",
+                    }}
+                  />
+                )}
+                {/* Gradient overlay */}
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: "60px",
+                    background:
+                      "linear-gradient(to top, #1a1a1a 0%, transparent 100%)",
+                  }}
+                />
+              </div>
+
+              {/* Text */}
+              <div
+                style={{
+                  padding: "16px 20px 20px",
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                }}
+              >
+                <h3
+                  style={{
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    color: "#fff",
+                    margin: 0,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {promoTitle}
+                </h3>
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "rgba(255,255,255,0.55)",
+                    margin: 0,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {promoDesc}
+                </p>
+                <Link
+                  href={promoHref}
+                  onClick={onClose}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    color: t.accent,
+                    textDecoration: "none",
+                    marginTop: "auto",
+                    paddingTop: "8px",
+                  }}
+                >
+                  Learn more
+                  <ArrowRight style={{ width: "12px", height: "12px" }} />
+                </Link>
+              </div>
+            </div>
+
+            {/* Right — Links grid */}
+            <div
+              style={{
+                flex: 1,
+                padding: "20px 24px",
+                display: "flex",
+                gap: "28px",
+              }}
+            >
+              {sections.map((section) => (
+                <div key={section.title} style={{ flex: 1, minWidth: 0 }}>
+                  {/* Section title */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      marginBottom: "12px",
+                      paddingBottom: "8px",
+                      borderBottom: `1px solid ${t.borderLight}`,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.12em",
+                        color: t.textFaint,
+                      }}
+                    >
+                      {section.title}
+                    </span>
+                  </div>
+
+                  {/* Items */}
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "2px",
+                    }}
+                  >
+                    {section.items.map((item) => (
+                      <DropdownMenuItem
+                        key={item.label}
+                        item={item}
+                        onClose={onClose}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function DropdownMenuItem({
+  item,
+  onClose,
+}: {
+  item: DropdownItem;
+  onClose: () => void;
+}) {
+  return (
+    <Link
+      href={item.href || "#"}
+      onClick={onClose}
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: "10px",
+        padding: "8px 10px",
+        borderRadius: "5px",
+        textDecoration: "none",
+        transition: "background 0.12s",
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.background = t.bg)}
+      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+    >
+      <span
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "28px",
+          height: "28px",
+          borderRadius: "5px",
+          background: t.borderLight,
+          color: t.textMuted,
+          flexShrink: 0,
+          marginTop: "1px",
+        }}
+      >
+        {item.icon}
+      </span>
+      <div style={{ minWidth: 0 }}>
+        <p
+          style={{
+            fontSize: "13px",
+            fontWeight: 600,
+            color: t.text,
+            margin: 0,
+            lineHeight: 1.3,
+          }}
+        >
+          {item.label}
+        </p>
+        <p
+          style={{
+            fontSize: "11px",
+            color: t.textMuted,
+            margin: "2px 0 0",
+            lineHeight: 1.3,
+          }}
+        >
+          {item.desc}
+        </p>
+      </div>
+    </Link>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   Nav Trigger with chevron
+   ═══════════════════════════════════════════ */
+function NavDropdownTrigger({
+  label,
+  isOpen,
+}: {
+  label: string;
+  isOpen: boolean;
+}) {
+  return (
+    <button
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "4px",
+        background: "none",
+        border: "none",
+        cursor: "pointer",
+        fontSize: "14px",
+        fontWeight: 500,
+        color: isOpen ? t.text : "#4b5563",
+        transition: "color 0.15s",
+        padding: "4px 0",
+        position: "relative",
+        fontFamily: "inherit",
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.color = t.text)}
+      onMouseLeave={(e) => {
+        if (!isOpen) e.currentTarget.style.color = "#4b5563";
+      }}
+    >
+      {label}
+      <ChevronDown
+        style={{
+          width: "14px",
+          height: "14px",
+          transition: "transform 0.2s",
+          transform: isOpen ? "rotate(180deg)" : "rotate(0)",
+          opacity: 0.5,
+        }}
+      />
+      {/* Underline indicator */}
+      <span
+        style={{
+          position: "absolute",
+          bottom: "-2px",
+          left: 0,
+          height: "2px",
+          background: "#f97316",
+          borderRadius: "1px",
+          width: isOpen ? "100%" : "0",
+          transition: "width 0.25s ease",
+        }}
+      />
+    </button>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   Main Navbar
+   ═══════════════════════════════════════════ */
 export default function Navbar() {
   const { user, isSignedIn, isLoaded } = useUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -27,24 +510,53 @@ export default function Navbar() {
   const [accountOpen, setAccountOpen] = useState(false);
   const accountRef = useRef<HTMLDivElement | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
+
+  // Mega dropdown states
+  const [exploreOpen, setExploreOpen] = useState(false);
+  const [platformOpen, setPlatformOpen] = useState(false);
+  const exploreRef = useRef<HTMLDivElement | null>(null);
+  const platformRef = useRef<HTMLDivElement | null>(null);
+
+  // Close timeout for hover intent
 
   useEffect(() => {
-    setMounted(true);
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Close dropdowns on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (!accountRef.current?.contains(e.target as Node)) {
         setAccountOpen(false);
       }
+      if (!exploreRef.current?.contains(e.target as Node)) {
+        setExploreOpen(false);
+      }
+      if (!platformRef.current?.contains(e.target as Node)) {
+        setPlatformOpen(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  // Close other dropdown when one opens
+  const openExplore = useCallback(() => {
+    setExploreOpen(true);
+    setPlatformOpen(false);
+    setAccountOpen(false);
+  }, []);
+
+  const openPlatform = useCallback(() => {
+    setPlatformOpen(true);
+    setExploreOpen(false);
+    setAccountOpen(false);
+  }, []);
+  const effectiveRole = isSignedIn ? userRole : null;
+  const isAdmin = effectiveRole === "ADMIN";
+  const isOrganizer = effectiveRole === "ORGANIZER" || isAdmin;
 
   // Fetch role from database
   useEffect(() => {
@@ -62,10 +574,10 @@ export default function Navbar() {
     };
     fetchRole();
   }, [isSignedIn, user]);
-  
 
-  const isAdmin = userRole === "ADMIN";
-  const isOrganizer = userRole === "ORGANIZER" || isAdmin;
+  // Mobile accordion state
+  const [mobileExploreOpen, setMobileExploreOpen] = useState(false);
+  const [mobilePlatformOpen, setMobilePlatformOpen] = useState(false);
 
   return (
     <nav
@@ -93,42 +605,76 @@ export default function Navbar() {
             </motion.span>
           </Link>
 
-          {/* Center Nav */}
+          {/* ═══════════════════════════════════
+              Center Nav with Mega Dropdowns
+              ═══════════════════════════════════ */}
           <div className="hidden lg:flex items-center gap-8 absolute left-1/2 transform -translate-x-1/2">
-            <NavLink href="/events">Discover Events</NavLink>
+            {/* Explore dropdown */}
+            <div
+              ref={exploreRef}
+              style={{ position: "relative" }}
+              onMouseEnter={openExplore}
+              onMouseLeave={() => setExploreOpen(false)}
+            >
+              <NavDropdownTrigger label="Explore" isOpen={exploreOpen} />
+              <MegaDropdown
+                sections={exploreDropdown}
+                promoImage="/images/admin.png"
+                promoTitle="Find Your Next Experience"
+                promoDesc="Discover events that match your interests — from tech meetups to creative workshops."
+                promoHref="/events"
+                isOpen={exploreOpen}
+                onClose={() => setExploreOpen(false)}
+              />
+            </div>
+
+            {/* Platform dropdown */}
+            <div
+              ref={platformRef}
+              style={{ position: "relative" }}
+              onMouseEnter={openPlatform}
+              onMouseLeave={() => setPlatformOpen(false)}
+            >
+              <NavDropdownTrigger label="Platform" isOpen={platformOpen} />
+              <MegaDropdown
+                sections={platformDropdown}
+                promoImage="/images/attendee.png"
+                promoTitle="Organize With Evenza"
+                promoDesc="Create, manage, and grow your events with powerful tools built for organizers."
+                promoHref="/dashboard/events/create"
+                isOpen={platformOpen}
+                onClose={() => setPlatformOpen(false)}
+              />
+            </div>
+
             <NavLink href="/about">About</NavLink>
             <NavLink href="/contact">Contact</NavLink>
-            {isOrganizer && (
-              <NavLink href="/dashboard">
-                <LayoutDashboard className="w-4 h-4 inline mr-1" />
-                Dashboard
-              </NavLink>
-            )}
-            {isAdmin && (
-              <NavLink href="/admin">
-                <Settings className="w-4 h-4 inline mr-1" />
-                Admin
-              </NavLink>
-            )}
+            <NavLink href="/events">Discover Events</NavLink>
+
+            {isOrganizer && <NavLink href="/dashboard">Dashboard</NavLink>}
+            {isAdmin && <NavLink href="/admin">Admin</NavLink>}
           </div>
 
-          {/* Right Side */}
+          {/* ═══════════════════════════════════
+              Right Side (account)
+              ═══════════════════════════════════ */}
           <div className="hidden lg:flex items-center gap-3">
-{!mounted || !isLoaded ? (
-                <div className="w-20 h-9 bg-gray-100 rounded-full animate-pulse" />
+            {!isLoaded ? (
+              <div className="w-20 h-9 bg-gray-100 rounded-full animate-pulse" />
             ) : !isSignedIn ? (
               <>
                 <Link href="/sign-in">
                   <Button>Sign In</Button>
                 </Link>
-                <Link href="/sign-up">
-                  <Button>Get Started</Button>
-                </Link>
               </>
             ) : (
               <div className="relative" ref={accountRef}>
                 <button
-                  onClick={() => setAccountOpen((v) => !v)}
+                  onClick={() => {
+                    setAccountOpen((v) => !v);
+                    setExploreOpen(false);
+                    setPlatformOpen(false);
+                  }}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -172,7 +718,11 @@ export default function Navbar() {
                       }}
                     >
                       <User
-                        style={{ width: "15px", height: "15px", color: "#fff" }}
+                        style={{
+                          width: "15px",
+                          height: "15px",
+                          color: "#fff",
+                        }}
                       />
                     </div>
                   )}
@@ -315,25 +865,18 @@ export default function Navbar() {
 
                     {/* Items */}
                     <div style={{ padding: "6px 0" }}>
-                      <DropdownLink
+                      <AccountDropdownLink
                         href="/profile"
                         icon={<UserCircle size={16} />}
                         label="My Profile"
                         onClick={() => setAccountOpen(false)}
                       />
-                      <DropdownLink
-                        href="/my-tickets"
-                        icon={<Ticket size={16} />}
-                        label="My Tickets"
-                        onClick={() => setAccountOpen(false)}
-                      />
-                      <DropdownLink
-                        href="/my-events"
+                      <AccountDropdownLink
+                        href="/my-hub"
                         icon={<Heart size={16} />}
-                        label="My Registrations"
+                        label="My Hub"
                         onClick={() => setAccountOpen(false)}
                       />
-
                       {isOrganizer && (
                         <>
                           <div
@@ -343,13 +886,13 @@ export default function Navbar() {
                               margin: "6px 0",
                             }}
                           />
-                          <DropdownLink
+                          <AccountDropdownLink
                             href="/dashboard"
                             icon={<LayoutDashboard size={16} />}
                             label="Organizer Dashboard"
                             onClick={() => setAccountOpen(false)}
                           />
-                          <DropdownLink
+                          <AccountDropdownLink
                             href="/dashboard/events/create"
                             icon={<Calendar size={16} />}
                             label="Create Event"
@@ -367,7 +910,7 @@ export default function Navbar() {
                               margin: "6px 0",
                             }}
                           />
-                          <DropdownLink
+                          <AccountDropdownLink
                             href="/admin"
                             icon={<Settings size={16} />}
                             label="Admin Panel"
@@ -419,7 +962,9 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Button */}
+          {/* ═══════════════════════════════════
+              Mobile Button
+              ═══════════════════════════════════ */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="lg:hidden text-gray-700 p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -428,7 +973,9 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Mobile Menu */}
+        {/* ═══════════════════════════════════
+            Mobile Menu
+            ═══════════════════════════════════ */}
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div
@@ -438,12 +985,30 @@ export default function Navbar() {
               className="lg:hidden pb-4 border-t border-gray-200 pt-4 overflow-hidden"
             >
               <div className="flex flex-col gap-1">
-                <MobileNavLink
-                  href="/events"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Discover Events
-                </MobileNavLink>
+                {/* Mobile Explore Accordion */}
+                <MobileAccordion
+                  label="Explore"
+                  isOpen={mobileExploreOpen}
+                  onToggle={() => {
+                    setMobileExploreOpen((v) => !v);
+                    setMobilePlatformOpen(false);
+                  }}
+                  sections={exploreDropdown}
+                  onClose={() => setMobileMenuOpen(false)}
+                />
+
+                {/* Mobile Platform Accordion */}
+                <MobileAccordion
+                  label="Platform"
+                  isOpen={mobilePlatformOpen}
+                  onToggle={() => {
+                    setMobilePlatformOpen((v) => !v);
+                    setMobileExploreOpen(false);
+                  }}
+                  sections={platformDropdown}
+                  onClose={() => setMobileMenuOpen(false)}
+                />
+
                 <MobileNavLink
                   href="/about"
                   onClick={() => setMobileMenuOpen(false)}
@@ -525,6 +1090,91 @@ export default function Navbar() {
   );
 }
 
+/* ═══════════════════════════════════════════
+   Mobile Accordion for dropdowns
+   ═══════════════════════════════════════════ */
+function MobileAccordion({
+  label,
+  isOpen,
+  onToggle,
+  sections,
+  onClose,
+}: {
+  label: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  sections: DropdownSection[];
+  onClose: () => void;
+}) {
+  return (
+    <div>
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-all font-medium px-4 py-3 rounded-lg"
+      >
+        {label}
+        <ChevronDown
+          style={{
+            width: "16px",
+            height: "16px",
+            transition: "transform 0.2s",
+            transform: isOpen ? "rotate(180deg)" : "rotate(0)",
+            opacity: 0.4,
+          }}
+        />
+      </button>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            style={{ overflow: "hidden" }}
+          >
+            <div style={{ padding: "4px 0 8px 16px" }}>
+              {sections.map((section) => (
+                <div key={section.title} style={{ marginBottom: "8px" }}>
+                  <p
+                    style={{
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.1em",
+                      color: t.textFaint,
+                      padding: "4px 12px",
+                      margin: 0,
+                    }}
+                  >
+                    {section.title}
+                  </p>
+                  {section.items.map((item) => (
+                    <Link
+                      key={item.label}
+                      href={item.href || "#"}
+                      onClick={onClose}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-all"
+                      style={{ fontSize: "13px", textDecoration: "none" }}
+                    >
+                      <span style={{ color: t.textFaint, display: "flex" }}>
+                        {item.icon}
+                      </span>
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   Helper components
+   ═══════════════════════════════════════════ */
+
 function NavLink({
   href,
   children,
@@ -563,7 +1213,7 @@ function MobileNavLink({
   );
 }
 
-function DropdownLink({
+function AccountDropdownLink({
   href,
   label,
   icon,

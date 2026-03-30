@@ -24,7 +24,7 @@ export default function AuthLayout({
       {/* Back Button */}
       <Link
         href="/"
-        className="absolute top-6 left-6 z-20 flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm text-white/70 text-sm font-medium transition-all duration-200 hover:bg-black hover:text-white hover:shadow-lg"
+        className="absolute top-6 left-6 z-20 flex items-center gap-2 px-4 py-2 backdrop-blur-sm text-white/70 text-sm font-medium transition-all duration-200 hover:bg-black hover:text-white hover:shadow-lg"
       >
         <ArrowLeft size={18} />
         Back

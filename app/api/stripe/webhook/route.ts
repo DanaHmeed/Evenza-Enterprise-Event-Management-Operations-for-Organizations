@@ -41,6 +41,32 @@ export async function POST(req: NextRequest) {
         throw new Error("Missing metadata");
       }
 
+      // Idempotency: skip if already processed
+      const existingOrder = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { paymentStatus: true },
+      });
+
+      if (existingOrder?.paymentStatus === "PAID") {
+        console.log("⚠️ Webhook already processed for order:", orderId);
+        return NextResponse.json({ received: true });
+      }
+
+      // Fetch receipt URL from the payment intent
+      let receiptUrl: string | null = null;
+      if (session.payment_intent) {
+        try {
+          const paymentIntent = await stripe.paymentIntents.retrieve(
+            session.payment_intent as string,
+            { expand: ["latest_charge"] }
+          );
+          const charge = paymentIntent.latest_charge as Stripe.Charge | null;
+          receiptUrl = charge?.receipt_url ?? null;
+        } catch {
+          // Non-critical — continue without receipt URL
+        }
+      }
+
       await prisma.$transaction(async (tx) => {
         // 1. Update ticket to PAID
         await tx.ticket.update({
@@ -56,6 +82,7 @@ export async function POST(req: NextRequest) {
           where: { id: orderId },
           data: {
             paymentStatus: "PAID",
+            ...(receiptUrl ? { receiptUrl } : {}),
           },
         });
 
@@ -85,8 +112,8 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Handle failed payment
-  if (event.type === "checkout.session.expired" || event.type === "payment_intent.payment_failed") {
+  // Handle expired checkout session
+  if (event.type === "checkout.session.expired") {
     const session = event.data.object as Stripe.Checkout.Session;
 
     try {
@@ -94,40 +121,104 @@ export async function POST(req: NextRequest) {
         session.metadata || {};
 
       if (!ticketId || !orderId || !registrationId || !eventId) {
-        console.error("[STRIPE_WEBHOOK] Missing metadata on failed payment");
+        console.error("[STRIPE_WEBHOOK] Missing metadata on expired session");
+        return NextResponse.json({ received: true });
+      }
+
+      // Idempotency: skip if already processed
+      const existingOrder = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { paymentStatus: true },
+      });
+
+      if (existingOrder?.paymentStatus !== "PENDING") {
         return NextResponse.json({ received: true });
       }
 
       await prisma.$transaction(async (tx) => {
-        // 1. Cancel ticket
         await tx.ticket.update({
           where: { id: ticketId },
           data: { status: "CANCELLED" },
         });
 
-        // 2. Fail order
         await tx.order.update({
           where: { id: orderId },
           data: { paymentStatus: "FAILED" },
         });
 
-        // 3. Cancel registration
         await tx.registration.update({
           where: { id: registrationId },
           data: { status: "CANCELLED" },
         });
 
-        // 4. Restore seat
         await tx.event.update({
           where: { id: eventId },
           data: { seatsRemaining: { increment: 1 } },
         });
       });
 
-      console.log("❌ Payment failed/expired, resources released:", session.id);
+      console.log("❌ Session expired, resources released:", session.id);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      console.error("[STRIPE_WEBHOOK] Error handling failed payment:", errorMessage);
+      console.error("[STRIPE_WEBHOOK] Error handling expired session:", errorMessage);
+    }
+  }
+
+  // Handle failed payment intent — look up by paymentIntentId stored on the ticket
+  if (event.type === "payment_intent.payment_failed") {
+    const paymentIntent = event.data.object as Stripe.PaymentIntent;
+
+    try {
+      // Attempt to find the ticket linked to this payment intent
+      const ticket = await prisma.ticket.findFirst({
+        where: { paymentIntentId: paymentIntent.id },
+        include: { registration: true },
+      });
+
+      if (!ticket) {
+        // Can't trace back — already handled by session.expired or never linked
+        return NextResponse.json({ received: true });
+      }
+
+      // Idempotency
+      if (ticket.status !== "RESERVED") {
+        return NextResponse.json({ received: true });
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.ticket.update({
+          where: { id: ticket.id },
+          data: { status: "CANCELLED" },
+        });
+
+        if (ticket.registration) {
+          const relatedOrder = await tx.order.findFirst({
+            where: { eventId: ticket.eventId, userId: ticket.userId, paymentStatus: "PENDING" },
+          });
+
+          if (relatedOrder) {
+            await tx.order.update({
+              where: { id: relatedOrder.id },
+              data: { paymentStatus: "FAILED" },
+            });
+          }
+
+          await tx.registration.update({
+            where: { id: ticket.registration.id },
+            data: { status: "CANCELLED" },
+          });
+        }
+
+        await tx.event.update({
+          where: { id: ticket.eventId },
+          data: { seatsRemaining: { increment: 1 } },
+        });
+      });
+
+      console.log("❌ Payment intent failed, resources released:", paymentIntent.id);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      console.error("[STRIPE_WEBHOOK] Error handling failed payment intent:", errorMessage);
     }
   }
 

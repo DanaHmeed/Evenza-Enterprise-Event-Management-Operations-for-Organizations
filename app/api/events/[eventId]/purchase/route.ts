@@ -42,13 +42,20 @@ export async function POST(request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Event is full" }, { status: 400 });
     }
 
-    // Check if already registered
+    // Check if already registered (ignore PENDING/CANCELLED — only block on APPROVED)
     const existingRegistration = await prisma.registration.findUnique({
       where: { userId_eventId: { userId, eventId } },
     });
 
-    if (existingRegistration) {
+    if (existingRegistration?.status === "APPROVED") {
       return NextResponse.json({ error: "You are already registered for this event" }, { status: 400 });
+    }
+
+    // Clean up any stale PENDING/CANCELLED registration so we can create a fresh one
+    if (existingRegistration && existingRegistration.status !== "APPROVED") {
+      await prisma.registration.delete({
+        where: { userId_eventId: { userId, eventId } },
+      });
     }
 
     const body = await request.json();
@@ -65,7 +72,41 @@ export async function POST(request: NextRequest, { params }: Params) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
 
-      // Create registration + ticket + order in a transaction
+      // Only pass images if banner is an absolute URL — Stripe rejects relative paths
+      const bannerImages =
+        event.banner?.startsWith("http") ? [event.banner] : [];
+
+      // Create Stripe checkout session FIRST — before any DB writes.
+      // If Stripe fails here, nothing has been written to the DB yet.
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price_data: {
+              currency: event.currency?.toLowerCase() || "usd",
+              product_data: {
+                name: event.title,
+                description: `Ticket for ${event.title}`,
+                images: bannerImages,
+              },
+              unit_amount: Math.round((event.price ?? 0) * 100),
+            },
+            quantity: 1,
+          },
+        ],
+        mode: "payment",
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/events/${eventId}/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/events/${eventId}?payment=cancelled`,
+        customer_email: user.email,
+        metadata: {
+          userId,
+          eventId,
+          // ticketId and orderId will be patched onto the session metadata after
+          // DB write, but we store them in the order record instead.
+        },
+      });
+
+      // Now create registration + ticket + order in a single transaction
       const result = await prisma.$transaction(async (tx) => {
         // 1. Create registration (PENDING until payment completes)
         const registration = await tx.registration.create({
@@ -91,7 +132,7 @@ export async function POST(request: NextRequest, { params }: Params) {
           },
         });
 
-        // 3. Create order
+        // 3. Create order (with stripeSessionId already known)
         const order = await tx.order.create({
           data: {
             userId,
@@ -100,6 +141,7 @@ export async function POST(request: NextRequest, { params }: Params) {
             currency: event.currency || "USD",
             paymentMethod: "STRIPE",
             paymentStatus: "PENDING",
+            stripeSessionId: session.id,
           },
         });
 
@@ -112,27 +154,8 @@ export async function POST(request: NextRequest, { params }: Params) {
         return { registration, ticket, order };
       });
 
-      // Create Stripe checkout session
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ["card"],
-        line_items: [
-          {
-            price_data: {
-              currency: event.currency?.toLowerCase() || "usd",
-              product_data: {
-                name: event.title,
-                description: `Ticket for ${event.title}`,
-                images: event.banner ? [event.banner] : [],
-              },
-              unit_amount: Math.round((event.price ?? 0) * 100),
-            },
-            quantity: 1,
-          },
-        ],
-        mode: "payment",
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/events/${eventId}/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/events/${eventId}`,
-        customer_email: user.email,
+      // Patch the Stripe session metadata now that we have the DB IDs
+      await stripe.checkout.sessions.update(session.id, {
         metadata: {
           userId,
           eventId,
@@ -140,12 +163,6 @@ export async function POST(request: NextRequest, { params }: Params) {
           orderId: result.order.id,
           registrationId: result.registration.id,
         },
-      });
-
-      // Link stripe session to order
-      await prisma.order.update({
-        where: { id: result.order.id },
-        data: { stripeSessionId: session.id },
       });
 
       return NextResponse.json({

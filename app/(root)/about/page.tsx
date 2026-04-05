@@ -518,7 +518,7 @@ export default function AboutPage() {
             margin: "0 0 56px 0",
           }}
         >
-          What we stand for
+          What we stand for?
         </h2>
 
         <div

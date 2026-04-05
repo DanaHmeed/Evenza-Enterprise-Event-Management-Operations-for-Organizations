@@ -1,11 +1,12 @@
 // app/dashboard/layout.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { Loader2 } from "lucide-react";
+import { useRoleCheck } from "@/hooks/use-dashboard";
 
 export default function DashboardLayout({
   children,
@@ -14,43 +15,29 @@ export default function DashboardLayout({
 }) {
   const { user, isSignedIn, isLoaded } = useUser();
   const router = useRouter();
-  const [authorized, setAuthorized] = useState(false);
-  const [checking, setChecking] = useState(true);
+
+  // SWR-cached role check — navigating between dashboard pages
+  // no longer re-fetches this. The first load caches the result for 60s.
+  const { isAuthorized, isLoading: roleLoading } = useRoleCheck(
+    isLoaded && isSignedIn ? user?.id : null
+  );
 
   useEffect(() => {
     if (!isLoaded) return;
-
     if (!isSignedIn) {
       router.replace("/sign-in?redirect_url=/dashboard");
-      return;
     }
+  }, [isLoaded, isSignedIn, router]);
 
-    // Check if user is ORGANIZER or ADMIN
-    const checkRole = async () => {
-      try {
-        const res = await fetch(`/api/users/${user?.id}`);
-        if (res.ok) {
-          const data = await res.json();
-          const role = data.data?.role || data.role;
-          if (role === "ORGANIZER" || role === "ADMIN") {
-            setAuthorized(true);
-          } else {
-            router.replace("/");
-          }
-        } else {
-          router.replace("/");
-        }
-      } catch {
-        router.replace("/");
-      } finally {
-        setChecking(false);
-      }
-    };
+  useEffect(() => {
+    // Only redirect once the role check is done and user is NOT authorized
+    if (!isLoaded || !isSignedIn || roleLoading) return;
+    if (!isAuthorized) {
+      router.replace("/");
+    }
+  }, [isLoaded, isSignedIn, roleLoading, isAuthorized, router]);
 
-    checkRole();
-  }, [isLoaded, isSignedIn, user, router]);
-
-  if (!isLoaded || checking) {
+  if (!isLoaded || roleLoading) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -61,7 +48,7 @@ export default function DashboardLayout({
     );
   }
 
-  if (!authorized) return null;
+  if (!isAuthorized) return null;
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">

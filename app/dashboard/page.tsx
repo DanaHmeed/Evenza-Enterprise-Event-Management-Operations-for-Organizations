@@ -1,7 +1,6 @@
 // app/dashboard/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -13,61 +12,22 @@ import {
   ArrowRight,
   Loader2,
 } from "lucide-react";
-import { t, StatusBadge, StatCard, SectionTitle } from "@/components/dashboard/OrganizerUI";
-
-interface Stats {
-  totalEvents: number;
-  publishedEvents: number;
-  draftEvents: number;
-  cancelledEvents: number;
-  upcomingEvents: number;
-  totalAttendees: number;
-  pendingAttendees: number;
-  checkedInCount: number;
-  totalRevenue: number;
-  totalOrders: number;
-  averageRating: number;
-  totalFeedbacks: number;
-}
-
-interface RecentEvent {
-  id: string;
-  title: string;
-  status: string;
-  startDate: string;
-  eventType: string;
-  price?: number | null;
-  capacity: number;
-  seatsRemaining: number;
-  _count: { registrations: number };
-}
+import {
+  t,
+  StatusBadge,
+  StatCard,
+  SectionTitle,
+} from "@/components/dashboard/OrganizerUI";
+import { useDashboardStats } from "@/hooks/use-dashboard";
 
 export default function DashboardPage() {
   const { user } = useUser();
   const router = useRouter();
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch("/api/organizer/stats");
-        if (res.ok) {
-          const json = await res.json();
-          setStats(json.data.counts);
-          setRecentEvents(json.data.recentEvents || []);
-        }
-      } catch {
-        console.error("Failed to load dashboard");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+  // SWR: cached for 30s, instant on re-navigation, background refresh
+  const { stats, recentEvents, isLoading } = useDashboardStats();
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
         <Loader2 className="animate-spin" style={{ width: "24px", height: "24px", color: t.accent }} />
@@ -83,10 +43,10 @@ export default function DashboardPage() {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "32px", flexWrap: "wrap", gap: "16px" }}>
         <div>
-          <h1 style={{ fontFamily: t.serif, fontSize: "28px", fontWeight: 600, color: t.text, margin: 0, letterSpacing: "-0.02em" }}>
+          <h1 style={{ fontFamily: t.serif, fontSize: "28px", fontWeight: 600, color: t.text, marginLeft: 2, marginTop: 6, letterSpacing: "-0.02em" }}>
             Welcome back, {user?.firstName || "Organizer"}
           </h1>
-          <p style={{ fontSize: "14px", color: t.textMuted, marginTop: "4px" }}>
+          <p style={{ fontSize: "14px", color: t.textMuted, marginTop: "4px", marginLeft: 6, fontFamily: "Quicksand" }}>
             Here&apos;s your event overview.
           </p>
         </div>
@@ -96,7 +56,7 @@ export default function DashboardPage() {
             display: "inline-flex", alignItems: "center", gap: "8px",
             padding: "10px 20px", fontSize: "13px", fontWeight: 600,
             color: "#fff", background: t.text, borderRadius: "4px",
-            textDecoration: "none", fontFamily: t.sans,
+            textDecoration: "none", fontFamily: t.sans, margin: 6,
           }}
         >
           <CalendarPlus style={{ width: "14px", height: "14px" }} />
@@ -155,7 +115,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-              {recentEvents.map((e) => {
+              {recentEvents.map((e: { id: string; title: string; startDate: string; status: string; capacity: number; seatsRemaining: number }) => {
                 const registered = e.capacity - e.seatsRemaining;
                 return (
                   <Link

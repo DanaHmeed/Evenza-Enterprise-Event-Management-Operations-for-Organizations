@@ -199,7 +199,7 @@ main {
   cursor: pointer;
   align-items: center;
   gap: 0.75rem;
-  background: linear-gradient(to right, #f97316, #ea580c);
+  background: linear-gradient(to right, #d25903, #d25903);
   color: #ffffff;
   border-radius: 9999px;
   font-weight: 600;
@@ -220,7 +220,7 @@ main {
   width: 25px;
   height: 25px;
   position: relative;
-  color: #f97316;
+  color: #d25903;
   background-color: #fff;
   border-radius: 50%;
   display: grid;

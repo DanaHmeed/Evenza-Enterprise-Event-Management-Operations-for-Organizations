@@ -1,7 +1,4 @@
-// app/(root)/events/EventCard.tsx
-"use client";
-
-import { memo } from "react";
+// app/(root)/events/EventCard.tsx - Optimized version
 import Link from "next/link";
 import Image from "next/image";
 import { Calendar, MapPin, Globe, ArrowUpRight } from "lucide-react";
@@ -32,46 +29,43 @@ interface EventCardProps {
   };
 }
 
-function EventCard({ event }: EventCardProps) {
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    const month = d
-      .toLocaleDateString("en-US", { month: "short" })
-      .toUpperCase();
-    const day = d.getDate();
-    return { month, day };
+const formatDate = (dateStr: string) => {
+  const d = new Date(dateStr);
+  return {
+    month: d.toLocaleDateString("en-US", { month: "short" }).toUpperCase(),
+    day: d.getDate(),
   };
+};
 
-  const formatFullDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-    });
+const formatFullDate = (dateStr: string) =>
+  new Date(dateStr).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
 
-  const formatTime = (dateStr: string) =>
-    new Date(dateStr).toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
+const formatTime = (dateStr: string) =>
+  new Date(dateStr).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
 
-  const locationLabel = event.isOnline
-    ? "Online"
-    : event.city || event.venueName || "TBA";
-
-  const isPast = new Date(event.endDate) < new Date();
+export default function EventCard({ event }: EventCardProps) {
+  const now = new Date();
+  const locationLabel = event.isOnline ? "Online" : event.city || event.venueName || "TBA";
+  const isPast = new Date(event.endDate) < now;
   const isCancelled = event.status === "CANCELLED";
-  const { month, day } = formatDate(event.startDate);
+  const dateInfo = formatDate(event.startDate);
+  const isDimmed = isPast || isCancelled;
 
   return (
     <Link
       href={`/events/${event.id}`}
       className="group relative flex flex-col"
-      style={{ opacity: isPast || isCancelled ? 0.55 : 1 }}
+      style={{ opacity: isDimmed ? 0.55 : 1 }}
       prefetch={false}
     >
-      {/* ── Image ── */}
       <div
         className="relative w-full overflow-hidden"
         style={{ aspectRatio: "16 / 10", borderRadius: "6px" }}
@@ -106,7 +100,6 @@ function EventCard({ event }: EventCardProps) {
           </div>
         )}
 
-        {/* Status overlay */}
         {(isCancelled || isPast) && (
           <div
             className="absolute inset-0 flex items-center justify-center"
@@ -129,7 +122,6 @@ function EventCard({ event }: EventCardProps) {
           </div>
         )}
 
-        {/* Date badge — top left */}
         <div
           className="absolute flex flex-col items-center"
           style={{
@@ -151,7 +143,7 @@ function EventCard({ event }: EventCardProps) {
               color: "#e63946",
             }}
           >
-            {month}
+            {dateInfo.month}
           </span>
           <span
             style={{
@@ -162,11 +154,10 @@ function EventCard({ event }: EventCardProps) {
               fontFamily: "'Georgia', serif",
             }}
           >
-            {day}
+            {dateInfo.day}
           </span>
         </div>
 
-        {/* Arrow on hover */}
         <div
           className="absolute flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100"
           style={{
@@ -182,9 +173,7 @@ function EventCard({ event }: EventCardProps) {
         </div>
       </div>
 
-      {/* ── Content ── */}
       <div className="flex flex-col" style={{ paddingTop: "16px" }}>
-        {/* Category + Price */}
         <div className="flex items-center" style={{ gap: "8px", marginBottom: "8px" }}>
           {event.category && (
             <>
@@ -215,7 +204,6 @@ function EventCard({ event }: EventCardProps) {
           </span>
         </div>
 
-        {/* Title */}
         <h3
           className="line-clamp-2 transition-opacity duration-200 group-hover:opacity-65"
           style={{
@@ -230,7 +218,6 @@ function EventCard({ event }: EventCardProps) {
           {event.title}
         </h3>
 
-        {/* Summary */}
         {event.summary && (
           <p
             className="line-clamp-2"
@@ -245,7 +232,6 @@ function EventCard({ event }: EventCardProps) {
           </p>
         )}
 
-        {/* Meta */}
         <div className="flex flex-col" style={{ gap: "6px", marginTop: "auto" }}>
           <div className="flex items-center" style={{ gap: "8px" }}>
             <Calendar
@@ -277,5 +263,3 @@ function EventCard({ event }: EventCardProps) {
     </Link>
   );
 }
-
-export default memo(EventCard);

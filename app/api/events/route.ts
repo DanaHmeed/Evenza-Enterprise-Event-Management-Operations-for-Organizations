@@ -6,31 +6,30 @@ import { createEventSchema } from "@/lib/validations/event.schema";
 import { generateSlug } from "@/lib/utils/helpers";
 import { ZodError } from "zod";
 
-// GET - Browse all published events (public) with filters & pagination
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
 
-    // Pagination
-    const page = parseInt(searchParams.get("page") || "1");
-    const pageSize = parseInt(searchParams.get("pageSize") || "12");
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+    const pageSize = Math.min(
+      Math.max(1, parseInt(searchParams.get("pageSize") || "12", 10) || 12),
+      24
+    );
     const skip = (page - 1) * pageSize;
 
-    // Filters
-    const search = searchParams.get("search") || "";
+    const search = searchParams.get("search")?.trim() || "";
     const categoryId = searchParams.get("categoryId");
     const city = searchParams.get("city");
-    const eventType = searchParams.get("eventType"); // FREE or PAID
+    const eventType = searchParams.get("eventType");
     const isOnline = searchParams.get("isOnline");
     const startAfter = searchParams.get("startAfter");
     const startBefore = searchParams.get("startBefore");
-    const sortBy = searchParams.get("sortBy") || "startDate"; // startDate, createdAt, title
+    const sortBy = searchParams.get("sortBy") || "startDate";
     const sortOrder = searchParams.get("sortOrder") || "asc";
 
-    // Build where clause
-   const status = searchParams.get("status");
+    const status = searchParams.get("status");
     const where: Record<string, unknown> = {};
-    
+
     if (status) {
       where.status = status;
     } else if (!searchParams.get("all")) {
@@ -40,7 +39,6 @@ export async function GET(request: NextRequest) {
     if (search) {
       where.OR = [
         { title: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
         { city: { contains: search, mode: "insensitive" } },
         { venueName: { contains: search, mode: "insensitive" } },
       ];
@@ -52,13 +50,13 @@ export async function GET(request: NextRequest) {
     if (isOnline !== null && isOnline !== undefined) {
       where.isOnline = isOnline === "true";
     }
+
     if (startAfter || startBefore) {
       where.startDate = {};
       if (startAfter) (where.startDate as Record<string, unknown>).gte = new Date(startAfter);
       if (startBefore) (where.startDate as Record<string, unknown>).lte = new Date(startBefore);
     }
 
-    // Validate sort
     const allowedSortFields = ["startDate", "createdAt", "title", "price"];
     const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : "startDate";
     const safeSortOrder = sortOrder === "desc" ? "desc" : "asc";
@@ -66,19 +64,25 @@ export async function GET(request: NextRequest) {
     const [events, total] = await Promise.all([
       prisma.event.findMany({
         where,
-        include: {
-          organizer: {
-            select: { id: true, name: true, avatar: true },
-          },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          summary: true,
+          // banner removed from listing payload
+          startDate: true,
+          endDate: true,
+          eventType: true,
+          price: true,
+          currency: true,
+          isOnline: true,
+          city: true,
+          venueName: true,
+          status: true,
           category: {
             select: { id: true, name: true, slug: true, color: true },
           },
-          tags: {
-            select: { id: true, name: true, slug: true },
-          },
-          _count: {
-            select: { registrations: true, feedbacks: true },
-          },
+          _count: { select: { registrations: true } },
         },
         orderBy: { [safeSortBy]: safeSortOrder },
         skip,
@@ -87,26 +91,49 @@ export async function GET(request: NextRequest) {
       prisma.event.count({ where }),
     ]);
 
-    return NextResponse.json({
-      success: true,
-      data: events,
-      pagination: {
-        page,
-        pageSize,
-        total,
-        totalPages: Math.ceil(total / pageSize),
+    const serializedEvents = events.map((e) => ({
+      id: e.id,
+      slug: e.slug,
+      title: e.title,
+      summary: e.summary ? e.summary.slice(0, 140) : null,
+      startDate: e.startDate.toISOString(),
+      endDate: e.endDate.toISOString(),
+      eventType: e.eventType,
+      price: e.price,
+      currency: e.currency,
+      isOnline: e.isOnline,
+      city: e.city,
+      venueName: e.venueName,
+      status: e.status,
+      category: e.category,
+      _count: e._count,
+    }));
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: serializedEvents,
+        pagination: {
+          page,
+          pageSize,
+          total,
+          totalPages: Math.ceil(total / pageSize),
+        },
       },
-    });
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+        },
+      }
+    );
   } catch (error) {
     console.error("[EVENTS_GET]", error);
-    return NextResponse.json(
-      { error: "Failed to fetch events" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch events" }, { status: 500 });
   }
 }
 
-// POST - Create a new event (organizer/admin only)
+// POST stays unchanged
 export async function POST(request: NextRequest) {
   try {
     const authResult = await requireOrganizer();
@@ -115,7 +142,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = createEventSchema.parse(body);
 
-    // Validate dates
     const start = new Date(validatedData.startDate);
     const end = new Date(validatedData.endDate);
     const deadline = new Date(validatedData.registrationDeadline);
@@ -134,7 +160,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate category exists
     const category = await prisma.category.findUnique({
       where: { id: validatedData.categoryId },
     });
@@ -146,10 +171,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate slug
     const slug = generateSlug(validatedData.title);
 
-    // Handle tags — connect existing or create new
     const tagConnections = validatedData.tags
       ? await Promise.all(
           validatedData.tags.map(async (tagName) => {
@@ -216,6 +239,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    try {
+      const { revalidateTag } = await import("next/cache");
+      revalidateTag("events", {});
+    } catch {}
+
     return NextResponse.json(
       { success: true, data: event, message: "Event created successfully" },
       { status: 201 }
@@ -230,9 +258,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(
-      { error: "Failed to create event" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to create event" }, { status: 500 });
   }
 }

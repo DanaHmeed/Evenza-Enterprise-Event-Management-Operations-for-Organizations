@@ -1,5 +1,6 @@
 // app/api/events/[eventId]/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import prisma from "@/lib/db/prisma";
 import { getCurrentUser } from "@/lib/auth/require-role";
 import { updateEventSchema } from "@/lib/validations/event.schema";
@@ -8,7 +9,7 @@ import { ZodError } from "zod";
 type Params = { params: Promise<{ eventId: string }> };
 
 // GET - Fetch single event (public)
-export async function GET(req: NextRequest, { params }: Params) {
+export async function GET(_req: NextRequest, { params }: Params) {
   try {
     const { eventId } = await params;
 
@@ -122,6 +123,10 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       },
     });
 
+    revalidateTag("events", {});
+    revalidateTag("event-detail", {});
+    revalidateTag("event-detail", {});
+
     return NextResponse.json({ success: true, data: updatedEvent });
   } catch (error) {
     console.error("[EVENT_PATCH]", error);
@@ -133,7 +138,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 }
 
 // DELETE - Delete event (organizer who owns it, or admin)
-export async function DELETE(request: NextRequest, { params }: Params) {
+export async function DELETE(_request: NextRequest, { params }: Params) {
   try {
     const { eventId } = await params;
     const currentUser = await getCurrentUser();
@@ -174,6 +179,9 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     }
 
     await prisma.event.delete({ where: { id: eventId } });
+
+    revalidateTag("events", {});
+    revalidateTag("event-detail", {});
 
     return NextResponse.json({ success: true, message: "Event deleted successfully" });
   } catch (error) {

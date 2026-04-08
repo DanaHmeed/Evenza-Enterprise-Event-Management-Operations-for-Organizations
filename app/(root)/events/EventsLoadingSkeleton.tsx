@@ -53,18 +53,38 @@ export default function EventsLoadingSkeleton() {
               borderRadius: "3px",
             }}
           />
+          {/* Search + category pills skeleton */}
           <div
-            className="animate-pulse"
-            style={{
-              marginTop: "40px",
-              height: "44px",
-              width: "420px",
-              maxWidth: "100%",
-              background: "#f5f5f0",
-              borderRadius: "4px",
-              border: "1px solid #eee",
-            }}
-          />
+            className="flex flex-col lg:flex-row lg:items-center"
+            style={{ marginTop: "40px", gap: "20px" }}
+          >
+            <div
+              className="animate-pulse"
+              style={{
+                height: "44px",
+                width: "420px",
+                maxWidth: "100%",
+                background: "#f5f5f0",
+                borderRadius: "4px",
+                border: "1px solid #eee",
+                flexShrink: 0,
+              }}
+            />
+            <div className="flex items-center" style={{ gap: "6px" }}>
+              {[48, 72, 60, 80, 56].map((w, i) => (
+                <div
+                  key={i}
+                  className="animate-pulse"
+                  style={{
+                    height: "34px",
+                    width: `${w}px`,
+                    background: "#f0f0ec",
+                    borderRadius: "3px",
+                  }}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
       <div

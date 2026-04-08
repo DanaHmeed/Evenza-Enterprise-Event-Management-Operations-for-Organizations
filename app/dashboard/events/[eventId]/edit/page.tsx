@@ -14,12 +14,12 @@ import {
   Users,
   FileText,
   Loader2,
-  Upload,
   X,
   Eye,
   Save,
 } from "lucide-react";
 import { t, FormSection, Field, inputStyle, StatusBadge } from "@/components/dashboard/OrganizerUI";
+import BannerUpload from "@/components/dashboard/BannerUpload";
 
 interface Category { id: string; name: string; slug: string; }
 
@@ -42,7 +42,7 @@ export default function EditEventPage() {
     isOnline: false, venueName: "", address: "", city: "", country: "", meetingLink: "",
     eventType: "FREE" as "FREE" | "PAID", price: "", currency: "USD",
     capacity: "", waitlistEnabled: false, approvalRequired: false,
-    banner: "", bannerPreview: "",
+    banner: "",
   });
 
   const set = (field: string, value: unknown) => setForm((p) => ({ ...p, [field]: value }));
@@ -75,7 +75,8 @@ export default function EditEventPage() {
             eventType: e.eventType || "FREE", price: e.price?.toString() || "", currency: e.currency || "USD",
             capacity: e.capacity?.toString() || "",
             waitlistEnabled: e.waitlistEnabled || false, approvalRequired: e.approvalRequired || false,
-            banner: e.banner || "", bannerPreview: e.banner || "",
+            // If existing banner is base64, treat as empty (force re-upload via Cloudinary)
+            banner: e.banner && !e.banner.startsWith("data:") ? e.banner : "",
           });
         } else { setMessage({ type: "error", text: "Event not found" }); }
       } catch { setMessage({ type: "error", text: "Failed to load" }); }
@@ -87,14 +88,6 @@ export default function EditEventPage() {
   const addTag = () => {
     const tag = form.tagInput.trim();
     if (tag && !form.tags.includes(tag) && form.tags.length < 10) { set("tags", [...form.tags, tag]); set("tagInput", ""); }
-  };
-
-  const handleBanner = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => { set("bannerPreview", reader.result); set("banner", reader.result); };
-    reader.readAsDataURL(file);
   };
 
   const validate = () => {
@@ -134,7 +127,7 @@ export default function EditEventPage() {
       currency: form.eventType === "PAID" ? form.currency : undefined,
       capacity: parseInt(form.capacity),
       waitlistEnabled: form.waitlistEnabled, approvalRequired: form.approvalRequired,
-      banner: form.banner || undefined,
+      banner: form.banner || null, // null clears the banner if removed
     };
     if (status) payload.status = status;
 
@@ -278,22 +271,9 @@ export default function EditEventPage() {
           </div>
         </FormSection>
 
-        {/* Banner */}
+        {/* Banner — Cloudinary upload */}
         <FormSection icon={<ImageIcon style={{ width: "16px", height: "16px" }} />} title="Cover Image">
-          {form.bannerPreview ? (
-            <div style={{ position: "relative", borderRadius: "4px", overflow: "hidden", border: `1px solid ${t.borderLight}` }}>
-              <img src={form.bannerPreview} alt="" style={{ width: "100%", height: "180px", objectFit: "cover" }} />
-              <button onClick={() => { set("banner", ""); set("bannerPreview", ""); }} style={{ position: "absolute", top: "8px", right: "8px", width: "28px", height: "28px", background: "rgba(0,0,0,0.5)", border: "none", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff" }}>
-                <X style={{ width: "14px", height: "14px" }} />
-              </button>
-            </div>
-          ) : (
-            <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "160px", border: `2px dashed ${t.border}`, borderRadius: "4px", cursor: "pointer" }}>
-              <Upload style={{ width: "24px", height: "24px", color: t.textFaint, marginBottom: "8px" }} />
-              <p style={{ fontSize: "13px", color: t.textSecondary, margin: 0 }}>Click to upload</p>
-              <input type="file" accept="image/*" onChange={handleBanner} style={{ display: "none" }} />
-            </label>
-          )}
+          <BannerUpload value={form.banner} onChange={(url) => set("banner", url)} />
         </FormSection>
 
         {/* Submit */}

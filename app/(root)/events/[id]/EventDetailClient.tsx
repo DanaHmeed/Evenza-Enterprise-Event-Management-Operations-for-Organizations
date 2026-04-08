@@ -1,7 +1,7 @@
 // app/(root)/events/[id]/EventDetailClient.tsx
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
@@ -111,18 +111,41 @@ interface EventDetailClientProps {
   event: EventData;
   feedbacks: FeedbackData[];
   feedbackStats: { count: number; averageRating: number };
-  paymentStatus?: string;
 }
+
+// ─── Formatters (outside component - no re-creation) ───
+const fmtDate = (s: string) =>
+  new Date(s).toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+const fmtTime = (s: string) =>
+  new Date(s).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+const fmtShortDate = (s: string) => {
+  const d = new Date(s);
+  return {
+    month: d.toLocaleDateString("en-US", { month: "short" }).toUpperCase(),
+    day: d.getDate(),
+    weekday: d.toLocaleDateString("en-US", { weekday: "short" }),
+  };
+};
 
 // ─── Main Component ───
 export default function EventDetailClient({
   event,
   feedbacks: initialFeedbacks,
   feedbackStats: initialFeedbackStats,
-  paymentStatus,
 }: EventDetailClientProps) {
   const router = useRouter();
-  const { isSignedIn } = useUser();
+  const { isSignedIn, isLoaded: isClerkLoaded } = useUser();
 
   const [registering, setRegistering] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
@@ -133,15 +156,25 @@ export default function EventDetailClient({
   } | null>(null);
 
   const [feedbacks, setFeedbacks] = useState<FeedbackData[]>(initialFeedbacks);
-  const [feedbackStats, setFeedbackStats] = useState(initialFeedbackStats);
+  const [feedbackStats] = useState(initialFeedbackStats);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackTitle, setFeedbackTitle] = useState("");
   const [feedbackComment, setFeedbackComment] = useState("");
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
 
-  // ─── Handle payment redirect (only runs once on mount) ───
+  // Track if initial checks have run
+  const initialChecksDone = useRef(false);
+
+  // ─── Combined initialization effect ───
   useEffect(() => {
+    if (!isClerkLoaded || initialChecksDone.current) return;
+    initialChecksDone.current = true;
+
+    // Check URL for payment status
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get("payment_status");
+    
     if (paymentStatus === "success") {
       setActionMessage({
         type: "success",
@@ -150,34 +183,29 @@ export default function EventDetailClient({
       setIsRegistered(true);
       setRegistrationStatus("APPROVED");
       window.history.replaceState({}, "", `/events/${event.id}`);
+      return;
     } else if (paymentStatus === "cancelled") {
       setActionMessage({
         type: "error",
         text: "Payment was cancelled. You can try again anytime.",
       });
       window.history.replaceState({}, "", `/events/${event.id}`);
+      return;
     }
-  }, [paymentStatus, event.id]);
 
-  // ─── Check registration status (only client-side fetch needed) ───
-  useEffect(() => {
-    if (!isSignedIn) return;
-    const check = async () => {
-      try {
-        const res = await fetch(`/api/events/${event.id}/registration-status`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.registered) {
+    // Check registration status in parallel (only if signed in)
+    if (isSignedIn) {
+      fetch(`/api/events/${event.id}/registration-status`)
+        .then((res) => res.ok && res.json())
+        .then((data) => {
+          if (data?.registered) {
             setIsRegistered(true);
             setRegistrationStatus(data.status);
           }
-        }
-      } catch {
-        // Silent fail — non-critical
-      }
-    };
-    check();
-  }, [isSignedIn, event.id]);
+        })
+        .catch(() => {}); // Silent fail
+    }
+  }, [isClerkLoaded, isSignedIn, event.id]);
 
   // ─── Handlers ───
   const handleRegister = useCallback(async () => {
@@ -294,31 +322,6 @@ export default function EventDetailClient({
     [event.id, feedbackRating, feedbackTitle, feedbackComment]
   );
 
-  // ─── Helpers ───
-  const fmtDate = (s: string) =>
-    new Date(s).toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-
-  const fmtTime = (s: string) =>
-    new Date(s).toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-
-  const fmtShortDate = (s: string) => {
-    const d = new Date(s);
-    return {
-      month: d.toLocaleDateString("en-US", { month: "short" }).toUpperCase(),
-      day: d.getDate(),
-      weekday: d.toLocaleDateString("en-US", { weekday: "short" }),
-    };
-  };
-
   const handleShare = async () => {
     const url = window.location.href;
     if (navigator.share) {
@@ -330,7 +333,7 @@ export default function EventDetailClient({
     }
   };
 
-  // ─── Derived state ───
+  // ─── Derived state (computed once) ───
   const isPast = new Date(event.endDate) < new Date();
   const isDeadlinePassed = new Date(event.registrationDeadline) < new Date();
   const isFull = event.seatsRemaining <= 0;
@@ -1073,8 +1076,18 @@ export default function EventDetailClient({
                 )}
 
                 {/* Action buttons */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  {isRegistered ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {canRegister ? (
+                    <EvenzaButton size="lg" className="w-full" onClick={handleRegister} loading={registering}>
+                      <Ticket style={{ width: "15px", height: "15px" }} />
+                      Register for Free
+                    </EvenzaButton>
+                  ) : canPurchase ? (
+                    <EvenzaButton size="lg" className="w-full" onClick={handlePurchase} loading={registering}>
+                      <CreditCard style={{ width: "15px", height: "15px" }} />
+                      Purchase Ticket — ${event.price}
+                    </EvenzaButton>
+                  ) : isRegistered ? (
                     <>
                       <div
                         style={{
@@ -1082,7 +1095,7 @@ export default function EventDetailClient({
                           alignItems: "center",
                           justifyContent: "center",
                           gap: "8px",
-                          padding: "12px",
+                          padding: "13px",
                           borderRadius: "4px",
                           background: t.greenSoft,
                           border: `1px solid ${t.greenBorder}`,
@@ -1094,21 +1107,11 @@ export default function EventDetailClient({
                         </span>
                       </div>
                       {canCancel && (
-                        <EvenzaButton variant="ghost" size="sm" className="w-full" onClick={handleCancelRegistration} loading={registering} style={{ color: t.accent }}>
+                        <EvenzaButton variant="secondary" size="sm" className="w-full" onClick={handleCancelRegistration} loading={registering}>
                           Cancel Registration
                         </EvenzaButton>
                       )}
                     </>
-                  ) : canRegister ? (
-                    <EvenzaButton size="lg" className="w-full" onClick={handleRegister} loading={registering}>
-                      <Ticket style={{ width: "15px", height: "15px" }} />
-                      Register for Free
-                    </EvenzaButton>
-                  ) : canPurchase ? (
-                    <EvenzaButton size="lg" className="w-full" onClick={handlePurchase} loading={registering}>
-                      <CreditCard style={{ width: "15px", height: "15px" }} />
-                      Purchase Ticket — ${event.price}
-                    </EvenzaButton>
                   ) : isPast ? (
                     <StatusBox text="This event has ended" bg={t.borderLight} color={t.textMuted} />
                   ) : isCancelled ? (
@@ -1127,7 +1130,7 @@ export default function EventDetailClient({
                   ) : null}
 
                   {!isSignedIn && !isPast && !isCancelled && (
-                    <p style={{ fontSize: "12px", color: t.textFaint, textAlign: "center", margin: 0 }}>
+                    <p style={{ fontSize: "12px", color: t.textFaint, textAlign: "center", margin: "4px 0 0" }}>
                       <Link href={`/sign-in?redirect_url=/events/${event.id}`} style={{ color: t.accent, fontWeight: 600, textDecoration: "none" }}>
                         Sign in
                       </Link>{" "}
@@ -1156,22 +1159,31 @@ export default function EventDetailClient({
                 <SidebarRow icon={<Clock style={{ width: "16px", height: "16px", color: t.textFaint }} />} label="Time" value={`${fmtTime(event.startDate)} – ${fmtTime(event.endDate)}`} />
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {isRegistered ? (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "12px", borderRadius: "4px", background: t.greenSoft, border: `1px solid ${t.greenBorder}` }}>
-                    <CheckCircle2 style={{ width: "15px", height: "15px", color: t.green }} />
-                    <span style={{ fontSize: "13px", fontWeight: 600, color: t.green }}>
-                      {registrationStatus === "PENDING" ? "Pending Approval" : "You\u2019re Registered"}
-                    </span>
-                  </div>
-                ) : canRegister ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {canRegister ? (
                   <EvenzaButton size="lg" className="w-full" onClick={handleRegister} loading={registering}>
+                    <Ticket style={{ width: "15px", height: "15px" }} />
                     Register for Free
                   </EvenzaButton>
                 ) : canPurchase ? (
                   <EvenzaButton size="lg" className="w-full" onClick={handlePurchase} loading={registering}>
+                    <CreditCard style={{ width: "15px", height: "15px" }} />
                     Purchase Ticket — ${event.price}
                   </EvenzaButton>
+                ) : isRegistered ? (
+                  <>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "13px", borderRadius: "4px", background: t.greenSoft, border: `1px solid ${t.greenBorder}` }}>
+                      <CheckCircle2 style={{ width: "15px", height: "15px", color: t.green }} />
+                      <span style={{ fontSize: "13px", fontWeight: 600, color: t.green }}>
+                        {registrationStatus === "PENDING" ? "Pending Approval" : "You\u2019re Registered"}
+                      </span>
+                    </div>
+                    {canCancel && (
+                      <EvenzaButton variant="secondary" size="sm" className="w-full" onClick={handleCancelRegistration} loading={registering}>
+                        Cancel Registration
+                      </EvenzaButton>
+                    )}
+                  </>
                 ) : (
                   <StatusBox text={isPast ? "This event has ended" : "Registration closed"} bg={t.borderLight} color={t.textMuted} />
                 )}

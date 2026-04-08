@@ -14,12 +14,12 @@ import {
   Users,
   FileText,
   Loader2,
-  Upload,
   X,
   Eye,
   Save,
 } from "lucide-react";
 import { t, FormSection, Field, inputStyle } from "@/components/dashboard/OrganizerUI";
+import BannerUpload from "@/components/dashboard/BannerUpload";
 
 interface Category {
   id: string;
@@ -34,7 +34,6 @@ export default function CreateEventPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Form
   const [form, setForm] = useState({
     title: "",
     summary: "",
@@ -59,7 +58,6 @@ export default function CreateEventPage() {
     waitlistEnabled: false,
     approvalRequired: false,
     banner: "",
-    bannerPreview: "",
   });
 
   const set = (field: string, value: unknown) => setForm((p) => ({ ...p, [field]: value }));
@@ -74,14 +72,6 @@ export default function CreateEventPage() {
       set("tags", [...form.tags, tag]);
       set("tagInput", "");
     }
-  };
-
-  const handleBanner = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => { set("bannerPreview", reader.result); set("banner", reader.result); };
-    reader.readAsDataURL(file);
   };
 
   const validate = () => {
@@ -156,7 +146,6 @@ export default function CreateEventPage() {
         </div>
       </div>
 
-      {/* Message */}
       {message && (
         <div style={{ marginBottom: "20px", padding: "12px 16px", borderRadius: "4px", fontSize: "13px", fontWeight: 500, background: message.type === "success" ? t.greenSoft : t.redSoft, color: message.type === "success" ? t.green : t.red }}>
           {message.text}
@@ -282,24 +271,9 @@ export default function CreateEventPage() {
           </div>
         </FormSection>
 
-        {/* Banner */}
+        {/* Banner — Cloudinary upload */}
         <FormSection icon={<ImageIcon style={{ width: "16px", height: "16px" }} />} title="Cover Image">
-          {form.bannerPreview ? (
-            <div style={{ position: "relative", borderRadius: "4px", overflow: "hidden", border: `1px solid ${t.borderLight}` }}>
-              <img src={form.bannerPreview} alt="Banner" style={{ width: "100%", height: "180px", objectFit: "cover" }} />
-              <button onClick={() => { set("banner", ""); set("bannerPreview", ""); }}
-                style={{ position: "absolute", top: "8px", right: "8px", width: "28px", height: "28px", background: "rgba(0,0,0,0.5)", border: "none", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff" }}>
-                <X style={{ width: "14px", height: "14px" }} />
-              </button>
-            </div>
-          ) : (
-            <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "160px", border: `2px dashed ${t.border}`, borderRadius: "4px", cursor: "pointer", transition: "border-color 0.15s" }}>
-              <Upload style={{ width: "24px", height: "24px", color: t.textFaint, marginBottom: "8px" }} />
-              <p style={{ fontSize: "13px", fontWeight: 500, color: t.textSecondary, margin: 0 }}>Click to upload cover image</p>
-              <p style={{ fontSize: "11px", color: t.textFaint, marginTop: "4px" }}>PNG, JPG up to 5MB</p>
-              <input type="file" accept="image/*" onChange={handleBanner} style={{ display: "none" }} />
-            </label>
-          )}
+          <BannerUpload value={form.banner} onChange={(url) => set("banner", url)} />
         </FormSection>
 
         {/* Submit */}

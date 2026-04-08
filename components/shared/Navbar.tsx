@@ -14,7 +14,6 @@ import {
   LogOut,
   Calendar,
   LayoutDashboard,
-  Ticket,
   Heart,
   User,
   Star,
@@ -590,14 +589,14 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center">
+          <Link href="/" className="flex items-center flex-1">
             <motion.span
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent"
             >
               <img
-                src="/icons/logo.png"
+                src="/icons/logito.png"
                 alt="Evenza logo"
                 width={140}
                 height={40}
@@ -658,7 +657,7 @@ export default function Navbar() {
           {/* ═══════════════════════════════════
               Right Side (account)
               ═══════════════════════════════════ */}
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="hidden lg:flex flex-1 justify-end min-w-20">
             {!isLoaded ? (
               <div className="w-20 h-9 bg-gray-100 rounded-full animate-pulse" />
             ) : !isSignedIn ? (
@@ -678,7 +677,7 @@ export default function Navbar() {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "10px",
+                    gap: "5px",
                     padding: "5px",
                     background: "transparent",
                     border: "none",

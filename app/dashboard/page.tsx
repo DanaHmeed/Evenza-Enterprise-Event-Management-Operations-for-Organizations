@@ -24,7 +24,6 @@ export default function DashboardPage() {
   const { user } = useUser();
   const router = useRouter();
 
-  // SWR: cached for 30s, instant on re-navigation, background refresh
   const { stats, recentEvents, isLoading } = useDashboardStats();
 
   if (isLoading) {

@@ -1,7 +1,7 @@
 // app/(root)/events/EventsClient.tsx
 "use client";
 
-import { useState, useCallback, useEffect, useRef, useTransition } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { Search, Loader2, X } from "lucide-react";
 import EventCard from "@/app/(root)/events/EventCard";
 
@@ -16,8 +16,8 @@ interface Event {
   id: string;
   slug?: string;
   title: string;
-  summary?: string | null;
   banner?: string | null;
+  summary?: string | null;
   startDate: string;
   endDate: string;
   eventType: "FREE" | "PAID";
@@ -46,35 +46,47 @@ interface Pagination {
 interface EventsClientProps {
   initialEvents: Event[];
   categories: Category[];
-  initialSearch: string;
-  initialCategory: string;
   pagination: Pagination;
 }
 
 export default function EventsClient({
   initialEvents,
   categories,
-  initialSearch,
-  initialCategory,
   pagination: initialPagination,
 }: EventsClientProps) {
   const [events, setEvents] = useState<Event[]>(initialEvents);
   const [pagination, setPagination] = useState<Pagination>(initialPagination);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [isFiltering, startFilterTransition] = useTransition();
+  const [isSearching, setIsSearching] = useState(false);
 
-  const [searchQuery, setSearchQuery] = useState(initialSearch);
-  const [activeSearch, setActiveSearch] = useState(initialSearch);
-  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeSearch, setActiveSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
 
-  // Abort controller ref for cancelling in-flight fetches
   const abortRef = useRef<AbortController | null>(null);
+  const cacheRef = useRef<Map<string, { data: Event[]; pagination: Pagination }>>(new Map());
 
-  // ── Fetch events client-side (no router.push, no server re-render) ──
+  const updateURL = useCallback((search: string, category: string) => {
+    const urlParams = new URLSearchParams();
+    if (search) urlParams.set("search", search);
+    if (category) urlParams.set("categoryId", category);
+    const qs = urlParams.toString();
+    window.history.replaceState(null, "", `/events${qs ? `?${qs}` : ""}`);
+  }, []);
+
   const fetchEvents = useCallback(
     async (search: string, category: string, page: number = 1, append: boolean = false) => {
-      // Cancel any previous in-flight request
+      const cacheKey = `${search}-${category}-${page}`;
+
+      const cached = cacheRef.current.get(cacheKey);
+      if (cached && !append) {
+        setEvents(cached.data);
+        setPagination(cached.pagination);
+        updateURL(search, category);
+        return;
+      }
+
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
@@ -89,52 +101,56 @@ export default function EventsClient({
         const res = await fetch(`/api/events?${params.toString()}`, {
           signal: controller.signal,
         });
+
         if (!res.ok) return;
+
         const data = await res.json();
 
-        setEvents((prev) => (append ? [...prev, ...data.data] : data.data));
-        setPagination(data.pagination);
+        const newEvents = data.data as Event[];
+        const newPagination = data.pagination as Pagination;
 
-        // Update URL without triggering navigation/re-render
-        const urlParams = new URLSearchParams();
-        if (search) urlParams.set("search", search);
-        if (category) urlParams.set("categoryId", category);
-        const qs = urlParams.toString();
-        window.history.replaceState(null, "", `/events${qs ? `?${qs}` : ""}`);
+        cacheRef.current.set(cacheKey, {
+          data: newEvents,
+          pagination: newPagination,
+        });
+
+        if (cacheRef.current.size > 20) {
+          const firstKey = cacheRef.current.keys().next().value;
+          if (firstKey) cacheRef.current.delete(firstKey);
+        }
+
+        setEvents((prev) => (append ? [...prev, ...newEvents] : newEvents));
+        setPagination(newPagination);
+        updateURL(search, category);
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
         console.error("Failed to fetch events:", err);
       }
     },
-    []
+    [updateURL]
   );
 
-  // ── Debounced search ──
   useEffect(() => {
+    if (searchQuery === activeSearch) return;
+
     const timer = setTimeout(() => {
-      if (searchQuery !== activeSearch) {
-        setActiveSearch(searchQuery);
-        startFilterTransition(() => {
-          fetchEvents(searchQuery, selectedCategory);
-        });
-      }
-    }, 400);
+      setIsSearching(true);
+      setActiveSearch(searchQuery);
+      fetchEvents(searchQuery, selectedCategory).finally(() => setIsSearching(false));
+    }, 300);
+
     return () => clearTimeout(timer);
   }, [searchQuery, activeSearch, selectedCategory, fetchEvents]);
 
-  // ── Category change — instant (no debounce needed) ──
   const handleCategoryChange = useCallback(
     (catId: string) => {
       const next = selectedCategory === catId ? "" : catId;
       setSelectedCategory(next);
-      startFilterTransition(() => {
-        fetchEvents(activeSearch, next);
-      });
+      fetchEvents(activeSearch, next);
     },
     [selectedCategory, activeSearch, fetchEvents]
   );
 
-  // ── Load more ──
   const handleShowMore = useCallback(async () => {
     if (pagination.page >= pagination.totalPages || loadingMore) return;
     setLoadingMore(true);
@@ -142,33 +158,53 @@ export default function EventsClient({
     setLoadingMore(false);
   }, [pagination, activeSearch, selectedCategory, loadingMore, fetchEvents]);
 
-  // ── Clear helpers ──
   const clearSearch = useCallback(() => {
     setSearchQuery("");
     setActiveSearch("");
-    startFilterTransition(() => {
-      fetchEvents("", selectedCategory);
-    });
+    fetchEvents("", selectedCategory);
   }, [selectedCategory, fetchEvents]);
 
   const clearCategory = useCallback(() => {
     setSelectedCategory("");
-    startFilterTransition(() => {
-      fetchEvents(activeSearch, "");
-    });
+    fetchEvents(activeSearch, "");
   }, [activeSearch, fetchEvents]);
 
   const clearAll = useCallback(() => {
     setSearchQuery("");
     setActiveSearch("");
     setSelectedCategory("");
-    startFilterTransition(() => {
-      fetchEvents("", "");
-    });
+    cacheRef.current.clear();
+    fetchEvents("", "");
   }, [fetchEvents]);
 
   const hasMore = pagination.page < pagination.totalPages;
   const hasFilters = !!(activeSearch || selectedCategory);
+  const isLoading = isSearching;
+
+  const categoryButtons = useMemo(
+    () =>
+      categories.map((cat) => (
+        <button
+          key={cat.id}
+          onClick={() => handleCategoryChange(cat.id)}
+          style={{
+            padding: "8px 18px",
+            fontSize: "13px",
+            fontWeight: 500,
+            fontFamily: "'DM Sans', sans-serif",
+            borderRadius: "3px",
+            border: "none",
+            cursor: "pointer",
+            background: selectedCategory === cat.id ? "#1a1a1a" : "transparent",
+            color: selectedCategory === cat.id ? "#fff" : "#666",
+            transition: "all 0.2s ease",
+          }}
+        >
+          {cat.name}
+        </button>
+      )),
+    [categories, selectedCategory, handleCategoryChange]
+  );
 
   return (
     <section
@@ -179,9 +215,6 @@ export default function EventsClient({
         minHeight: "100vh",
       }}
     >
-      {/* ════════════════════════════════════════════════
-          HEADER
-          ════════════════════════════════════════════════ */}
       <div
         style={{
           width: "100%",
@@ -196,11 +229,7 @@ export default function EventsClient({
             padding: "80px 48px 48px",
           }}
         >
-          {/* Eyebrow accent */}
-          <div
-            className="flex items-center"
-            style={{ gap: "12px", marginBottom: "24px" }}
-          >
+          <div className="flex items-center" style={{ gap: "12px", marginBottom: "24px" }}>
             <div
               style={{
                 width: "32px",
@@ -221,7 +250,6 @@ export default function EventsClient({
             </span>
           </div>
 
-          {/* Page title */}
           <h1
             style={{
               fontFamily: "'Playfair Display', Georgia, serif",
@@ -235,6 +263,7 @@ export default function EventsClient({
           >
             Discover Events
           </h1>
+
           <p
             style={{
               fontSize: "16px",
@@ -247,12 +276,10 @@ export default function EventsClient({
             Find upcoming events and experiences that inspire you.
           </p>
 
-          {/* ── Search + Category Row ── */}
           <div
             className="flex flex-col lg:flex-row lg:items-center"
             style={{ marginTop: "40px", gap: "20px" }}
           >
-            {/* Search */}
             <div className="relative" style={{ maxWidth: "420px", width: "100%" }}>
               <input
                 type="text"
@@ -267,16 +294,14 @@ export default function EventsClient({
                   fontSize: "14px",
                   color: "#1a1a1a",
                   background: "#fafaf8",
-                  border: searchFocused
-                    ? "1px solid #1a1a1a"
-                    : "1px solid #e5e5e0",
+                  border: searchFocused ? "1px solid #1a1a1a" : "1px solid #e5e5e0",
                   borderRadius: "4px",
                   outline: "none",
                   fontFamily: "'DM Sans', sans-serif",
                   transition: "border-color 0.25s ease",
                 }}
               />
-              {isFiltering ? (
+              {isLoading ? (
                 <Loader2
                   className="absolute top-1/2 -translate-y-1/2 animate-spin"
                   style={{
@@ -301,7 +326,6 @@ export default function EventsClient({
               )}
             </div>
 
-            {/* Category pills */}
             <div className="flex flex-wrap items-center" style={{ gap: "6px" }}>
               <button
                 onClick={() => handleCategoryChange("")}
@@ -320,54 +344,26 @@ export default function EventsClient({
               >
                 All
               </button>
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => handleCategoryChange(cat.id)}
-                  style={{
-                    padding: "8px 18px",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    fontFamily: "'DM Sans', sans-serif",
-                    borderRadius: "3px",
-                    border: "none",
-                    cursor: "pointer",
-                    background:
-                      selectedCategory === cat.id ? "#1a1a1a" : "transparent",
-                    color: selectedCategory === cat.id ? "#fff" : "#666",
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  {cat.name}
-                </button>
-              ))}
+              {categoryButtons}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ════════════════════════════════════════════════
-          EVENTS GRID
-          ════════════════════════════════════════════════ */}
       <div
         style={{
           maxWidth: "1400px",
           margin: "0 auto",
           padding: "48px 48px 96px",
-          // Subtle fade during filter transitions
-          opacity: isFiltering ? 0.6 : 1,
-          transition: "opacity 0.15s ease",
         }}
       >
-        {/* Active filter chips */}
         {hasFilters && (
           <div
             className="flex items-center flex-wrap"
             style={{ gap: "12px", marginBottom: "32px" }}
           >
             <span style={{ fontSize: "13px", color: "#999" }}>
-              {pagination.total} result
-              {pagination.total !== 1 ? "s" : ""}
+              {pagination.total} result{pagination.total !== 1 ? "s" : ""}
             </span>
 
             {activeSearch && (
@@ -431,7 +427,6 @@ export default function EventsClient({
         )}
 
         {events.length === 0 ? (
-          /* ── Empty State ── */
           <div style={{ textAlign: "center", padding: "100px 0" }}>
             <div
               style={{
@@ -447,6 +442,7 @@ export default function EventsClient({
             >
               <Search style={{ width: "18px", height: "18px", color: "#bbb" }} />
             </div>
+
             <h3
               style={{
                 fontFamily: "'Playfair Display', Georgia, serif",
@@ -458,6 +454,7 @@ export default function EventsClient({
             >
               No events found
             </h3>
+
             <p
               style={{
                 fontSize: "14px",
@@ -470,6 +467,7 @@ export default function EventsClient({
                 ? "Try adjusting your search or filters."
                 : "No published events yet. Check back soon!"}
             </p>
+
             {hasFilters && (
               <button
                 onClick={clearAll}
@@ -491,7 +489,6 @@ export default function EventsClient({
           </div>
         ) : (
           <>
-            {/* ── Grid ── */}
             <div
               className="grid"
               style={{
@@ -504,7 +501,6 @@ export default function EventsClient({
               ))}
             </div>
 
-            {/* Load more */}
             {hasMore && (
               <div style={{ textAlign: "center", marginTop: "56px" }}>
                 <button

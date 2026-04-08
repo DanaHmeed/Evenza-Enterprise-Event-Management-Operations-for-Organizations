@@ -3,13 +3,14 @@ import { Suspense } from "react";
 import prisma from "@/lib/db/prisma";
 import { unstable_cache } from "next/cache";
 import EventsClient from "./EventsClient";
-import EventsLoadingSkeleton from  "./EventsLoadingSkeleton";
+import EventsLoadingSkeleton from "./EventsLoadingSkeleton";
+
+export const revalidate = 60;
 
 interface PageProps {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }
 
-// ── Cache categories — they rarely change ──
 const getCategories = unstable_cache(
   async () => {
     return prisma.category.findMany({
@@ -18,34 +19,15 @@ const getCategories = unstable_cache(
     });
   },
   ["event-categories"],
-  { revalidate: 300 } // 5 minutes
+  { revalidate: 300, tags: ["categories"] }
 );
 
-// ── Data fetching extracted into its own component so Suspense works ──
-async function EventsData({
-  search,
-  categoryId,
-  page,
-  pageSize,
-}: {
-  search: string;
-  categoryId: string;
-  page: number;
-  pageSize: number;
-}) {
-  const where: Record<string, unknown> = { status: "PUBLISHED" };
+async function getEvents(page: number, pageSize: number) {
+  const where = { status: "PUBLISHED" as const };
 
-  if (search) {
-    where.OR = [
-      { title: { contains: search, mode: "insensitive" } },
-      { description: { contains: search, mode: "insensitive" } },
-      { city: { contains: search, mode: "insensitive" } },
-      { venueName: { contains: search, mode: "insensitive" } },
-    ];
-  }
-  if (categoryId) where.categoryId = categoryId;
 
-  const [events, total, categories] = await Promise.all([
+  
+  const [events, total] = await Promise.all([
     prisma.event.findMany({
       where,
       select: {
@@ -73,14 +55,28 @@ async function EventsData({
       take: pageSize,
     }),
     prisma.event.count({ where }),
+  ]);
+
+  return { events, total };
+}
+
+async function EventsData({
+  page,
+  pageSize,
+}: {
+  page: number;
+  pageSize: number;
+}) {
+  const [{ events, total }, categories] = await Promise.all([
+    getEvents(page, pageSize),
     getCategories(),
   ]);
 
   const serializedEvents = events.map((e) => ({
     id: e.id,
-    title: e.title,
     slug: e.slug,
-    summary: e.summary,
+    title: e.title,
+    summary: e.summary ? e.summary.slice(0, 140) : null,
     banner: e.banner,
     startDate: e.startDate.toISOString(),
     endDate: e.endDate.toISOString(),
@@ -99,8 +95,6 @@ async function EventsData({
     <EventsClient
       initialEvents={serializedEvents}
       categories={categories}
-      initialSearch={search}
-      initialCategory={categoryId}
       pagination={{
         page,
         pageSize,
@@ -113,22 +107,12 @@ async function EventsData({
 
 export default async function EventsPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const search = params.search || "";
-  const categoryId = params.categoryId || "";
-  const page = parseInt(params.page || "1");
+  const page = Math.max(1, parseInt(params.page || "1", 10) || 1);
   const pageSize = 12;
 
-  // Suspense key forces re-suspension when params change
-  const suspenseKey = `${search}-${categoryId}-${page}`;
-
   return (
-    <Suspense key={suspenseKey} fallback={<EventsLoadingSkeleton />}>
-      <EventsData
-        search={search}
-        categoryId={categoryId}
-        page={page}
-        pageSize={pageSize}
-      />
+    <Suspense fallback={<EventsLoadingSkeleton />}>
+      <EventsData page={page} pageSize={pageSize} />
     </Suspense>
   );
 }

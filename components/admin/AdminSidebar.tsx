@@ -144,7 +144,7 @@ export default function AdminSidebar() {
           }}
         >
           <img
-            src="/icons/black-logo.png"
+            src="/icons/Logomark.png"
             alt="Evenza"
             style={{
               height: collapsed ? "34px" : "34px",

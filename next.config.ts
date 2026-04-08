@@ -11,9 +11,8 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "images.clerk.dev",
       },
-      // Add your event banner image host here, e.g.:
-      // { protocol: "https", hostname: "res.cloudinary.com" },
-      // { protocol: "https", hostname: "utfs.io" },
+
+      { protocol: "https", hostname: "res.cloudinary.com" },
     ],
   },
 };

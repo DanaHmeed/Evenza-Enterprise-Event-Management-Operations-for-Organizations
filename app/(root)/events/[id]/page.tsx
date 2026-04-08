@@ -1,47 +1,126 @@
 // app/(root)/events/[id]/page.tsx
+// Route-level revalidation — avoids 2MB data-cache limit from base64 banners.
+export const revalidate = 60;
+
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
 import prisma from "@/lib/db/prisma";
+import { unstable_cache } from "next/cache";
+import { notFound } from "next/navigation";
 import EventDetailClient from "./EventDetailClient";
 import EventDetailSkeleton from "./EventDetailSkeleton";
 
 interface PageProps {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ [key: string]: string | undefined }>;
+  searchParams: Promise<{ payment_status?: string }>;
 }
 
-async function EventData({ eventId, paymentStatus }: { eventId: string; paymentStatus?: string }) {
-  const event = await prisma.event.findUnique({
-    where: { id: eventId },
-    include: {
-      organizer: {
-        select: { id: true, name: true, avatar: true },
+// ── Event data: NOT wrapped in unstable_cache — banner field can be large base64.
+//    Route-level revalidate = 60 handles caching at the rendered HTML level. ──
+async function getEventById(id: string) {
+    const event = await prisma.event.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        summary: true,
+        banner: true,
+        gallery: true,
+        videoUrl: true,
+        startDate: true,
+        endDate: true,
+        timezone: true,
+        registrationDeadline: true,
+        eventType: true,
+        price: true,
+        currency: true,
+        isOnline: true,
+        venueName: true,
+        address: true,
+        city: true,
+        country: true,
+        meetingLink: true,
+        capacity: true,
+        seatsRemaining: true,
+        waitlistEnabled: true,
+        approvalRequired: true,
+        status: true,
+        viewCount: true,
+        organizer: {
+          select: { id: true, name: true, avatar: true },
+        },
+        category: {
+          select: { id: true, name: true, slug: true, color: true },
+        },
+        tags: {
+          select: { id: true, name: true, slug: true },
+        },
+        _count: {
+          select: { registrations: true, feedbacks: true },
+        },
       },
-      category: {
-        select: { id: true, name: true, slug: true, color: true },
-      },
-      tags: {
-        select: { id: true, name: true, slug: true },
-      },
-      feedbacks: {
-        where: { status: "APPROVED" },
-        include: {
+    });
+
+    return event;
+}
+
+// ── Cache feedbacks ──
+const getEventFeedbacks = unstable_cache(
+  async (eventId: string) => {
+    const [feedbacks, stats] = await Promise.all([
+      prisma.feedback.findMany({
+        where: {
+          eventId,
+          status: "APPROVED",
+        },
+        select: {
+          id: true,
+          rating: true,
+          title: true,
+          comment: true,
+          createdAt: true,
           user: {
             select: { id: true, name: true, avatar: true },
           },
         },
         orderBy: { createdAt: "desc" },
-        take: 20,
-      },
-      _count: {
-        select: { registrations: true, feedbacks: true },
-      },
-    },
-  });
+        take: 10,
+      }),
+      prisma.feedback.aggregate({
+        where: {
+          eventId,
+          status: "APPROVED",
+        },
+        _avg: { rating: true },
+        _count: true,
+      }),
+    ]);
 
-  if (!event) notFound();
+    return {
+      feedbacks,
+      stats: {
+        count: stats._count || 0,
+        averageRating: Math.round((stats._avg.rating || 0) * 10) / 10,
+      },
+    };
+  },
+  ["event-feedbacks"],
+  { revalidate: 120, tags: ["feedbacks"] }
+);
 
-  // Increment view count (non-blocking, fire-and-forget)
+// ── Split into streaming chunks ──
+async function EventContent({ eventId }: { eventId: string }) {
+  const [event, { feedbacks, stats }] = await Promise.all([
+    getEventById(eventId),
+    getEventFeedbacks(eventId),
+  ]);
+
+  if (!event) {
+    notFound();
+  }
+
+  // Increment view count asynchronously (don't block)
   prisma.event
     .update({
       where: { id: eventId },
@@ -49,82 +128,35 @@ async function EventData({ eventId, paymentStatus }: { eventId: string; paymentS
     })
     .catch(() => {});
 
-  // Compute feedback stats on the server
-  const approvedFeedbacks = event.feedbacks || [];
-  const feedbackStats = {
-    count: approvedFeedbacks.length,
-    averageRating:
-      approvedFeedbacks.length > 0
-        ? Math.round(
-            (approvedFeedbacks.reduce((sum, f) => sum + f.rating, 0) /
-              approvedFeedbacks.length) *
-              10
-          ) / 10
-        : 0,
-  };
-
-  // Serialize dates for client
   const serializedEvent = {
-    id: event.id,
-    title: event.title,
-    slug: (event as Record<string, unknown>).slug as string | undefined,
-    description: event.description,
-    summary: event.summary,
-    banner: event.banner,
-    gallery: (event as Record<string, unknown>).gallery as string[] | undefined,
-    videoUrl: (event as Record<string, unknown>).videoUrl as string | null | undefined,
+    ...event,
     startDate: event.startDate.toISOString(),
     endDate: event.endDate.toISOString(),
-    timezone: (event as Record<string, unknown>).timezone as string | undefined,
     registrationDeadline: event.registrationDeadline.toISOString(),
-    eventType: event.eventType,
-    price: event.price,
-    currency: event.currency,
-    isOnline: event.isOnline,
-    venueName: event.venueName,
-    address: event.address,
-    city: event.city,
-    country: event.country,
-    meetingLink: (event as Record<string, unknown>).meetingLink as string | null | undefined,
-    capacity: event.capacity,
-    seatsRemaining: event.seatsRemaining,
-    waitlistEnabled: (event as Record<string, unknown>).waitlistEnabled as boolean | undefined,
-    approvalRequired: (event as Record<string, unknown>).approvalRequired as boolean | undefined,
-    status: event.status,
-    viewCount: (event as Record<string, unknown>).viewCount as number | undefined,
-    organizer: event.organizer,
-    category: event.category,
-    tags: event.tags,
-    _count: event._count,
+    feedbacks: feedbacks.map((f) => ({
+      ...f,
+      createdAt: f.createdAt.toISOString(),
+    })),
   };
-
-  const serializedFeedbacks = approvedFeedbacks.map((f) => ({
-    id: f.id,
-    rating: f.rating,
-    title: f.title,
-    comment: f.comment,
-    createdAt: f.createdAt.toISOString(),
-    user: f.user,
-  }));
 
   return (
     <EventDetailClient
       event={serializedEvent}
-      feedbacks={serializedFeedbacks}
-      feedbackStats={feedbackStats}
-      paymentStatus={paymentStatus}
+      feedbacks={feedbacks.map((f) => ({
+        ...f,
+        createdAt: f.createdAt.toISOString(),
+      }))}
+      feedbackStats={stats}
     />
   );
 }
 
-export default async function EventDetailPage({ params, searchParams }: PageProps) {
+export default async function EventDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const sp = await searchParams;
-  const paymentStatus = sp.payment;
 
   return (
     <Suspense fallback={<EventDetailSkeleton />}>
-      <EventData eventId={id} paymentStatus={paymentStatus} />
+      <EventContent eventId={id} />
     </Suspense>
   );
 }

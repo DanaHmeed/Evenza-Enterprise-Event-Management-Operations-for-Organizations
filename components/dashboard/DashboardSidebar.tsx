@@ -13,8 +13,6 @@ import {
   BarChart3,
   Settings,
   ChevronLeft,
-  Menu,
-  X,
   MessageSquare,
   CreditCard,
 } from "lucide-react";
@@ -82,28 +80,20 @@ const navGroups: NavGroup[] = [
   },
 ];
 
-export default function DashboardSidebar() {
-  const pathname = usePathname();
-  const { user } = useUser();
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  // Close mobile on route change
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
-
-  const isActive = (href: string) => {
-    if (href === "/dashboard") return pathname === "/dashboard";
-    if (href === "/dashboard/events")
-      return (
-        pathname === "/dashboard/events" ||
-        (pathname.startsWith("/dashboard/events/") && !pathname.includes("create"))
-      );
-    return pathname.startsWith(href);
-  };
-
-  const NavContent = ({ onNavigate }: { onNavigate?: () => void }) => (
+function NavContent({
+  collapsed,
+  setCollapsed,
+  isActive,
+  user,
+  onNavigate,
+}: {
+  collapsed: boolean;
+  setCollapsed: (v: boolean) => void;
+  isActive: (href: string) => boolean;
+  user: { imageUrl?: string; firstName?: string | null; fullName?: string | null } | null | undefined;
+  onNavigate?: () => void;
+}) {
+  return (
     <div
       style={{
         display: "flex",
@@ -129,7 +119,7 @@ export default function DashboardSidebar() {
             style={{ cursor: "pointer", display: "flex", alignItems: "center" }}
           >
             <img
-              src="/icons/orange-logo.png"
+              src="/icons/Logomark.png"
               alt="Evenza"
               style={{ height: "22px", width: "auto" }}
             />
@@ -147,7 +137,7 @@ export default function DashboardSidebar() {
               }}
             >
               <img
-                src="/icons/orange-logo.png"
+                src="/icons/Logomark.png"
                 alt="Evenza"
                 style={{ height: "22px", width: "auto" }}
               />
@@ -361,10 +351,27 @@ export default function DashboardSidebar() {
       </div>
     </div>
   );
+}
+
+export default function DashboardSidebar() {
+  const pathname = usePathname();
+  const { user } = useUser();
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {}, [pathname]);
+
+  const isActive = (href: string) => {
+    if (href === "/dashboard") return pathname === "/dashboard";
+    if (href === "/dashboard/events")
+      return (
+        pathname === "/dashboard/events" ||
+        (pathname.startsWith("/dashboard/events/") && !pathname.includes("create"))
+      );
+    return pathname.startsWith(href);
+  };
 
   return (
     <>
-      {/* ── Mobile toggle ── */}
       {/* ── Desktop sidebar ── */}
       <aside
         className="hidden lg:flex"
@@ -379,7 +386,12 @@ export default function DashboardSidebar() {
           flexShrink: 0,
         }}
       >
-        <NavContent />
+        <NavContent
+          collapsed={collapsed}
+          setCollapsed={setCollapsed}
+          isActive={isActive}
+          user={user}
+        />
       </aside>
     </>
   );

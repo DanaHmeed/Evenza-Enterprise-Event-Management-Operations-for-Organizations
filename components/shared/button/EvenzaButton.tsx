@@ -24,23 +24,25 @@ const EvenzaButton = forwardRef<HTMLButtonElement, EvenzaButtonProps>(
     ref
   ) => {
     const base =
-      "inline-flex items-center justify-center font-semibold rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+      "inline-flex items-center justify-center font-semibold rounded transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a1a1a] focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed";
 
     const variants: Record<string, string> = {
       primary:
-        "bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:shadow-lg hover:shadow-orange-500/25 hover:scale-[1.02] active:scale-[0.98]",
+        "bg-[#1a1a1a] text-white hover:bg-[#333] active:scale-[0.99]",
       secondary:
-        "bg-gray-900 text-white hover:bg-gray-800 active:scale-[0.98]",
+        "bg-white text-[#1a1a1a] border border-[#d4d4d0] hover:bg-[#fafaf8] active:scale-[0.99]",
       outline:
-        "border-2 border-orange-500/50 text-orange-600 hover:bg-orange-50 hover:border-orange-500",
-      ghost: "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
-      danger: "bg-red-500 text-white hover:bg-red-600 active:scale-[0.98]",
+        "border border-[#1a1a1a] text-[#1a1a1a] bg-transparent hover:bg-[#1a1a1a] hover:text-white active:scale-[0.99]",
+      ghost:
+        "text-[#666] bg-transparent hover:text-[#1a1a1a] hover:bg-[#f5f5f0]",
+      danger:
+        "bg-[#e63946] text-white hover:bg-[#d62f3a] active:scale-[0.99]",
     };
 
     const sizes: Record<string, string> = {
-      sm: "text-sm px-4 py-2 gap-1.5",
-      md: "text-sm px-6 py-2.5 gap-2",
-      lg: "text-base px-8 py-3.5 gap-2.5",
+      sm: "text-[13px] px-4 py-2 gap-1.5",
+      md: "text-[13px] px-5 py-2.5 gap-2",
+      lg: "text-[14px] px-7 py-3 gap-2",
     };
 
     return (

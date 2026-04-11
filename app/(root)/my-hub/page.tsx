@@ -1,95 +1,29 @@
 // app/(root)/my-hub/page.tsx
-//
-// "My Hub" — Personal command center for attendees
-
-"use client";
-
-import { useEffect, useState, useMemo } from "react";
-import { useUser } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { redirect } from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
 import {
-  Calendar,
-  MapPin,
-  Globe,
   ChevronRight,
-  Clock,
-  Star,
-  TrendingUp,
+  CalendarDays,
   ArrowRight,
   Sparkles,
-  CalendarDays,
-  CheckCircle2,
-  Timer,
-  Flame,
 } from "lucide-react";
+import { getHubSummary, type HubData, type HubEvent, type HubRegistration } from "@/lib/my-hub/getHubSummary";
 
-/* ═══════════════════════════════════════════
-   Design tokens — matches profile page
-   ═══════════════════════════════════════════ */
+export const dynamic = "force-dynamic";
+
 const t = {
   bg: "#fafaf8",
-  surface: "#fff",
-  border: "#e5e5e0",
-  borderLight: "#f0f0ec",
-  text: "#1a1a1a",
-  textSecondary: "#555",
-  textMuted: "#888",
-  textFaint: "#aaa",
-  accent: "#e63946",
-  accentSoft: "rgba(230,57,70,0.07)",
-  green: "#2d6a4f",
-  greenSoft: "rgba(45,106,79,0.08)",
-  amber: "#b45309",
-  amberSoft: "rgba(180,83,9,0.08)",
-  dark: "#1a1a2e",
-  serif: "'Playfair Display', Georgia, serif",
+  surface: "#ffffff",
+  border: "#e8e8e4",
+  borderLight: "#ebebea",
+  text: "#111111",
+  textSecondary: "#555555",
+  textMuted: "#aaaaaa",
+  textFaint: "#cccccc",
   sans: "'DM Sans', sans-serif",
 };
-
-/* ═══════════════════════════════════════════
-   Types
-   ═══════════════════════════════════════════ */
-interface HubEvent {
-  id: string;
-  title: string;
-  startDate: string;
-  endDate: string;
-  isOnline: boolean;
-  city?: string | null;
-  venueName?: string | null;
-  banner?: string | null;
-  category?: string | null;
-}
-
-interface HubRegistration {
-  id: string;
-  status: string;
-  createdAt: string;
-  event: HubEvent;
-}
-
-interface HubStats {
-  totalRegistrations: number;
-  eventsAttended: number;
-  upcomingCount: number;
-  reviewsGiven: number;
-}
-
-interface HubData {
-  stats: HubStats;
-  upcoming: HubRegistration[];
-  past: HubRegistration[];
-  recommended: HubEvent[];
-  userName: string;
-}
-
-const shortDate = (d: string) =>
-  new Date(d).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
 
 const fullDate = (d: string) =>
   new Date(d).toLocaleDateString("en-US", {
@@ -99,545 +33,279 @@ const fullDate = (d: string) =>
     year: "numeric",
   });
 
+const shortDate = (d: string) =>
+  new Date(d).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+
 const timeOnly = (d: string) =>
   new Date(d).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
   });
 
-const daysUntil = (d: string): number => {
-  const diff = new Date(d).getTime() - Date.now();
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-};
+const daysUntil = (d: string) =>
+  Math.max(0, Math.ceil((new Date(d).getTime() - Date.now()) / 86400000));
 
-/* ═══════════════════════════════════════════
-   Greeting based on time of day
-   ═══════════════════════════════════════════ */
-const getGreeting = (): string => {
+const getGreeting = () => {
   const h = new Date().getHours();
   if (h < 12) return "Good morning";
   if (h < 17) return "Good afternoon";
   return "Good evening";
 };
 
-/* ═══════════════════════════════════════════
-   Component
-   ═══════════════════════════════════════════ */
-export default function MyHubPage() {
-  const { user, isSignedIn, isLoaded } = useUser();
-  const router = useRouter();
-  const [data, setData] = useState<HubData | null>(null);
-  const [loading, setLoading] = useState(true);
+const countdownLabel = (days: number) => {
+  if (days === 0) return "Today";
+  if (days === 1) return "Tomorrow";
+  return `In ${days} days`;
+};
 
-  // ── Single API call ──
-  useEffect(() => {
-    if (!isLoaded) return;
-    if (!isSignedIn) {
-      router.replace("/sign-in?redirect_url=/my-hub");
-      return;
-    }
+export default async function MyHubPage() {
+  const { userId } = await auth();
 
-    const controller = new AbortController();
+  if (!userId) {
+    redirect("/sign-in?redirect_url=/my-hub");
+  }
 
-    const fetchHub = async () => {
-      if (!user?.id) {
-        setLoading(false);
-        return;
-      }
+  const data = await getHubSummary(userId);
 
-      try {
-        const res = await fetch(`/api/users/${user.id}/hub-summary`, {
-          signal: controller.signal,
-        });
-        if (res.ok) {
-          const json = await res.json();
-          setData(json.data);
-        }
-      } catch (err: unknown) {
-        if ((err as Error).name !== "AbortError") {
-          console.error("Failed to load hub data");
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchHub();
-    return () => controller.abort();
-  }, [isLoaded, isSignedIn, user, router]);
-
-  // ── Memoized values ──
-  const greeting = useMemo(() => getGreeting(), []);
-
-  const nextEvent = useMemo(() => {
-    if (!data?.upcoming.length) return null;
-    return data.upcoming[0];
-  }, [data?.upcoming]);
-
-  const nextEventCountdown = useMemo(() => {
-    if (!nextEvent) return null;
-    const days = daysUntil(nextEvent.event.startDate);
-    if (days === 0) return "Today";
-    if (days === 1) return "Tomorrow";
-    return `In ${days} days`;
-  }, [nextEvent]);
-
-  const stats = useMemo(() => {
-    if (!data) return [];
-    return [
-      {
-        label: "Upcoming",
-        value: data.stats.upcomingCount,
-        icon: <Timer style={{ width: 16, height: 16 }} />,
-        color: t.accent,
-        bg: t.accentSoft,
-      },
-      {
-        label: "Attended",
-        value: data.stats.eventsAttended,
-        icon: <CheckCircle2 style={{ width: 16, height: 16 }} />,
-        color: t.green,
-        bg: t.greenSoft,
-      },
-      {
-        label: "Registered",
-        value: data.stats.totalRegistrations,
-        icon: <CalendarDays style={{ width: 16, height: 16 }} />,
-        color: t.amber,
-        bg: t.amberSoft,
-      },
-      {
-        label: "Reviews",
-        value: data.stats.reviewsGiven,
-        icon: <Star style={{ width: 16, height: 16 }} />,
-        color: t.textSecondary,
-        bg: t.borderLight,
-      },
-    ];
-  }, [data]);
-
-  // ── Loading ──
-  if (!isLoaded || loading) {
+  if (!data) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: t.bg,
-          fontFamily: t.sans,
-        }}
-      >
-        {/* Skeleton header */}
-        <div style={{ background: t.dark, height: "140px" }} />
-        <div style={{ maxWidth: "880px", margin: "0 auto", padding: "0 32px" }}>
-          <div
-            style={{
-              marginTop: "-40px",
-              background: t.surface,
-              border: `1px solid ${t.border}`,
-              borderRadius: "8px",
-              padding: "28px 32px",
-            }}
-          >
-            <div
-              style={{
-                height: "20px",
-                width: "260px",
-                background: t.borderLight,
-                borderRadius: "4px",
-                marginBottom: "8px",
-              }}
-            />
-            <div
-              style={{
-                height: "14px",
-                width: "180px",
-                background: t.borderLight,
-                borderRadius: "4px",
-              }}
-            />
-          </div>
-
-          {/* Skeleton stats */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
-              gap: "12px",
-              marginTop: "20px",
-            }}
-          >
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                style={{
-                  background: t.surface,
-                  border: `1px solid ${t.borderLight}`,
-                  borderRadius: "8px",
-                  padding: "20px",
-                  height: "80px",
-                }}
-              />
-            ))}
-          </div>
-
-          {/* Skeleton cards */}
-          <div style={{ marginTop: "32px" }}>
-            <div
-              style={{
-                height: "14px",
-                width: "120px",
-                background: t.borderLight,
-                borderRadius: "4px",
-                marginBottom: "16px",
-              }}
-            />
-            {[...Array(2)].map((_, i) => (
-              <div
-                key={i}
-                style={{
-                  background: t.surface,
-                  border: `1px solid ${t.borderLight}`,
-                  borderRadius: "8px",
-                  height: "88px",
-                  marginBottom: "8px",
-                }}
-              />
-            ))}
-          </div>
+      <div style={{ background: t.bg, minHeight: "100vh", fontFamily: t.sans }}>
+        <div style={{ maxWidth: "860px", margin: "0 auto", padding: "80px 32px" }}>
+          <p style={{ color: t.text }}>Unable to load hub data.</p>
         </div>
       </div>
     );
   }
 
-  if (!data) return null;
+  const greeting = getGreeting();
+  const nextEvent = data.upcoming[0] ?? null;
+  const nextDays = nextEvent ? daysUntil(nextEvent.event.startDate) : null;
+  const firstName = data.userName?.split(" ")[0] || "there";
 
-  const firstName = data.userName?.split(" ")[0] || user?.firstName || "there";
+  const statRows = [
+    { label: "Upcoming", value: data.stats.upcomingCount },
+    { label: "Attended", value: data.stats.eventsAttended },
+    { label: "Registered", value: data.stats.totalRegistrations },
+    { label: "Reviews", value: data.stats.reviewsGiven },
+  ];
 
   return (
-    <div style={{ background: t.bg, fontFamily: t.sans, minHeight: "100vh" }}>
-      {/* ═══════════════════════════════════
-          HEADER BAR
-          ═══════════════════════════════════ */}
-      <div
-        style={{
-          background: t.dark,
-          height: "140px",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        {/* Subtle accent glow */}
+    <div style={{ background: t.bg, minHeight: "100vh", fontFamily: t.sans }}>
+      <div style={{ maxWidth: "860px", margin: "0 auto", padding: "80px 32px 80px" }}>
         <div
           style={{
-            position: "absolute",
-            top: "20%",
-            right: "15%",
-            width: "300px",
-            height: "300px",
-            background:
-              "radial-gradient(circle, rgba(230,57,70,0.05) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }}
-        />
-      </div>
-
-      <div style={{ maxWidth: "880px", margin: "0 auto", padding: "0 32px 80px" }}>
-        {/* ═══════════════════════════════════
-            GREETING CARD
-            ═══════════════════════════════════ */}
-        <div
-          style={{
-            background: t.surface,
-            border: `1px solid ${t.border}`,
-            borderRadius: "8px",
-            marginTop: "-48px",
-            position: "relative",
-            zIndex: 1,
-            padding: "28px 32px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: "16px",
+            paddingBottom: "28px",
+            borderBottom: `1px solid ${t.borderLight}`,
+            marginBottom: "36px",
           }}
         >
-          <div>
-            <h1
-              style={{
-                fontFamily: t.serif,
-                fontSize: "22px",
-                fontWeight: 600,
-                color: t.text,
-                margin: 0,
-                letterSpacing: "-0.02em",
-              }}
-            >
-              {greeting}, {firstName}
-            </h1>
-            <p
-              style={{
-                fontSize: "13px",
-                color: t.textMuted,
-                margin: "4px 0 0",
-              }}
-            >
-              {nextEvent
-                ? `Next event: ${nextEvent.event.title}`
-                : "No upcoming events — discover something new"}
-            </p>
-          </div>
-
-          {/* Countdown pill */}
-          {nextEventCountdown && (
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "8px 16px",
-                background: t.accentSoft,
-                borderRadius: "100px",
-                flexShrink: 0,
-              }}
-            >
-              <Flame
-                style={{ width: "14px", height: "14px", color: t.accent }}
-              />
-              <span
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              gap: "16px",
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <h1
                 style={{
-                  fontSize: "12px",
+                  fontSize: "24px",
                   fontWeight: 600,
-                  color: t.accent,
+                  fontFamily: "'Playfair Display', Georgia, serif",
+                  letterSpacing: "-0.02em",
+                  color: t.text,
+                  margin: 0,
                 }}
               >
-                {nextEventCountdown}
-              </span>
+                {greeting}, {firstName}
+              </h1>
+              <p
+                style={{
+                  fontSize: "13px",
+                  color: t.textMuted,
+                  fontWeight: 300,
+                  margin: "5px 0 0",
+                }}
+              >
+                {nextEvent
+                  ? `Next event: ${nextEvent.event.title}`
+                  : "No upcoming events - discover something new"}
+              </p>
             </div>
-          )}
+
+            {nextDays !== null && (
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "7px",
+                  padding: "6px 14px",
+                  background: t.surface,
+                  border: `1px solid ${t.borderLight}`,
+                  borderRadius: "100px",
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  color: t.textSecondary,
+                  flexShrink: 0,
+                }}
+              >
+                <div
+                  style={{
+                    width: "6px",
+                    height: "6px",
+                    borderRadius: "50%",
+                    background: t.text,
+                  }}
+                />
+                {countdownLabel(nextDays)}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* ═══════════════════════════════════
-            STATS ROW
-            ═══════════════════════════════════ */}
         <div
-          className="grid grid-cols-2 sm:grid-cols-4"
           style={{
             display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
             gap: "10px",
-            marginTop: "16px",
+            marginBottom: "40px",
           }}
         >
-          {stats.map((s, i) => (
+          {statRows.map((s) => (
             <div
-              key={i}
+              key={s.label}
               style={{
                 background: t.surface,
                 border: `1px solid ${t.borderLight}`,
                 borderRadius: "8px",
-                padding: "16px 18px",
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
+                padding: "18px 20px",
               }}
             >
-              <div
+              <p
                 style={{
-                  width: "36px",
-                  height: "36px",
-                  borderRadius: "8px",
-                  background: s.bg,
-                  color: s.color,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
+                  fontSize: "26px",
+                  fontWeight: 500,
+                  letterSpacing: "-0.03em",
+                  color: t.text,
+                  margin: 0,
+                  lineHeight: 1,
                 }}
               >
-                {s.icon}
-              </div>
-              <div>
-                <p
-                  style={{
-                    fontFamily: t.serif,
-                    fontSize: "20px",
-                    fontWeight: 600,
-                    color: t.text,
-                    margin: 0,
-                    lineHeight: 1,
-                  }}
-                >
-                  {s.value}
-                </p>
-                <p
-                  style={{
-                    fontSize: "11px",
-                    color: t.textMuted,
-                    margin: "2px 0 0",
-                    fontWeight: 500,
-                  }}
-                >
-                  {s.label}
-                </p>
-              </div>
+                {s.value}
+              </p>
+              <p
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 300,
+                  color: t.textMuted,
+                  margin: "5px 0 0",
+                  letterSpacing: "0.02em",
+                }}
+              >
+                {s.label}
+              </p>
             </div>
           ))}
         </div>
 
-        {/* ═══════════════════════════════════
-            UPCOMING EVENTS
-            ═══════════════════════════════════ */}
-        <div style={{ marginTop: "36px" }}>
-          <SectionHeader
-            title="Coming Up"
-            action={
-              data.upcoming.length > 3
-                ? { label: "View all", href: "/profile/events" }
-                : undefined
-            }
-          />
-
+        <Section
+          title="Coming Up"
+          action={data.upcoming.length > 4 ? { label: "View all", href: "/profile/events" } : undefined}
+        >
           {data.upcoming.length === 0 ? (
-            <EmptyState
-              message="No upcoming events"
-              cta="Discover Events"
-              href="/events"
-            />
+            <EmptyState message="No upcoming events" cta="Discover Events" href="/events" />
           ) : (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "8px",
-              }}
-            >
-              {data.upcoming.slice(0, 4).map((reg) => (
-                <UpcomingEventCard key={reg.id} reg={reg} />
-              ))}
-            </div>
+            data.upcoming.slice(0, 4).map((reg) => <UpcomingCard key={reg.id} reg={reg} />)
           )}
-        </div>
+        </Section>
 
-        {/* ═══════════════════════════════════
-            RECOMMENDED FOR YOU
-            ═══════════════════════════════════ */}
         {data.recommended.length > 0 && (
-          <div style={{ marginTop: "36px" }}>
-            <SectionHeader
-              title="Recommended for You"
-              action={{ label: "Browse all", href: "/events" }}
-            />
-            <div
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-              style={{
-                display: "grid",
-                gap: "12px",
-              }}
-            >
+          <Section title="Recommended for You" action={{ label: "Browse all", href: "/events" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
               {data.recommended.slice(0, 3).map((event) => (
                 <RecommendedCard key={event.id} event={event} />
               ))}
             </div>
-          </div>
+          </Section>
         )}
 
-        {/* ═══════════════════════════════════
-            PAST EVENTS
-            ═══════════════════════════════════ */}
         {data.past.length > 0 && (
-          <div style={{ marginTop: "36px" }}>
-            <SectionHeader
-              title="Event History"
-              action={
-                data.past.length > 4
-                  ? { label: "View all", href: "/profile/events" }
-                  : undefined
-              }
-            />
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "6px",
-              }}
-            >
-              {data.past.slice(0, 5).map((reg) => (
-                <PastEventRow key={reg.id} reg={reg} />
-              ))}
-            </div>
-          </div>
+          <Section
+            title="Event History"
+            action={data.past.length > 5 ? { label: "View all", href: "/profile/events" } : undefined}
+          >
+            {data.past.slice(0, 5).map((reg) => (
+              <PastRow key={reg.id} reg={reg} />
+            ))}
+          </Section>
         )}
-     
       </div>
     </div>
   );
 }
 
-/* ═══════════════════════════════════════════
-   Sub-components
-   ═══════════════════════════════════════════ */
-
-function SectionHeader({
+function Section({
   title,
   action,
+  children,
 }: {
   title: string;
   action?: { label: string; href: string };
+  children: React.ReactNode;
 }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginBottom: "14px",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <div style={{ width: "20px", height: "2px", background: t.accent }} />
+    <div style={{ marginBottom: "36px" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: "12px",
+        }}
+      >
         <span
           style={{
-            fontSize: "11px",
-            fontWeight: 600,
+            fontSize: "10px",
+            fontWeight: 500,
+            letterSpacing: "0.1em",
             textTransform: "uppercase",
-            letterSpacing: "0.14em",
             color: t.textMuted,
           }}
         >
           {title}
         </span>
+        {action && (
+          <Link
+            href={action.href}
+            style={{
+              fontSize: "12px",
+              fontWeight: 400,
+              color: "#888",
+              textDecoration: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: "3px",
+            }}
+          >
+            {action.label}
+            <ArrowRight style={{ width: "11px", height: "11px" }} />
+          </Link>
+        )}
       </div>
-      {action && (
-        <Link
-          href={action.href}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "4px",
-            fontSize: "12px",
-            fontWeight: 600,
-            color: t.accent,
-            textDecoration: "none",
-          }}
-        >
-          {action.label}
-          <ArrowRight style={{ width: "12px", height: "12px" }} />
-        </Link>
-      )}
+      {children}
     </div>
   );
 }
 
-/* ── Upcoming event card (prominent) ── */
-function UpcomingEventCard({ reg }: { reg: HubRegistration }) {
+function UpcomingCard({ reg }: { reg: HubRegistration }) {
   const days = daysUntil(reg.event.startDate);
   const isToday = days === 0;
-  const isTomorrow = days === 1;
-
-  const urgencyLabel = isToday
-    ? "Today"
-    : isTomorrow
-      ? "Tomorrow"
-      : `${days}d away`;
+  const label = countdownLabel(days);
 
   return (
     <Link
@@ -648,29 +316,24 @@ function UpcomingEventCard({ reg }: { reg: HubRegistration }) {
         gap: "16px",
         padding: "14px 18px",
         background: t.surface,
-        border: `1px solid ${isToday ? t.accent : t.borderLight}`,
+        border: `1px solid ${t.borderLight}`,
         borderRadius: "8px",
         textDecoration: "none",
-        transition: "border-color 0.15s, box-shadow 0.15s",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = t.border;
-        e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = isToday ? t.accent : t.borderLight;
-        e.currentTarget.style.boxShadow = "none";
+        marginBottom: "6px",
+        transition: "border-color 0.15s",
       }}
     >
-      {/* Thumbnail */}
       <div
         style={{
-          width: "52px",
-          height: "52px",
-          borderRadius: "8px",
+          width: "44px",
+          height: "44px",
+          borderRadius: "6px",
           overflow: "hidden",
           background: t.borderLight,
           flexShrink: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
           position: "relative",
         }}
       >
@@ -678,33 +341,21 @@ function UpcomingEventCard({ reg }: { reg: HubRegistration }) {
           <Image
             src={reg.event.banner}
             alt=""
-            width={52}
-            height={52}
+            width={44}
+            height={44}
+            loading="lazy"
             style={{ objectFit: "cover", width: "100%", height: "100%" }}
           />
         ) : (
-          <div
-            style={{
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <CalendarDays
-              style={{ width: "20px", height: "20px", color: t.textFaint }}
-            />
-          </div>
+          <CalendarDays style={{ width: "16px", height: "16px", color: t.textFaint }} />
         )}
       </div>
 
-      {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <p
           style={{
             fontSize: "14px",
-            fontWeight: 600,
+            fontWeight: 500,
             color: t.text,
             margin: 0,
             overflow: "hidden",
@@ -714,74 +365,38 @@ function UpcomingEventCard({ reg }: { reg: HubRegistration }) {
         >
           {reg.event.title}
         </p>
-        <div
+        <p
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            marginTop: "4px",
+            fontSize: "12px",
+            fontWeight: 300,
+            color: t.textMuted,
+            margin: "3px 0 0",
           }}
         >
-          <span
-            style={{
-              fontSize: "12px",
-              color: t.textMuted,
-              display: "flex",
-              alignItems: "center",
-              gap: "4px",
-            }}
-          >
-            <Clock style={{ width: "11px", height: "11px" }} />
-            {fullDate(reg.event.startDate)} · {timeOnly(reg.event.startDate)}
-          </span>
-          <span
-            style={{
-              fontSize: "12px",
-              color: t.textFaint,
-              display: "flex",
-              alignItems: "center",
-              gap: "4px",
-            }}
-          >
-            {reg.event.isOnline ? (
-              <Globe style={{ width: "11px", height: "11px" }} />
-            ) : (
-              <MapPin style={{ width: "11px", height: "11px" }} />
-            )}
-            {reg.event.isOnline
-              ? "Online"
-              : reg.event.city || reg.event.venueName || "TBA"}
-          </span>
-        </div>
+          {fullDate(reg.event.startDate)} · {timeOnly(reg.event.startDate)} ·{" "}
+          {reg.event.isOnline ? "Online" : reg.event.city || reg.event.venueName || "TBA"}
+        </p>
       </div>
 
-      {/* Countdown badge */}
       <div
         style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
           flexShrink: 0,
-          padding: "6px 12px",
-          borderRadius: "6px",
-          background: isToday ? t.accentSoft : t.borderLight,
+          fontSize: "11px",
+          fontWeight: 500,
+          color: isToday ? t.text : t.textSecondary,
+          background: isToday ? "#f0f0ec" : t.bg,
+          border: `1px solid ${isToday ? t.border : t.borderLight}`,
+          padding: "4px 10px",
+          borderRadius: "5px",
+          whiteSpace: "nowrap",
         }}
       >
-        <span
-          style={{
-            fontSize: "11px",
-            fontWeight: 700,
-            color: isToday ? t.accent : t.textSecondary,
-          }}
-        >
-          {urgencyLabel}
-        </span>
+        {label}
       </div>
     </Link>
   );
 }
 
-/* ── Recommended event card (visual) ── */
 function RecommendedCard({ event }: { event: HubEvent }) {
   return (
     <Link
@@ -794,22 +409,13 @@ function RecommendedCard({ event }: { event: HubEvent }) {
         borderRadius: "8px",
         overflow: "hidden",
         textDecoration: "none",
-        transition: "border-color 0.15s, box-shadow 0.15s",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = t.border;
-        e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.05)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = t.borderLight;
-        e.currentTarget.style.boxShadow = "none";
+        transition: "border-color 0.15s",
       }}
     >
-      {/* Image */}
       <div
         style={{
           width: "100%",
-          height: "120px",
+          height: "100px",
           background: t.borderLight,
           position: "relative",
           overflow: "hidden",
@@ -820,7 +426,8 @@ function RecommendedCard({ event }: { event: HubEvent }) {
             src={event.banner}
             alt=""
             fill
-            sizes="(max-width: 640px) 100vw, 33vw"
+            sizes="(max-width: 768px) 100vw, 33vw"
+            loading="lazy"
             style={{ objectFit: "cover" }}
           />
         ) : (
@@ -828,18 +435,15 @@ function RecommendedCard({ event }: { event: HubEvent }) {
             style={{
               width: "100%",
               height: "100%",
-              background: `linear-gradient(135deg, ${t.borderLight} 0%, ${t.bg} 100%)`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Sparkles
-              style={{ width: "24px", height: "24px", color: t.textFaint }}
-            />
+            <Sparkles style={{ width: "20px", height: "20px", color: t.textFaint }} />
           </div>
         )}
-        {/* Category tag */}
+
         {event.category && (
           <span
             style={{
@@ -847,14 +451,13 @@ function RecommendedCard({ event }: { event: HubEvent }) {
               top: "8px",
               left: "8px",
               fontSize: "9px",
-              fontWeight: 700,
+              fontWeight: 500,
               textTransform: "uppercase",
               letterSpacing: "0.08em",
-              padding: "3px 8px",
+              padding: "3px 7px",
               borderRadius: "3px",
-              background: "rgba(255,255,255,0.92)",
+              background: "rgba(255,255,255,0.9)",
               color: t.textSecondary,
-              backdropFilter: "blur(4px)",
             }}
           >
             {event.category}
@@ -862,15 +465,13 @@ function RecommendedCard({ event }: { event: HubEvent }) {
         )}
       </div>
 
-      {/* Text */}
-      <div style={{ padding: "14px 16px" }}>
+      <div style={{ padding: "12px 14px" }}>
         <p
           style={{
             fontSize: "13px",
-            fontWeight: 600,
+            fontWeight: 500,
             color: t.text,
             margin: 0,
-            lineHeight: 1.4,
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -878,58 +479,23 @@ function RecommendedCard({ event }: { event: HubEvent }) {
         >
           {event.title}
         </p>
-        <div
+        <p
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            marginTop: "6px",
+            fontSize: "11px",
+            fontWeight: 300,
+            color: t.textMuted,
+            margin: "4px 0 0",
           }}
         >
-          <span
-            style={{
-              fontSize: "11px",
-              color: t.textMuted,
-              display: "flex",
-              alignItems: "center",
-              gap: "3px",
-            }}
-          >
-            <Calendar style={{ width: "10px", height: "10px" }} />
-            {shortDate(event.startDate)}
-          </span>
-          <span style={{ color: t.borderLight, fontSize: "10px" }}>·</span>
-          <span
-            style={{
-              fontSize: "11px",
-              color: t.textFaint,
-              display: "flex",
-              alignItems: "center",
-              gap: "3px",
-            }}
-          >
-            {event.isOnline ? (
-              <Globe style={{ width: "10px", height: "10px" }} />
-            ) : (
-              <MapPin style={{ width: "10px", height: "10px" }} />
-            )}
-            {event.isOnline ? "Online" : event.city || "TBA"}
-          </span>
-        </div>
+          {shortDate(event.startDate)} · {event.isOnline ? "Online" : event.city || "TBA"}
+        </p>
       </div>
     </Link>
   );
 }
 
-/* ── Past event row (compact) ── */
-function PastEventRow({ reg }: { reg: HubRegistration }) {
-  const statusColors: Record<string, string> = {
-    APPROVED: t.green,
-    ATTENDED: t.green,
-    PENDING: t.amber,
-    REJECTED: t.accent,
-    CANCELLED: t.textFaint,
-  };
+function PastRow({ reg }: { reg: HubRegistration }) {
+  const statusOk = ["APPROVED", "ATTENDED"].includes(reg.status);
 
   return (
     <Link
@@ -938,43 +504,32 @@ function PastEventRow({ reg }: { reg: HubRegistration }) {
         display: "flex",
         alignItems: "center",
         gap: "14px",
-        padding: "12px 16px",
+        padding: "11px 16px",
         background: t.surface,
         border: `1px solid ${t.borderLight}`,
         borderRadius: "6px",
         textDecoration: "none",
+        marginBottom: "5px",
         transition: "border-color 0.15s",
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.borderColor = t.border)}
-      onMouseLeave={(e) => (e.currentTarget.style.borderColor = t.borderLight)}
     >
-      {/* Date block */}
-      <div
-        style={{
-          width: "40px",
-          textAlign: "center",
-          flexShrink: 0,
-        }}
-      >
+      <div style={{ width: "36px", textAlign: "center", flexShrink: 0 }}>
         <p
           style={{
             fontSize: "9px",
-            fontWeight: 700,
+            fontWeight: 500,
             textTransform: "uppercase",
             letterSpacing: "0.1em",
             color: t.textFaint,
             margin: 0,
           }}
         >
-          {new Date(reg.event.startDate).toLocaleDateString("en-US", {
-            month: "short",
-          })}
+          {new Date(reg.event.startDate).toLocaleDateString("en-US", { month: "short" })}
         </p>
         <p
           style={{
-            fontFamily: t.serif,
             fontSize: "18px",
-            fontWeight: 600,
+            fontWeight: 500,
             color: t.text,
             margin: 0,
             lineHeight: 1.1,
@@ -984,22 +539,13 @@ function PastEventRow({ reg }: { reg: HubRegistration }) {
         </p>
       </div>
 
-      {/* Divider */}
-      <div
-        style={{
-          width: "1px",
-          height: "28px",
-          background: t.borderLight,
-          flexShrink: 0,
-        }}
-      />
+      <div style={{ width: "1px", height: "24px", background: t.borderLight, flexShrink: 0 }} />
 
-      {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <p
           style={{
             fontSize: "13px",
-            fontWeight: 600,
+            fontWeight: 500,
             color: t.text,
             margin: 0,
             overflow: "hidden",
@@ -1009,115 +555,33 @@ function PastEventRow({ reg }: { reg: HubRegistration }) {
         >
           {reg.event.title}
         </p>
-        <span
+        <p
           style={{
             fontSize: "11px",
+            fontWeight: 300,
             color: t.textFaint,
-            display: "flex",
-            alignItems: "center",
-            gap: "4px",
-            marginTop: "2px",
+            margin: "2px 0 0",
           }}
         >
-          {reg.event.isOnline ? (
-            <Globe style={{ width: "10px", height: "10px" }} />
-          ) : (
-            <MapPin style={{ width: "10px", height: "10px" }} />
-          )}
           {reg.event.isOnline ? "Online" : reg.event.city || "TBA"}
-        </span>
+        </p>
       </div>
 
-      {/* Status dot */}
       <div
         style={{
-          width: "7px",
-          height: "7px",
+          width: "6px",
+          height: "6px",
           borderRadius: "50%",
-          background: statusColors[reg.status] || t.textFaint,
+          background: statusOk ? "#bbb" : t.borderLight,
           flexShrink: 0,
         }}
       />
-
-      <ChevronRight
-        style={{ width: "14px", height: "14px", color: t.borderLight, flexShrink: 0 }}
-      />
+      <ChevronRight style={{ width: "13px", height: "13px", color: t.borderLight, flexShrink: 0 }} />
     </Link>
   );
 }
 
-/* ── Quick action link ── */
-function QuickAction({
-  href,
-  icon,
-  label,
-  desc,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  label: string;
-  desc: string;
-}) {
-  return (
-    <Link
-      href={href}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "14px",
-        padding: "16px 18px",
-        background: t.surface,
-        border: `1px solid ${t.borderLight}`,
-        borderRadius: "8px",
-        textDecoration: "none",
-        transition: "border-color 0.15s, box-shadow 0.15s",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = t.border;
-        e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = t.borderLight;
-        e.currentTarget.style.boxShadow = "none";
-      }}
-    >
-      <div
-        style={{
-          width: "38px",
-          height: "38px",
-          borderRadius: "8px",
-          background: t.borderLight,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: t.textMuted,
-          flexShrink: 0,
-        }}
-      >
-        {icon}
-      </div>
-      <div>
-        <p style={{ fontSize: "13px", fontWeight: 600, color: t.text, margin: 0 }}>
-          {label}
-        </p>
-        <p style={{ fontSize: "11px", color: t.textMuted, margin: "2px 0 0" }}>
-          {desc}
-        </p>
-      </div>
-    </Link>
-  );
-}
-
-/* ── Empty state ── */
-function EmptyState({
-  message,
-  cta,
-  href,
-}: {
-  message: string;
-  cta: string;
-  href: string;
-}) {
+function EmptyState({ message, cta, href }: { message: string; cta: string; href: string }) {
   return (
     <div
       style={{
@@ -1130,29 +594,36 @@ function EmptyState({
     >
       <CalendarDays
         style={{
-          width: "32px",
-          height: "32px",
+          width: "28px",
+          height: "28px",
           color: t.borderLight,
           margin: "0 auto 12px",
+          display: "block",
         }}
       />
-      <p style={{ fontSize: "14px", color: t.textMuted, margin: "0 0 12px" }}>
+      <p
+        style={{
+          fontSize: "13px",
+          fontWeight: 300,
+          color: t.textMuted,
+          margin: "0 0 14px",
+        }}
+      >
         {message}
       </p>
       <Link
         href={href}
         style={{
+          fontSize: "13px",
+          fontWeight: 500,
+          color: t.text,
+          textDecoration: "none",
           display: "inline-flex",
           alignItems: "center",
-          gap: "6px",
-          fontSize: "13px",
-          fontWeight: 600,
-          color: t.accent,
-          textDecoration: "none",
+          gap: "5px",
         }}
       >
-        {cta}
-        <ArrowRight style={{ width: "13px", height: "13px" }} />
+        {cta} <ArrowRight style={{ width: "12px", height: "12px" }} />
       </Link>
     </div>
   );

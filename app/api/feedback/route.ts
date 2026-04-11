@@ -21,20 +21,13 @@ export async function POST(request: NextRequest) {
           eventId: validatedData.eventId,
         },
       },
-      include: { event: { select: { endDate: true, title: true } } },
+      include: { event: { select: { title: true } } },
     });
 
     if (!registration) {
       return NextResponse.json(
         { error: "You can only provide feedback for events you registered for" },
         { status: 403 }
-      );
-    }
-
-    if (new Date() < new Date(registration.event.endDate)) {
-      return NextResponse.json(
-        { error: "You can only provide feedback after the event has ended" },
-        { status: 400 }
       );
     }
 

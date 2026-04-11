@@ -1,5 +1,5 @@
 // app/page.tsx
-// Evenza Landing Page — Comprehensive graduation-level homepage
+// Evenza Landing Page —  homepage
 "use client";
 
 import Navbar from "@/components/shared/Navbar";
@@ -320,239 +320,341 @@ function HeroSection() {
 // ════════════════════════════════════════════════════════════
 // 2. FEATURES SHOWCASE — Icon-forward bento grid
 // ════════════════════════════════════════════════════════════
-function FeaturesShowcase() {
-  const features = [
-    {
-      title: "In-Person Events",
-      desc: "Rich event pages with media galleries, venue maps, capacity controls, and on-site check-in tools.",
-      icon: (
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      ),
-      accent: "#ea580c",
-      size: "large", // spans 2 cols
-    },
-    {
-      title: "Virtual Events",
-      desc: "Meeting link integration with instant ticket delivery. Global reach, no venue needed.",
-      icon: (
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <polygon points="23 7 16 12 23 17 23 7" />
-          <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-        </svg>
-      ),
-      accent: "#3b82f6",
-      size: "normal",
-    },
-    {
-      title: "Hybrid Events",
-      desc: "Combine physical and virtual. Unified registration and ticketing for both audiences.",
-      icon: (
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-        </svg>
-      ),
-      accent: "#8b5cf6",
-      size: "normal",
-    },
-    {
-      title: "Secure Payments",
-      desc: "Stripe-powered checkout with SSL encryption. Support for free events, paid tickets, and local payment methods.",
-      icon: (
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-          <line x1="1" y1="10" x2="23" y2="10" />
-        </svg>
-      ),
-      accent: "#059669",
-      size: "normal",
-    },
-    {
-      title: "Real-Time Analytics",
-      desc: "Track registrations, revenue, attendance rates, and attendee engagement from a live dashboard.",
-      icon: (
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="18" y1="20" x2="18" y2="10" />
-          <line x1="12" y1="20" x2="12" y2="4" />
-          <line x1="6" y1="20" x2="6" y2="14" />
-        </svg>
-      ),
-      accent: "#ea580c",
-      size: "large",
-    },
-  ];
- 
+const features = [
+  {
+    title: "In-Person Events",
+    tag: "VENUE",
+    num: "01",
+    desc: "Rich event pages with media galleries, venue maps, capacity controls, and on-site check-in tools.",
+    accent: "#777371",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
+  },
+  {
+    title: "Virtual Events",
+    tag: "REMOTE",
+    num: "02",
+    desc: "Meeting link integration with instant ticket delivery. Global reach, no venue needed.",
+    accent: "#6d2501",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="23 7 16 12 23 17 23 7" />
+        <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+      </svg>
+    ),
+  },
+  {
+    title: "Hybrid Events",
+    tag: "UNIFIED",
+    num: "03",
+    desc: "Combine physical and virtual. One registration flow, two audiences.",
+    accent: "#777371",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      </svg>
+    ),
+  },
+  {
+    title: "Secure Payments",
+    tag: "STRIPE",
+    num: "04",
+    desc: "SSL-encrypted checkout. Free events, paid tickets, and local payment methods.",
+    accent: "#6d2501",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+        <line x1="1" y1="10" x2="23" y2="10" />
+      </svg>
+    ),
+  },
+  {
+    title: "Real-Time Analytics",
+    tag: "LIVE DATA",
+    num: "05",
+    desc: "Track registrations, revenue, and attendee engagement from a live dashboard.",
+    accent: "#777371",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10" />
+        <line x1="12" y1="20" x2="12" y2="4" />
+        <line x1="6" y1="20" x2="6" y2="14" />
+      </svg>
+    ),
+  },
+  {
+    title: "Custom Branding",
+    tag: "DESIGN",
+    num: "06",
+    desc: "Your logo, colors, and domain. Events that feel like yours from start to finish.",
+    accent: "#6d2501",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M8.56 2.75c4.37 6.03 6.02 9.42 8.03 17.72m2.54-15.38c-3.72 4.35-8.94 5.66-16.88 5.85m19.5 1.9c-3.5-.93-6.63-.82-8.94 0-2.58.92-5.01 2.86-7.44 6.32" />
+      </svg>
+    ),
+  },
+  {
+    title: "Smart Check-In",
+    tag: "ON-SITE",
+    num: "07",
+    desc: "QR scanning, attendee search, and walk-in registration all from your phone.",
+    accent: "#6d2501",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="9 11 12 14 22 4" />
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+      </svg>
+    ),
+  },
+  {
+    title: "Email Campaigns",
+    tag: "MARKETING",
+    num: "08",
+    desc: "Built-in email tools for invitations, reminders, and post-event follow-ups.",
+    accent: "#6d2501",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+        <polyline points="22,6 12,13 2,6" />
+      </svg>
+    ),
+  },
+];
+
+const row1 = [...features, ...features];
+const row2 = [...features.slice(2), ...features.slice(2)];
+
+interface Feature {
+  title: string;
+  tag: string;
+  num: string;
+  desc: string;
+  accent: string;
+  icon: React.ReactNode;
+}
+
+function FeatureCard({ f }: { f: Feature }) {
   return (
-    <section
+    <div
       style={{
-        padding: "120px 0",
-        background: "#06060a",
-        fontFamily: "'Quicksand', sans-serif",
+        flexShrink: 0,
+        width: "290px",
+        background: "#0e0e0e",
+        border: "1px solid rgba(255,255,255,0.07)",
+        borderRadius: "18px",
+        padding: "26px",
         position: "relative",
         overflow: "hidden",
+        marginRight: "14px",
+        transition: "border-color 0.35s ease, transform 0.35s ease",
+        cursor: "default",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = `${f.accent}45`;
+        e.currentTarget.style.transform = "translateY(-5px) scale(1.01)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)";
+        e.currentTarget.style.transform = "translateY(0) scale(1)";
       }}
     >
-      {/* Subtle background glow */}
-      <div
-        style={{
+      {/* Ghost number bg */}
+      <div style={{
+        position: "absolute",
+        right: "12px",
+        bottom: "-12px",
+        fontFamily: "'Bebas Neue', Impact, sans-serif",
+        fontSize: "90px",
+        fontWeight: 900,
+        color: "rgba(255,255,255,0.028)",
+        lineHeight: 1,
+        userSelect: "none",
+        pointerEvents: "none",
+        letterSpacing: "-0.02em",
+      }}>
+        {f.num}
+      </div>
+
+      {/* Top accent bar */}
+      <div style={{
+        position: "absolute",
+        top: 0,
+        left: "26px",
+        right: "80px",
+        height: "2px",
+        background: `linear-gradient(90deg, ${f.accent}, ${f.accent}00)`,
+        borderRadius: "0 0 2px 2px",
+      }} />
+
+      {/* Icon + tag row */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px" }}>
+        <div style={{
+          width: "40px",
+          height: "40px",
+          borderRadius: "10px",
+          background: `${f.accent}14`,
+          border: `1px solid ${f.accent}22`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: f.accent,
+        }}>
+          {f.icon}
+        </div>
+        <span style={{
+          fontFamily: "'Space Mono', monospace",
+          fontSize: "8px",
+          fontWeight: 700,
+          letterSpacing: "0.2em",
+          textTransform: "uppercase",
+          color: f.accent,
+          background: `${f.accent}10`,
+          border: `1px solid ${f.accent}18`,
+          padding: "3px 9px",
+          borderRadius: "100px",
+        }}>
+          {f.tag}
+        </span>
+      </div>
+
+      {/* Title */}
+      <h3 style={{
+        fontFamily: "'Cormorant Garamond', Georgia, serif",
+        fontWeight: 600,
+        fontSize: "20px",
+        color: "#f0ede8",
+        margin: "0 0 9px",
+        letterSpacing: "0.03em",
+        lineHeight: 1.1,
+      }}>
+        {f.title}
+      </h3>
+
+      {/* Desc */}
+      <p style={{
+        fontFamily: "'Space Mono', monospace",
+        fontSize: "10px",
+        color: "rgba(255,255,255,0.27)",
+        lineHeight: 1.9,
+        margin: 0,
+      }}>
+        {f.desc}
+      </p>
+    </div>
+  );
+}
+
+function FeaturesShowcase() {
+  return (
+    <>
+      <style>{`
+        @keyframes slide-left {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
+        }
+        @keyframes slide-right {
+          from { transform: translateX(-50%); }
+          to   { transform: translateX(0); }
+        }
+
+        .track-l { animation: slide-left  34s linear infinite; }
+        .track-r { animation: slide-right 30s linear infinite; }
+
+        .mq-outer:hover .track-l,
+        .mq-outer:hover .track-r {
+          animation-play-state: paused;
+        }
+
+        .mq-fade {
+          position: relative;
+        }
+        .mq-fade::before, .mq-fade::after {
+          content: '';
+          position: absolute;
+          top: 0; bottom: 0;
+          width: 140px;
+          z-index: 2;
+          pointer-events: none;
+        }
+        .mq-fade::before { left: 0;  background: linear-gradient(90deg, #080808, transparent); }
+        .mq-fade::after  { right: 0; background: linear-gradient(-90deg, #080808, transparent); }
+      `}</style>
+
+      <section style={{
+        padding: "96px 0 108px",
+        background: "#080808",
+        overflow: "hidden",
+        position: "relative",
+      }}>
+        {/* Subtle radial warmth at top */}
+        <div style={{
           position: "absolute",
-          top: "30%",
-          right: "10%",
-          width: "500px",
-          height: "500px",
-          background: "radial-gradient(circle, rgba(234,88,12,0.03) 0%, transparent 70%)",
+          top: 0, left: "50%",
+          transform: "translateX(-50%)",
+          width: "700px",
+          height: "300px",
+          background: "radial-gradient(ellipse, rgba(232,88,28,0.05) 0%, transparent 70%)",
           pointerEvents: "none",
-        }}
-      />
- 
-      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 32px", position: "relative" }}>
+        }} />
+
         {/* Header */}
-        <div style={{ marginBottom: "64px", maxWidth: "500px" }}>
-          <p
-            style={{
-              fontSize: "11px",
-              fontWeight: 700,
-              letterSpacing: "0.3em",
-              textTransform: "uppercase",
-              color: "#ea580c",
-              marginBottom: "16px",
-            }}
-          >
+        <div style={{ maxWidth: "900px", margin: "0 auto 60px", padding: "0 40px" }}>
+          <p style={{
+            fontFamily: "'Space Mono', monospace",
+            fontSize: "9.5px",
+            fontWeight: 700,
+            letterSpacing: "0.32em",
+            textTransform: "uppercase",
+            color: "#e8581c",
+            margin: "0 0 20px",
+          }}>
             Platform Features
           </p>
-          <h2
-            style={{
-              fontSize: "clamp(1.75rem, 3.5vw, 2.5rem)",
-              fontWeight: 700,
-              color: "#fff",
-              lineHeight: 1.2,
-              margin: "0 0 14px 0",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            Everything you need to run{" "}
-            <span style={{ color: "#ea580c" }}>world-class events</span>
-          </h2>
-          <p
-            style={{
-              fontSize: "15px",
-              color: "rgba(255,255,255,0.3)",
-              lineHeight: 1.7,
-              margin: 0,
-            }}
-          >
-            From registration to check-in, payments to analytics — one
-            platform handles it all.
+
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "32px", flexWrap: "wrap" }}>
+              <p style={{
+            fontSize: "15px",
+            fontWeight: 700,
+            letterSpacing: "0.32em",
+            textTransform: "uppercase",
+            color: "#f7efeb",
+            margin: "0 0 20px",
+          }}>
+              From Registration to check-in one Platform handles it all.
           </p>
+          </div>
+
+          <div style={{
+            marginTop: "44px",
+            height: "1px",
+            background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.07) 30%, rgba(255,255,255,0.07) 70%, transparent)",
+          }} />
         </div>
- 
-        {/* Bento grid */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "16px",
-          }}
-          className="grid-cols-1 md:grid-cols-3"
-        >
-          {features.map((f, i) => (
-            <div
-              key={i}
-              style={{
-                gridColumn: f.size === "large" ? "span 2" : "span 1",
-                background: "rgba(255,255,255,0.02)",
-                border: "1px solid rgba(255,255,255,0.05)",
-                borderRadius: "16px",
-                padding: f.size === "large" ? "40px" : "32px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "20px",
-                transition: "border-color 0.3s, background 0.3s",
-                cursor: "default",
-                position: "relative",
-                overflow: "hidden",
-              }}
-              className={f.size === "large" ? "md:col-span-2" : ""}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = `${f.accent}30`;
-                e.currentTarget.style.background = "rgba(255,255,255,0.03)";
-                const glow = e.currentTarget.querySelector("[data-glow]") as HTMLElement;
-                if (glow) glow.style.opacity = "1";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
-                e.currentTarget.style.background = "rgba(255,255,255,0.02)";
-                const glow = e.currentTarget.querySelector("[data-glow]") as HTMLElement;
-                if (glow) glow.style.opacity = "0";
-              }}
-            >
-              {/* Hover glow in corner */}
-              <div
-                data-glow
-                style={{
-                  position: "absolute",
-                  top: "-40px",
-                  right: "-40px",
-                  width: "160px",
-                  height: "160px",
-                  background: `radial-gradient(circle, ${f.accent}10, transparent 70%)`,
-                  opacity: 0,
-                  transition: "opacity 0.4s",
-                  pointerEvents: "none",
-                }}
-              />
- 
-              {/* Icon */}
-              <div
-                style={{
-                  width: "48px",
-                  height: "48px",
-                  borderRadius: "12px",
-                  background: `${f.accent}12`,
-                  border: `1px solid ${f.accent}20`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: f.accent,
-                }}
-              >
-                {f.icon}
-              </div>
- 
-              {/* Text */}
-              <div>
-                <h3
-                  style={{
-                    fontSize: f.size === "large" ? "20px" : "17px",
-                    fontWeight: 700,
-                    color: "#fff",
-                    margin: "0 0 8px 0",
-                  }}
-                >
-                  {f.title}
-                </h3>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    color: "rgba(255,255,255,0.35)",
-                    lineHeight: 1.7,
-                    margin: 0,
-                    maxWidth: f.size === "large" ? "480px" : "none",
-                  }}
-                >
-                  {f.desc}
-                </p>
-              </div>
-            </div>
-          ))}
+
+        {/* Marquee row 1 — left */}
+        <div className="mq-fade mq-outer" style={{ marginBottom: "14px" }}>
+          <div className="track-l" style={{ display: "flex", width: "max-content", paddingLeft: "14px" }}>
+            {row1.map((f, i) => <FeatureCard key={`r1-${i}`} f={f} />)}
+          </div>
         </div>
-      </div>
-    </section>
+
+        {/* Marquee row 2 — right */}
+        <div className="mq-fade mq-outer">
+          <div className="track-r" style={{ display: "flex", width: "max-content", paddingLeft: "14px" }}>
+            {row2.map((f, i) => <FeatureCard key={`r2-${i}`} f={f} />)}
+          </div>
+        </div>
+      </section>
+    </>
   );
 }
 
@@ -924,14 +1026,12 @@ function HowItWorksSection() {
                   ) as HTMLElement;
                   if (numEl) {
                     numEl.style.color = "#f97316";
-                    numEl.style.textShadow = "0 0 40px rgba(249,115,22,0.3)";
                   }
                   const dotEl = e.currentTarget.querySelector(
                     "[data-dot]",
                   ) as HTMLElement;
                   if (dotEl) {
                     dotEl.style.background = "#f97316";
-                    dotEl.style.boxShadow = "0 0 12px rgba(249,115,22,0.4)";
                   }
                 }}
                 onMouseLeave={(e) => {
@@ -948,7 +1048,6 @@ function HowItWorksSection() {
                   ) as HTMLElement;
                   if (dotEl) {
                     dotEl.style.background = "rgba(249,115,22,0.4)";
-                    dotEl.style.boxShadow = "none";
                   }
                 }}
               >
@@ -2061,7 +2160,7 @@ function FAQSection() {
   return (
     <section id="faq" 
       style={{
-        padding: "120px 0",
+        padding: "50px 0",
         fontFamily: "'Quicksand', sans-serif",
       }}
     >
@@ -2232,7 +2331,7 @@ function FAQSection() {
 // ════════════════════════════════════════════════════════════
 // components/landing/CTASection.tsx
 
-const features = [
+const ctaFeatures = [
   "Create registration pages in minutes — no coding needed.",
   "Automatically send calendar invites to boost attendance.",
   "Enable waitlists to manage exclusive access.",
@@ -2368,7 +2467,7 @@ const scaleIn = {
                 marginBottom: "48px",
               }}
             >
-              {features.map((feature, i) => (
+              {ctaFeatures.map((feature, i) => (
                 <motion.div
                   key={i}
                   custom={3 + i}

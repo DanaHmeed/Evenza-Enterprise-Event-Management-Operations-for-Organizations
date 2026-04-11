@@ -1,18 +1,119 @@
-/* Prevent auth card from collapsing during Clerk's internal transitions */
-.auth-card {
-  max-width: 28rem;
-  min-height: 24rem; /* prevents height collapse flash */
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-}
-
-/* Keep Clerk's root container from shrinking to 0 during route transition */
-.cl-rootBox {
-  min-height: 20rem;
+.auth-shell {
   width: 100%;
+  max-width: 28rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 1rem;
 }
 
+.auth-widget-wrap {
+  width: 100%;
+  /* Match the card height exactly so it never collapses */
+  min-height: 34rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 2rem 0;
+  /* Needed for the redirect overlay to be scoped here */
+  position: relative;
+}
+
+.auth-root-box,
+.cl-rootBox {
+  width: 100%;
+  min-height: 34rem;
+}
+
+.auth-clerk-card,
 .cl-card {
   width: 100%;
+  min-height: 34rem;
+}
+
+.auth-secondary-action {
+  min-height: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Opacity transition so the link doesn't abruptly vanish */
+  transition: opacity 0.3s ease;
+}
+
+.auth-shell[data-redirecting="true"] .auth-secondary-action {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.auth-white-card {
+  background: #ffffff !important;
+  color: #111 !important;
+}
+
+.auth-white-card .cl-card {
+  background: #ffffff !important;
+}
+
+.auth-white-card .cl-footer,
+.auth-white-card .cl-footerAction,
+.auth-white-card .cl-footerActionText,
+.auth-white-card .cl-footerPages,
+.auth-white-card .cl-card > div:last-child {
+  background: #ffffff !important;
+  color: #111 !important;
+  border-top: 1px solid #eee !important;
+}
+
+.auth-white-card > *,
+.auth-white-card .cl-card > * {
+  backdrop-filter: none !important;
+  background-image: none !important;
+}
+
+.auth-redirect-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  animation: overlayFadeIn 0.2s ease forwards;
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.auth-redirect-overlay__spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(198, 85, 4, 0.2);
+  border-top-color: #c65504;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.auth-redirect-overlay__text {
+  font-size: 14px;
+  font-family: "Quicksand", sans-serif;
+  font-weight: 600;
+  color: #c65504;
+  letter-spacing: 0.02em;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(10px);
 }

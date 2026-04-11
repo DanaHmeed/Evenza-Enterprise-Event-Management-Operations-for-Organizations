@@ -17,32 +17,26 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     const userId = authResult.userId;
 
-    // Validate event
-    const event = await prisma.event.findUnique({
-      where: { id: eventId },
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+
+    if (!event) return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    if (event.status !== "PUBLISHED") return NextResponse.json({ error: "Event is not available" }, { status: 400 });
+    if (event.eventType !== "PAID") return NextResponse.json({ error: "This is a free event. Use the register endpoint." }, { status: 400 });
+    if (new Date() > new Date(event.registrationDeadline)) return NextResponse.json({ error: "Registration deadline has passed" }, { status: 400 });
+
+    // ─── Seat availability: count only APPROVED registrations ────────────
+    // We deliberately do NOT count PENDING (= Stripe sessions in-flight) so
+    // that abandoned checkouts never permanently consume a spot.
+    const approvedCount = await prisma.registration.count({
+      where: { eventId, status: "APPROVED" },
     });
 
-    if (!event) {
-      return NextResponse.json({ error: "Event not found" }, { status: 404 });
-    }
-
-    if (event.status !== "PUBLISHED") {
-      return NextResponse.json({ error: "Event is not available" }, { status: 400 });
-    }
-
-    if (event.eventType !== "PAID") {
-      return NextResponse.json({ error: "This is a free event. Use the register endpoint." }, { status: 400 });
-    }
-
-    if (new Date() > new Date(event.registrationDeadline)) {
-      return NextResponse.json({ error: "Registration deadline has passed" }, { status: 400 });
-    }
-
-    if (event.seatsRemaining <= 0) {
+    if (approvedCount >= event.capacity) {
       return NextResponse.json({ error: "Event is full" }, { status: 400 });
     }
+    // ─────────────────────────────────────────────────────────────────────
 
-    // Check if already registered (ignore PENDING/CANCELLED — only block on APPROVED)
+    // Block duplicate APPROVED registrations only
     const existingRegistration = await prisma.registration.findUnique({
       where: { userId_eventId: { userId, eventId } },
     });
@@ -51,8 +45,8 @@ export async function POST(request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "You are already registered for this event" }, { status: 400 });
     }
 
-    // Clean up any stale PENDING/CANCELLED registration so we can create a fresh one
-    if (existingRegistration && existingRegistration.status !== "APPROVED") {
+    // Clean up any stale PENDING/CANCELLED entry so we can create a fresh one
+    if (existingRegistration) {
       await prisma.registration.delete({
         where: { userId_eventId: { userId, eventId } },
       });
@@ -61,70 +55,50 @@ export async function POST(request: NextRequest, { params }: Params) {
     const body = await request.json();
     const { paymentMethod } = body;
 
-    // Handle Stripe payments
+    // ── Stripe ──────────────────────────────────────────────────────────
     if (paymentMethod === "STRIPE" || !paymentMethod) {
       const user = await prisma.user.findUnique({
         where: { id: userId },
         select: { email: true, name: true },
       });
 
-      if (!user) {
-        return NextResponse.json({ error: "User not found" }, { status: 404 });
-      }
+      if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-      // Only pass images if banner is an absolute URL — Stripe rejects relative paths
-      const bannerImages =
-        event.banner?.startsWith("http") ? [event.banner] : [];
+      const bannerImages = event.banner?.startsWith("http") ? [event.banner] : [];
 
-      // Create Stripe checkout session FIRST — before any DB writes.
-      // If Stripe fails here, nothing has been written to the DB yet.
+      // Create Stripe session before any DB writes — if Stripe fails, nothing is written.
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ["card"],
-        line_items: [
-          {
-            price_data: {
-              currency: event.currency?.toLowerCase() || "usd",
-              product_data: {
-                name: event.title,
-                description: `Ticket for ${event.title}`,
-                images: bannerImages,
-              },
-              unit_amount: Math.round((event.price ?? 0) * 100),
-            },
-            quantity: 1,
+        line_items: [{
+          price_data: {
+            currency: event.currency?.toLowerCase() || "usd",
+            product_data: { name: event.title, description: `Ticket for ${event.title}`, images: bannerImages },
+            unit_amount: Math.round((event.price ?? 0) * 100),
           },
-        ],
+          quantity: 1,
+        }],
         mode: "payment",
         success_url: `${process.env.NEXT_PUBLIC_APP_URL}/events/${eventId}/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/events/${eventId}?payment=cancelled`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/events/${eventId}?payment_status=cancelled`,
         customer_email: user.email,
-        metadata: {
-          userId,
-          eventId,
-          // ticketId and orderId will be patched onto the session metadata after
-          // DB write, but we store them in the order record instead.
-        },
+        // 30-minute expiry — the webhook handles cleanup on expiry
+        expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
+        metadata: { userId, eventId },
       });
 
-      // Now create registration + ticket + order in a single transaction
+      // Write registration/ticket/order — but do NOT touch seatsRemaining yet.
+      // seatsRemaining is only decremented by the webhook once payment succeeds.
       const result = await prisma.$transaction(async (tx) => {
-        // 1. Create registration (PENDING until payment completes)
         const registration = await tx.registration.create({
-          data: {
-            userId,
-            eventId,
-            status: "PENDING",
-          },
+          data: { userId, eventId, status: "PENDING" },
         });
 
-        // 2. Create ticket with required fields
         const ticketNumber = generateTicketNumber();
         const ticket = await tx.ticket.create({
           data: {
             ticketNumber,
             qrCode: generateQRData(registration.id, eventId),
-            userId,
-            eventId,
+            userId, eventId,
             registrationId: registration.id,
             price: event.price ?? 0,
             currency: event.currency || "USD",
@@ -132,11 +106,9 @@ export async function POST(request: NextRequest, { params }: Params) {
           },
         });
 
-        // 3. Create order (with stripeSessionId already known)
         const order = await tx.order.create({
           data: {
-            userId,
-            eventId,
+            userId, eventId,
             amount: event.price ?? 0,
             currency: event.currency || "USD",
             paymentMethod: "STRIPE",
@@ -145,20 +117,18 @@ export async function POST(request: NextRequest, { params }: Params) {
           },
         });
 
-        // 4. Decrement seats
-        await tx.event.update({
-          where: { id: eventId },
-          data: { seatsRemaining: { decrement: 1 } },
-        });
+        // ⚠️  seatsRemaining intentionally NOT decremented here.
+        //     The Stripe webhook (checkout.session.completed) does it after
+        //     real payment confirmation. This prevents abandoned checkouts
+        //     from consuming spots.
 
         return { registration, ticket, order };
       });
 
-      // Patch the Stripe session metadata now that we have the DB IDs
+      // Patch session metadata with DB IDs for the webhook to use
       await stripe.checkout.sessions.update(session.id, {
         metadata: {
-          userId,
-          eventId,
+          userId, eventId,
           ticketId: result.ticket.id,
           orderId: result.order.id,
           registrationId: result.registration.id,
@@ -173,15 +143,14 @@ export async function POST(request: NextRequest, { params }: Params) {
       });
     }
 
-    // Handle manual payments (CASH, BANK_TRANSFER, JAWWAL_PAY)
+    // ── Manual payments (CASH, BANK_TRANSFER, JAWWAL_PAY) ───────────────
+    // Manual payments require organizer confirmation, so we also skip the
+    // seat decrement here and let the organizer's "Mark as Paid" action
+    // (PATCH /api/organizer/orders) handle it.
     if (["CASH", "BANK_TRANSFER", "JAWWAL_PAY"].includes(paymentMethod)) {
       const result = await prisma.$transaction(async (tx) => {
         const registration = await tx.registration.create({
-          data: {
-            userId,
-            eventId,
-            status: "PENDING",
-          },
+          data: { userId, eventId, status: "PENDING" },
         });
 
         const ticketNumber = generateTicketNumber();
@@ -189,8 +158,7 @@ export async function POST(request: NextRequest, { params }: Params) {
           data: {
             ticketNumber,
             qrCode: generateQRData(registration.id, eventId),
-            userId,
-            eventId,
+            userId, eventId,
             registrationId: registration.id,
             price: event.price ?? 0,
             currency: event.currency || "USD",
@@ -200,8 +168,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 
         const order = await tx.order.create({
           data: {
-            userId,
-            eventId,
+            userId, eventId,
             amount: event.price ?? 0,
             currency: event.currency || "USD",
             paymentMethod,
@@ -209,10 +176,8 @@ export async function POST(request: NextRequest, { params }: Params) {
           },
         });
 
-        await tx.event.update({
-          where: { id: eventId },
-          data: { seatsRemaining: { decrement: 1 } },
-        });
+        // seatsRemaining decremented when organizer confirms payment via
+        // PATCH /api/organizer/orders — see that route for the decrement.
 
         return { registration, ticket, order };
       });

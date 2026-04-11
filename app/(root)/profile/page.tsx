@@ -1,12 +1,6 @@
 // app/(root)/profile/page.tsx
-//
-// 1. Single API call via /profile-summary (was 2 parallel calls)
-// 2. next/image for avatar & event banners (auto-resize, lazy load, WebP)
-// 3. Memoized date formatting
-// 4. Reduced re-renders with stable references
 
 "use client";
-import "@/styles/globals.css";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
@@ -126,7 +120,6 @@ export default function ProfilePage() {
       return;
     }
 
-    // ✅ OPTIMIZATION: Single API call instead of two parallel calls
     const fetchData = async () => {
       try {
         const res = await fetch(`/api/users/${user?.id}/profile-summary`);
@@ -314,15 +307,15 @@ export default function ProfilePage() {
             position: "absolute",
             top: "30%",
             left: "20%",
-            width: "400px",
-            height: "400px",
+            width: "700px",
+            height: "700px",
             background: "radial-gradient(circle, rgba(230,57,70,0.06) 0%, transparent 70%)",
             pointerEvents: "none",
           }}
         />
       </div>
 
-      <div style={{ maxWidth: "800px", margin: "0 auto", padding: "0 32px 80px" }}>
+      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 32px 80px" }}>
         {/* ═══════════════════════════════════
             PROFILE CARD
             ═══════════════════════════════════ */}
@@ -346,7 +339,6 @@ export default function ProfilePage() {
               gap: "20px",
             }}
           >
-            {/* ✅ Avatar with next/image */}
             <div
               style={{
                 width: "96px",

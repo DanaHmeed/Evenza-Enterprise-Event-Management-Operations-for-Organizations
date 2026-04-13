@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import "@/styles/globals.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
+import { Rubik } from 'next/font/google'
+const rubik = Rubik({
+  subsets: ['latin'],
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: {

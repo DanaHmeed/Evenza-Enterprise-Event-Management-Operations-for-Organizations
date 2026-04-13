@@ -5,7 +5,7 @@ import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import {
   CalendarPlus, CalendarDays, Users,
-  ScanLine, ArrowRight, BarChart2, Loader2,
+  ArrowRight, BarChart2, Loader2,
 } from "lucide-react";
 import { useDashboardStats } from "@/hooks/use-dashboard";
 
@@ -61,7 +61,6 @@ function DonutChart({
 }
 
 // ── Semi-circle Gauge ─────────────────────────────────────────────────────────
-// Uses pathLength="100" trick so strokeDasharray maps directly to percentage.
 function SemiGauge({
   pct, color, label,
 }: {
@@ -96,7 +95,6 @@ function SemiGauge({
 }
 
 // ── Registration Fill Rate Chart ──────────────────────────────────────────────
-// Horizontal bar chart showing capacity fill % per event from recentEvents.
 function RegistrationChart({ events }: {
   events: { id: string; title: string; capacity: number; seatsRemaining: number; status: string }[]
 }) {

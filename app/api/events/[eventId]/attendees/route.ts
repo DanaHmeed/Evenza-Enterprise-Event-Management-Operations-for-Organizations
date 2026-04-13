@@ -5,7 +5,9 @@ import { generateTicketNumber, generateQRData } from "@/lib/utils/helpers";
 
 type Params = { params: Promise<{ eventId: string }> };
 
-// GET - Get attendee list (organizer/admin)
+const PAGE_SIZE = 20;
+
+// GET - Get attendee list with server-side pagination, filtering, and search
 export async function GET(request: NextRequest, { params }: Params) {
   try {
     const { eventId } = await params;
@@ -29,44 +31,92 @@ export async function GET(request: NextRequest, { params }: Params) {
 
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get("status");
+    const search = searchParams.get("search")?.trim() || "";
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const skip = (page - 1) * PAGE_SIZE;
 
-    const attendees = await prisma.registration.findMany({
-      where: {
-        eventId,
-        ...(status && { status: status as "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED" }),
-      },
-      include: {
-        user: { select: { id: true, name: true, email: true, avatar: true, phone: true } },
-        ticket: {
-          select: {
-            ticketNumber: true,
-            qrCode: true,
-            status: true,
-            isUsed: true,
-            usedAt: true,
-          },
+    /* ── Build shared where clause ── */
+    const where = {
+      eventId,
+      ...(status && status !== "ALL" && {
+        status: status as "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED",
+      }),
+      ...(search && {
+        user: {
+          OR: [
+            { name:  { contains: search, mode: "insensitive" as const } },
+            { email: { contains: search, mode: "insensitive" as const } },
+          ],
         },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    const stats = {
-      total: attendees.length,
-      approved: attendees.filter((a) => a.status === "APPROVED").length,
-      pending: attendees.filter((a) => a.status === "PENDING").length,
-      rejected: attendees.filter((a) => a.status === "REJECTED").length,
-      cancelled: attendees.filter((a) => a.status === "CANCELLED").length,
-      checkedIn: attendees.filter((a) => a.checkedIn).length,
+      }),
     };
 
-    return NextResponse.json({ success: true, data: { attendees, stats } });
+    /* ── Run data + filtered count in parallel ── */
+    const [attendees, total] = await Promise.all([
+      prisma.registration.findMany({
+        where,
+        select: {
+          id: true,
+          status: true,
+          checkedIn: true,
+          checkedInAt: true,
+          createdAt: true,
+          user: {
+            select: { id: true, name: true, email: true, avatar: true },
+          },
+          ticket: {
+            select: { ticketNumber: true, status: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: PAGE_SIZE,
+      }),
+
+      prisma.registration.count({ where }),
+    ]);
+
+    /* ── Stats via COUNT queries — no JS filtering of large arrays ── */
+    const [statusGroups, checkedInCount, grandTotal] = await Promise.all([
+      prisma.registration.groupBy({
+        by: ["status"],
+        where: { eventId },
+        _count: { status: true },
+      }),
+      prisma.registration.count({ where: { eventId, checkedIn: true } }),
+      prisma.registration.count({ where: { eventId } }),
+    ]);
+
+    const sm = Object.fromEntries(statusGroups.map((r) => [r.status, r._count.status]));
+    const stats = {
+      total:     grandTotal,
+      approved:  sm["APPROVED"]  ?? 0,
+      pending:   sm["PENDING"]   ?? 0,
+      rejected:  sm["REJECTED"]  ?? 0,
+      cancelled: sm["CANCELLED"] ?? 0,
+      checkedIn: checkedInCount,
+    };
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        attendees,
+        stats,
+        pagination: {
+          page,
+          pageSize: PAGE_SIZE,
+          total,
+          totalPages: Math.ceil(total / PAGE_SIZE),
+        },
+      },
+    });
   } catch (error) {
     console.error("[ATTENDEES_GET]", error);
     return NextResponse.json({ error: "Failed to fetch attendees" }, { status: 500 });
   }
 }
 
-// PATCH - Approve/Reject registration (organizer/admin)
+// PATCH - Approve/Reject registration
 export async function PATCH(request: NextRequest, { params }: Params) {
   try {
     const { eventId } = await params;
@@ -105,7 +155,6 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         include: { user: { select: { id: true, name: true, email: true } } },
       });
 
-      // Generate ticket on approval
       let ticket = null;
       if (status === "APPROVED") {
         const ticketNumber = generateTicketNumber();
@@ -123,7 +172,6 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         });
       }
 
-      // If rejected, restore seat
       if (status === "REJECTED") {
         await tx.event.update({
           where: { id: eventId },
@@ -131,7 +179,6 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         });
       }
 
-      // Notify user
       await tx.notification.create({
         data: {
           userId: updatedRegistration.userId,

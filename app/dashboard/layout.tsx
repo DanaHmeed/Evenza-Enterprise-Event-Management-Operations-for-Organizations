@@ -1,4 +1,3 @@
-// app/dashboard/layout.tsx
 "use client";
 
 import { useEffect } from "react";
@@ -7,6 +6,13 @@ import { useRouter } from "next/navigation";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { Loader2 } from "lucide-react";
 import { useRoleCheck } from "@/hooks/use-dashboard";
+import { Rubik } from "next/font/google";
+
+const rubik = Rubik({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-rubik", 
+});
 
 export default function DashboardLayout({
   children,
@@ -16,8 +22,6 @@ export default function DashboardLayout({
   const { user, isSignedIn, isLoaded } = useUser();
   const router = useRouter();
 
-  // SWR-cached role check — navigating between dashboard pages
-  // no longer re-fetches this. The first load caches the result for 60s.
   const { isAuthorized, isLoading: roleLoading } = useRoleCheck(
     isLoaded && isSignedIn ? user?.id : null
   );
@@ -30,7 +34,6 @@ export default function DashboardLayout({
   }, [isLoaded, isSignedIn, router]);
 
   useEffect(() => {
-    // Only redirect once the role check is done and user is NOT authorized
     if (!isLoaded || !isSignedIn || roleLoading) return;
     if (!isAuthorized) {
       router.replace("/");
@@ -51,7 +54,7 @@ export default function DashboardLayout({
   if (!isAuthorized) return null;
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className={`${rubik.className} flex h-screen bg-gray-50 overflow-hidden`}>
       <DashboardSidebar />
       <main className="flex-1 overflow-y-auto">
         <div className="p-6 lg:p-8 max-w-[1400px]">{children}</div>

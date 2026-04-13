@@ -1,86 +1,196 @@
 // app/dashboard/settings/page.tsx
 "use client";
 
-import { useUser } from "@clerk/nextjs";
+import { useUser, useClerk } from "@clerk/nextjs";
 import Link from "next/link";
-import { Settings, ExternalLink, User, Shield, Mail } from "lucide-react";
-import { t, SectionTitle } from "@/components/dashboard/OrganizerUI";
+import { ExternalLink, User, Shield, Mail, ChevronRight } from "lucide-react";
+
+// ── Color tokens (same as dashboard) ─────────────────────────────────────────
+const c = {
+  a50:"#FAEEDA", a100:"#FAC775", a200:"#EF9F27", a600:"#854F0B", a800:"#633806",
+  g50:"#EAF3DE", g600:"#3B6D11", g800:"#27500A",
+  c50:"#FAECE7", c100:"#F5C4B3", c600:"#993C1D",
+  p50:"#EEEDFE", p600:"#534AB7", p800:"#3C3489",
+  b50:"#E6F1FB", b600:"#185FA5",
+  gr200:"#B4B2A9", gr400:"#888780",
+} as const;
 
 export default function OrganizerSettingsPage() {
-  const { user } = useUser();
+  const { user }  = useUser();
+  const { openUserProfile } = useClerk();
 
-  const links = [
+  // ── Section groups ─────────────────────────────────────────────────────────
+  const sections = [
     {
-      title: "Edit Profile",
-      desc: "Update your name, bio, phone, and professional details",
-      href: "/profile",
-      icon: <User style={{ width: "18px", height: "18px" }} />,
+      title: "Profile",
+      items: [
+        {
+          label: "Edit profile",
+          desc:  "Update your name, bio, phone, and professional details",
+          icon:  <User  style={{ width: 16, height: 16 }} />,
+          href:  "/profile",
+          action: null,
+        },
+      ],
     },
     {
-      title: "Account Security",
-      desc: "Manage your password, two-factor authentication, and sessions",
-      href: "https://accounts.clerk.dev/user/security",
-      icon: <Shield style={{ width: "18px", height: "18px" }} />,
-      external: true,
-    },
-    {
-      title: "Email Addresses",
-      desc: "Add or change your email addresses",
-      href: "https://accounts.clerk.dev/user",
-      icon: <Mail style={{ width: "18px", height: "18px" }} />,
-      external: true,
+      title: "Account",
+      items: [
+        {
+          label: "Account security",
+          desc:  "Password, two-factor authentication, and active sessions",
+          icon:  <Shield style={{ width: 16, height: 16 }} />,
+          href:  null,
+          // Opens Clerk's built-in UserProfile modal on the Security tab
+          action: () => openUserProfile({ appearance: { elements: { rootBox: { zIndex: 9999 } } } }),
+        },
+        {
+          label: "Email addresses",
+          desc:  "Add or remove email addresses linked to your account",
+          icon:  <Mail  style={{ width: 16, height: 16 }} />,
+          href:  null,
+          // Opens Clerk's built-in UserProfile modal (default tab shows email)
+          action: () => openUserProfile(),
+        },
+      ],
     },
   ];
 
   return (
-    <div style={{ fontFamily: t.sans, maxWidth: "640px" }}>
-      <div style={{ marginBottom: "32px" }}>
-        <h1 style={{ fontFamily: t.serif, fontSize: "24px", fontWeight: 600, color: t.text, margin: 0 }}>Settings</h1>
-        <p style={{ fontSize: "13px", color: t.textMuted, marginTop: "4px" }}>Manage your account and preferences.</p>
+      <div style={{ maxWidth: 1240, margin: "0 auto", padding: "28px 24px 60px" }}>
+
+      {/* ── Header ──────────────────────────────────────────────────────────── */}
+      <div style={{
+        paddingBottom: 18,
+        borderBottom: "1px solid var(--color-border-tertiary,#e8e8e8)",
+        marginBottom: 20,
+      }}>
+        <div style={{
+          fontSize: 22, fontWeight: 500, letterSpacing: "-0.02em",
+          color: "var(--color-text-primary,#111)",
+        }}>Settings</div>
+        <div style={{
+          fontSize: 11, letterSpacing: "0.04em",
+          color: "var(--color-text-tertiary,#999)", marginTop: 3,
+        }}>Manage your account and preferences.</div>
       </div>
 
-      {/* Current user info */}
-      <div style={{ background: t.surface, border: `1px solid ${t.borderLight}`, borderRadius: "6px", padding: "24px", marginBottom: "24px", display: "flex", alignItems: "center", gap: "16px" }}>
+      {/* ── User card ───────────────────────────────────────────────────────── */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 14,
+        padding: "16px 20px", marginBottom: 24,
+        border: "0.5px solid var(--color-border-tertiary,#e8e8e8)",
+        borderRadius: 12,
+      }}>
         {user?.imageUrl ? (
-          <img src={user.imageUrl} alt="" style={{ width: "48px", height: "48px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+          <img src={user.imageUrl} alt=""
+            style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
         ) : (
-          <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: t.accentSoft, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "18px", fontWeight: 600, color: t.accent }}>
-            {user?.firstName?.[0] || "O"}
+          <div style={{
+            width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
+            background: c.a50, border: `0.5px solid ${c.a100}`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 16, fontWeight: 500, color: c.a600,
+          }}>
+            {user?.firstName?.[0]?.toUpperCase() || "O"}
           </div>
         )}
-        <div>
-          <p style={{ fontSize: "16px", fontWeight: 600, color: t.text, margin: 0 }}>{user?.fullName || "Organizer"}</p>
-          <p style={{ fontSize: "13px", color: t.textMuted, margin: "2px 0 0" }}>{user?.primaryEmailAddress?.emailAddress}</p>
+        <div style={{ minWidth: 0 }}>
+          <div style={{
+            fontSize: 14, fontWeight: 500,
+            color: "var(--color-text-primary,#111)",
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          }}>{user?.fullName || "Organizer"}</div>
+          <div style={{
+            fontSize: 11, letterSpacing: "0.02em",
+            color: "var(--color-text-tertiary,#999)", marginTop: 2,
+          }}>{user?.primaryEmailAddress?.emailAddress}</div>
         </div>
       </div>
 
-      <SectionTitle title="Account" />
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-        {links.map((link, i) => (
-          <Link
-            key={i}
-            href={link.href}
-            target={link.external ? "_blank" : undefined}
-            rel={link.external ? "noopener noreferrer" : undefined}
-            style={{
-              display: "flex", alignItems: "center", gap: "16px", padding: "16px 20px",
-              background: t.surface, border: `1px solid ${t.borderLight}`, borderRadius: "6px",
-              textDecoration: "none", transition: "border-color 0.15s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.borderColor = t.border)}
-            onMouseLeave={(e) => (e.currentTarget.style.borderColor = t.borderLight)}
-          >
-            <div style={{ width: "36px", height: "36px", borderRadius: "6px", background: t.borderLight, display: "flex", alignItems: "center", justifyContent: "center", color: t.textMuted, flexShrink: 0 }}>
-              {link.icon}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: "14px", fontWeight: 600, color: t.text, margin: 0 }}>{link.title}</p>
-              <p style={{ fontSize: "12px", color: t.textMuted, margin: "2px 0 0" }}>{link.desc}</p>
-            </div>
-            {link.external && <ExternalLink style={{ width: "14px", height: "14px", color: t.textFaint, flexShrink: 0 }} />}
-          </Link>
-        ))}
-      </div>
+      {/* ── Sections ────────────────────────────────────────────────────────── */}
+      {sections.map(section => (
+        <div key={section.title} style={{ marginBottom: 24 }}>
+          {/* section label */}
+          <div style={{
+            fontSize: 11, fontWeight: 500, letterSpacing: "0.06em",
+            color: "var(--color-text-secondary,#666)",
+            marginBottom: 8, paddingLeft: 2,
+          }}>{section.title}</div>
+
+          {/* items */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {section.items.map((item, i) => {
+              const inner = (
+                <>
+                  {/* icon */}
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                    background: "var(--color-background-secondary,#f5f5f5)",
+                    border: "0.5px solid var(--color-border-tertiary,#e8e8e8)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "var(--color-text-secondary,#666)",
+                  }}>
+                    {item.icon}
+                  </div>
+
+                  {/* text */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontSize: 13, fontWeight: 500,
+                      color: "var(--color-text-primary,#111)",
+                    }}>{item.label}</div>
+                    <div style={{
+                      fontSize: 11, color: "var(--color-text-tertiary,#999)",
+                      marginTop: 2, lineHeight: 1.45,
+                    }}>{item.desc}</div>
+                  </div>
+
+                  {/* arrow / external */}
+                  <ChevronRight style={{
+                    width: 14, height: 14, flexShrink: 0,
+                    color: "var(--color-text-tertiary,#999)",
+                  }} />
+                </>
+              );
+
+              const sharedStyle: React.CSSProperties = {
+                display: "flex", alignItems: "center", gap: 12,
+                padding: "14px 16px",
+                border: "0.5px solid var(--color-border-tertiary,#e8e8e8)",
+                borderRadius: 12, textDecoration: "none",
+                background: "var(--color-background-primary,#fff)",
+                cursor: "pointer", width: "100%", textAlign: "left",
+                transition: "background 0.12s",
+              };
+
+              // button (Clerk modal) vs Link (internal route)
+              return item.action ? (
+                <button
+                  key={i}
+                  onClick={item.action}
+                  style={sharedStyle}
+                  onMouseEnter={e => (e.currentTarget.style.background = "var(--color-background-secondary,#f5f5f5)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "var(--color-background-primary,#fff)")}
+                >
+                  {inner}
+                </button>
+              ) : (
+                <Link
+                  key={i}
+                  href={item.href!}
+                  style={sharedStyle}
+                  onMouseEnter={e => (e.currentTarget.style.background = "var(--color-background-secondary,#f5f5f5)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "var(--color-background-primary,#fff)")}
+                >
+                  {inner}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+
     </div>
   );
 }

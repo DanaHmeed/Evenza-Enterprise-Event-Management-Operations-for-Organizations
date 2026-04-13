@@ -1,6 +1,4 @@
 // app/api/organizer/feedbacks/route.ts
-// CONSOLIDATED: Replaces the N+1 pattern (fetch all events → fetch feedback per event)
-// with a single Prisma query joining Feedback → Event filtered by organizerId.
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db/prisma";

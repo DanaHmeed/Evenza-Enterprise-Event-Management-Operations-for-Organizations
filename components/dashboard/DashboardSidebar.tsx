@@ -30,6 +30,7 @@ const t = {
   textSecondary:"#212020",
   textMuted:    "#bbbbbb",
   sans:         "'DM Sans', sans-serif",
+  rubik:        "'Rubik', sans-serif",
 };
 
 interface NavItem {
@@ -91,7 +92,7 @@ function NavContent({
   onNavigate?:  () => void;
 }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", fontFamily: t.sans }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", fontFamily: t.rubik }}>
 
       {/* ── Logo ── */}
       <div
@@ -122,7 +123,7 @@ function NavContent({
                 gap: "6px",
                 textDecoration: "none",
                 fontSize: "16px",
-                fontWeight: 500,
+                fontWeight: 400,
                 letterSpacing: "-0.02em",
                 color: t.text,
                 flexShrink: 0,
@@ -179,7 +180,7 @@ function NavContent({
               <p
                 style={{
                   fontSize: "10px",
-                  fontWeight: 500,
+                  fontWeight: 400,
                   textTransform: "uppercase",
                   letterSpacing: "0.1em",
                   color: t.textMuted,
@@ -217,6 +218,7 @@ function NavContent({
                       color: active ? t.text : t.textSecondary,
                       background: active ? t.bgActive : "transparent",
                       transition: "background 0.12s, color 0.12s",
+                      fontFamily: "Rubik, sans-serif",
                     }}
                     onMouseEnter={(e) => {
                       if (!active) {
@@ -248,7 +250,7 @@ function NavContent({
                           <span
                             style={{
                               fontSize: "10px",
-                              fontWeight: 500,
+                              fontWeight: 400,
                               color: t.text,
                               background: t.bgActive,
                               border: `1px solid ${t.border}`,

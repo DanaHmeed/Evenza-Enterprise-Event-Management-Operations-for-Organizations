@@ -1,9 +1,26 @@
-// app/dashboard/revenue/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-import { CreditCard, Search, CheckCircle2, Loader2, RefreshCw, AlertCircle } from "lucide-react";
-import { t, StatusBadge, StatCard, FilterButton, OrganizerLoading, OrganizerEmpty, OrganizerPagination } from "@/components/dashboard/OrganizerUI";
+import { useEffect, useState, useCallback } from "react";
+import {
+  CreditCard,
+  Search,
+  CheckCircle2,
+  Loader2,
+  RefreshCw,
+  AlertCircle,
+  ChevronRight,
+  Download,
+} from "lucide-react";
+import Link from "next/link";
+import {
+  t,
+  StatusBadge,
+  FilterButton,
+  OrganizerLoading,
+  OrganizerEmpty,
+  OrganizerPagination,
+} from "@/components/dashboard/OrganizerUI";
+import ActionToast from "@/components/modals/ActionToast";
 
 interface Order {
   id: string;
@@ -29,40 +46,100 @@ interface Stats {
 
 type Filter = "ALL" | "PAID" | "PENDING" | "FAILED" | "REFUNDED";
 
-const ACTION_MAP: Record<string, string> = { PAID: "mark_paid", FAILED: "mark_failed", REFUNDED: "refund" };
+const ACTION_MAP: Record<string, string> = {
+  PAID: "mark_paid",
+  FAILED: "mark_failed",
+  REFUNDED: "refund",
+};
 
+const METHOD_LABEL: Record<string, string> = {
+  STRIPE: "Stripe",
+  CASH: "Cash",
+  BANK_TRANSFER: "Bank",
+  JAWWAL_PAY: "Jawwal",
+};
+
+/* ─── Stat tile ─────────────────────────────────────────────────────────── */
+function StatTile({
+  label,
+  value,
+  sub,
+  color = t.text,
+}: {
+  label: string;
+  value: string | number;
+  sub?: string;
+  color?: string;
+}) {
+  return (
+    <div style={{
+      background: "#fff",
+      borderWidth: "1px", borderStyle: "solid", borderColor: t.borderLight,
+      borderRadius: 6, padding: "16px 20px",
+      flex: "1 1 0", minWidth: 0,
+    }}>
+      <p style={{ fontSize: 22, fontWeight: 600, color, margin: 0}}>
+        {value}
+      </p>
+      <p style={{
+        fontSize: 10, fontWeight: 700, color: t.textFaint, margin: "3px 0 0",
+        textTransform: "uppercase", letterSpacing: "0.08em"
+      }}>
+        {label}
+      </p>
+      {sub && (
+        <p style={{ fontSize: 11, color: t.textFaint, margin: "4px 0 0" }}>{sub}</p>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Page
+═══════════════════════════════════════════════════════════════════════ */
 export default function OrganizerRevenuePage() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [stats, setStats] = useState<Stats>({ totalRevenue: 0, totalOrders: 0, paidCount: 0, pendingCount: 0, failedCount: 0, refundedCount: 0 });
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<Filter>("ALL");
-  const [page, setPage] = useState(1);
+  const [orders, setOrders]     = useState<Order[]>([]);
+  const [stats, setStats]       = useState<Stats>({
+    totalRevenue: 0, totalOrders: 0,
+    paidCount: 0, pendingCount: 0, failedCount: 0, refundedCount: 0,
+  });
+  const [loading, setLoading]   = useState(true);
+  const [search, setSearch]     = useState("");
+  const [filter, setFilter]     = useState<Filter>("ALL");
+  const [page, setPage]         = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [toast, setToast]       = useState<{ message: string; description?: string; variant: "success" | "error" } | null>(null);
 
-  const fetchOrders = async (currentFilter: Filter, currentSearch: string, currentPage: number) => {
+  const fetchOrders = useCallback(async (
+    f: Filter, s: string, p: number
+  ) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(currentPage), pageSize: "20" });
-      if (currentFilter !== "ALL") params.set("status", currentFilter);
-      if (currentSearch) params.set("search", currentSearch);
+      const qs = new URLSearchParams({ page: String(p), pageSize: "20" });
+      if (f !== "ALL") qs.set("status", f);
+      if (s) qs.set("search", s);
 
-      const res = await fetch(`/api/organizer/orders?${params}`);
+      const res = await fetch(`/api/organizer/orders?${qs}`);
       if (!res.ok) return;
       const data = await res.json();
 
       setOrders(data.data || []);
       setStats(data.stats || { totalRevenue: 0, totalOrders: 0, paidCount: 0, pendingCount: 0, failedCount: 0, refundedCount: 0 });
       setTotalPages(data.pagination?.totalPages || 1);
-    } catch { console.error("Failed to fetch orders"); }
-    finally { setLoading(false); }
-  };
+    } catch {
+      setToast({ message: "Failed to load orders", variant: "error" });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  useEffect(() => { fetchOrders(filter, search, page); }, [filter, search, page]);
+  useEffect(() => { fetchOrders(filter, search, page); }, [filter, search, page, fetchOrders]);
 
   const markAs = async (orderId: string, paymentStatus: "PAID" | "REFUNDED" | "FAILED") => {
-    const label = paymentStatus === "PAID" ? "mark as paid" : paymentStatus === "REFUNDED" ? "refund" : "mark as failed";
+    const label =
+      paymentStatus === "PAID"     ? "mark as paid" :
+      paymentStatus === "REFUNDED" ? "refund" : "mark as failed";
     if (!confirm(`Are you sure you want to ${label} this order?`)) return;
 
     setProcessing(orderId);
@@ -73,100 +150,288 @@ export default function OrganizerRevenuePage() {
         body: JSON.stringify({ action: ACTION_MAP[paymentStatus] }),
       });
       if (res.ok) {
-        // Refresh current page to get accurate data
         fetchOrders(filter, search, page);
+        setToast({
+          message: paymentStatus === "PAID" ? "Payment confirmed" : paymentStatus === "REFUNDED" ? "Order refunded" : "Order marked failed",
+          description: paymentStatus === "PAID" ? "Registration and ticket have been issued." : undefined,
+          variant: paymentStatus === "FAILED" ? "error" : "success",
+        });
       } else {
-        const data = await res.json();
-        alert(data.error || "Failed to update order");
+        const d = await res.json();
+        setToast({ message: d.error || "Failed to update order", variant: "error" });
       }
-    } catch { alert("Failed to update"); }
-    finally { setProcessing(null); }
+    } catch {
+      setToast({ message: "Network error", variant: "error" });
+    } finally { setProcessing(null); }
   };
 
-  const totalRevenue = stats.totalRevenue;
-  const paidCount = stats.paidCount;
-  const pendingCount = stats.pendingCount;
-  const fmtDate = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  const methodLabel: Record<string, string> = { STRIPE: "Stripe", CASH: "Cash", BANK_TRANSFER: "Bank", JAWWAL_PAY: "Jawwal" };
-  const isManual = (method: string) => ["CASH", "BANK_TRANSFER", "JAWWAL_PAY"].includes(method);
+  /* ── export CSV ── */
+  const exportCSV = () => {
+    const rows = [["Order", "User", "Email", "Event", "Method", "Amount", "Status", "Date"]];
+    orders.forEach((o) => rows.push([
+      o.orderNumber, o.user.name, o.user.email, o.event.title,
+      METHOD_LABEL[o.paymentMethod] || o.paymentMethod,
+      `${o.currency} ${o.amount}`, o.paymentStatus,
+      new Date(o.createdAt).toLocaleDateString(),
+    ]));
+    const blob = new Blob([rows.map((r) => r.join(",")).join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "revenue.csv"; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const isManual = (m: string) => ["CASH", "BANK_TRANSFER", "JAWWAL_PAY"].includes(m);
+  const fmtDate  = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const fmtMoney = (n: number, cur = "USD") =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: cur, minimumFractionDigits: 0 }).format(n);
+
   const filters: Filter[] = ["ALL", "PAID", "PENDING", "FAILED", "REFUNDED"];
 
+  const card: React.CSSProperties = {
+    background: "#fff",
+    borderWidth: "1px", borderStyle: "solid", borderColor: t.borderLight,
+    borderRadius: 6, overflow: "hidden",
+  };
+
   return (
-    <div style={{ fontFamily: t.sans }}>
-      <div style={{ marginBottom: "24px" }}>
-        <h1 style={{ fontFamily: t.serif, fontSize: "24px", fontWeight: 600, color: t.text, margin: 0 }}>Revenue</h1>
-        <p style={{ fontSize: "13px", color: t.textMuted, marginTop: "4px" }}>Payment history across your events.</p>
-      </div>
+    <>
+      {toast && <ActionToast {...toast} duration={4000} onClose={() => setToast(null)} />}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "12px", marginBottom: "28px" }}>
-        <StatCard label="Total Revenue" value={`$${totalRevenue.toLocaleString()}`} sub={`${paidCount} paid orders`} />
-        <StatCard label="Total Orders" value={stats.totalOrders} />
-        <StatCard label="Pending" value={pendingCount} sub={pendingCount > 0 ? "awaiting confirmation" : undefined} />
-      </div>
+      <div style={{  minHeight: "100vh", background: "#f7f7f4" }}>
 
-      {pendingCount > 0 && (
-        <div style={{ marginBottom: "20px", padding: "12px 16px", background: t.amberSoft, borderRadius: "6px", fontSize: "13px", fontWeight: 500, color: t.amber, display: "flex", alignItems: "center", gap: "8px" }}>
-          <AlertCircle style={{ width: "14px", height: "14px" }} />
-          {pendingCount} order{pendingCount > 1 ? "s" : ""} pending — manual payments need your confirmation.
-        </div>
-      )}
-
-      <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
-        <div style={{ position: "relative", flex: "1 1 280px", maxWidth: "320px" }}>
-          <Search style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", width: "14px", height: "14px", color: t.textFaint }} />
-          <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Search user or event..."
-            style={{ width: "100%", padding: "9px 14px 9px 34px", fontSize: "13px", fontFamily: t.sans, border: `1px solid ${t.border}`, borderRadius: "4px", outline: "none", color: t.text, background: t.surface }} />
-        </div>
-        <div style={{ display: "flex", gap: "4px" }}>
-          {filters.map((f) => <FilterButton key={f} label={f === "ALL" ? "All" : f.charAt(0) + f.slice(1).toLowerCase()} active={filter === f} onClick={() => { setFilter(f); setPage(1); }} />)}
-        </div>
-      </div>
-
-      {loading ? <OrganizerLoading /> : orders.length === 0 ? (
-        <OrganizerEmpty icon={<CreditCard style={{ width: "32px", height: "32px" }} />} message="No orders found." />
-      ) : (
-        <div style={{ background: t.surface, border: `1px solid ${t.borderLight}`, borderRadius: "6px", overflow: "hidden" }}>
-          <div className="hidden md:grid" style={{ gridTemplateColumns: "2fr 2fr 1fr 1fr 1fr 1fr 140px", gap: "8px", padding: "10px 20px", background: t.borderLight, fontSize: "10px", fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: t.textFaint }}>
-            <span>User</span><span>Event</span><span>Method</span><span>Amount</span><span>Status</span><span>Date</span><span style={{ textAlign: "right" }}>Actions</span>
+        {/* ── Sticky top bar ── */}
+        <div style={{
+          position: "sticky", top: 0, zIndex: 50,
+          background: "#fff", borderBottom: `1px solid ${t.borderLight}`,
+          padding: "0 24px", height: 52,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          boxShadow: "0 1px 0 rgba(0,0,0,0.04)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: t.textMuted }}>
+            <Link href="/dashboard" style={{ color: t.textMuted, textDecoration: "none", fontWeight: 500 }}>
+              Dashboard
+            </Link>
+            <ChevronRight style={{ width: 13, height: 13, opacity: 0.4 }} />
+            <span style={{ color: t.text, fontWeight: 600 }}>Revenue</span>
           </div>
-          {orders.map((o, i) => {
-            const pending = o.paymentStatus === "PENDING" && isManual(o.paymentMethod);
-            return (
-              <div key={o.id} style={{ display: "grid", gridTemplateColumns: "2fr 2fr 1fr 1fr 1fr 1fr 140px", gap: "8px", padding: "12px 20px", alignItems: "center", borderTop: i > 0 ? `1px solid ${t.borderLight}` : "none", borderLeft: pending ? `3px solid ${t.amber}` : "none", transition: "background 0.1s" }} className="grid-cols-1 md:grid-cols-none"
-                onMouseEnter={(e) => (e.currentTarget.style.background = t.bg)}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
-                <div style={{ minWidth: 0 }}>
-                  <p style={{ fontSize: "13px", fontWeight: 600, color: t.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.user.name}</p>
-                  <p style={{ fontSize: "11px", color: t.textFaint, margin: 0 }}>{o.user.email}</p>
-                </div>
-                <p style={{ fontSize: "13px", color: t.textSecondary, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.event.title}</p>
-                <span style={{ fontSize: "12px", color: t.textMuted }}>{methodLabel[o.paymentMethod] || o.paymentMethod}</span>
-                <span style={{ fontSize: "13px", fontWeight: 600, color: t.text, fontVariantNumeric: "tabular-nums" }}>${o.amount}</span>
-                <StatusBadge status={o.paymentStatus} />
-                <span style={{ fontSize: "12px", color: t.textFaint }}>{fmtDate(o.createdAt)}</span>
 
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: "4px" }}>
-                  {pending && (
-                    <button onClick={() => markAs(o.id, "PAID")} disabled={processing === o.id}
-                      style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "5px 10px", fontSize: "11px", fontWeight: 600, fontFamily: t.sans, color: t.green, background: t.greenSoft, border: "none", borderRadius: "3px", cursor: "pointer", opacity: processing === o.id ? 0.5 : 1 }}>
-                      {processing === o.id ? <Loader2 className="animate-spin" style={{ width: "11px", height: "11px" }} /> : <CheckCircle2 style={{ width: "11px", height: "11px" }} />}
-                      Mark Paid
-                    </button>
-                  )}
-                  {o.paymentStatus === "PAID" && (
-                    <button onClick={() => markAs(o.id, "REFUNDED")} disabled={processing === o.id}
-                      style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "5px 10px", fontSize: "11px", fontWeight: 600, fontFamily: t.sans, color: t.textMuted, background: t.borderLight, border: "none", borderRadius: "3px", cursor: "pointer", opacity: processing === o.id ? 0.5 : 1 }}>
-                      <RefreshCw style={{ width: "11px", height: "11px" }} />
-                      Refund
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          <button
+            onClick={exportCSV}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              padding: "7px 14px", fontSize: 13, fontWeight: 500,
+              borderWidth: "1px", borderStyle: "solid", borderColor: t.border,
+              borderRadius: 4, background: "#fff", color: t.textSecondary,
+              cursor: "pointer",
+            }}
+          >
+            <Download style={{ width: 13, height: 13 }} />
+            Export CSV
+          </button>
         </div>
-      )}
-      <OrganizerPagination page={page} totalPages={totalPages} onPageChange={setPage} />
-    </div>
+
+        {/* ── Body ── */}
+        <div style={{ maxWidth: 1240, margin: "0 auto", padding: "28px 24px 60px" }}>
+
+          {/* Heading */}
+          <div style={{ marginBottom: 20 }}>
+            <h1 style={{ fontSize: 26, fontWeight: 500, color: t.text, margin: 0 }}>
+              Revenue
+            </h1>
+            <p style={{ fontSize: 13, color: t.textMuted, marginTop: 4 }}>
+              Payment history across all your events.
+            </p>
+          </div>
+
+          {/* Stat tiles */}
+          <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
+            <StatTile
+              label="Total Revenue"
+              value={fmtMoney(stats.totalRevenue)}
+              sub={`${stats.paidCount} paid order${stats.paidCount !== 1 ? "s" : ""}`}
+              color={t.green}
+            />
+            <StatTile label="Total Orders" value={stats.totalOrders} />
+            <StatTile label="Pending"  value={stats.pendingCount}  color={stats.pendingCount  > 0 ? t.amber : t.text} />
+            <StatTile label="Failed"   value={stats.failedCount}   color={stats.failedCount   > 0 ? t.red   : t.text} />
+            <StatTile label="Refunded" value={stats.refundedCount} color={t.textFaint} />
+          </div>
+
+          {/* Pending banner */}
+          {stats.pendingCount > 0 && (
+            <div style={{
+              marginBottom: 20, padding: "12px 16px",
+              background: t.amberSoft, borderRadius: 6,
+              fontSize: 13, fontWeight: 500, color: t.amber,
+              display: "flex", alignItems: "center", gap: 8,
+              borderWidth: "1px", borderStyle: "solid", borderColor: "#fde68a",
+            }}>
+              <AlertCircle style={{ width: 14, height: 14, flexShrink: 0 }} />
+              {stats.pendingCount} order{stats.pendingCount > 1 ? "s" : ""} pending — manual payments need your confirmation.
+            </div>
+          )}
+
+          {/* Filters */}
+          <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
+            <div style={{ position: "relative", flex: "1 1 260px", maxWidth: 340 }}>
+              <Search style={{
+                position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)",
+                width: 14, height: 14, color: t.textFaint, pointerEvents: "none",
+              }} />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                placeholder="Search user or event…"
+                style={{
+                  width: "100%", padding: "9px 14px 9px 34px", fontSize: 13,
+                  borderWidth: "1px", borderStyle: "solid", borderColor: t.border,
+                  borderRadius: 4, outline: "none", color: t.text, background: "#fff",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+              {filters.map((f) => (
+                <FilterButton
+                  key={f}
+                  label={f === "ALL" ? "All" : f.charAt(0) + f.slice(1).toLowerCase()}
+                  active={filter === f}
+                  onClick={() => { setFilter(f); setPage(1); }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Table */}
+          {loading ? (
+            <OrganizerLoading />
+          ) : orders.length === 0 ? (
+            <OrganizerEmpty
+              icon={<CreditCard style={{ width: 32, height: 32 }} />}
+              message="No orders found."
+            />
+          ) : (
+            <div style={card}>
+              {/* Header */}
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "2fr 2fr 1fr 1fr 1fr 1fr 140px",
+                gap: 8, padding: "10px 20px",
+                background: t.borderLight,
+                fontSize: 10, fontWeight: 700,
+                textTransform: "uppercase", letterSpacing: "0.08em", color: t.textFaint,
+              }}>
+                <span>User</span>
+                <span>Event</span>
+                <span>Method</span>
+                <span>Amount</span>
+                <span>Status</span>
+                <span>Date</span>
+                <span style={{ textAlign: "right" }}>Actions</span>
+              </div>
+
+              {orders.map((o, i) => {
+                const isPendingManual = o.paymentStatus === "PENDING" && isManual(o.paymentMethod);
+                return (
+                  <div
+                    key={o.id}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "2fr 2fr 1fr 1fr 1fr 1fr 140px",
+                      gap: 8, padding: "12px 20px", alignItems: "center",
+                      borderTop: i > 0 ? `1px solid ${t.borderLight}` : "none",
+                      borderLeft: isPendingManual ? `3px solid ${t.amber}` : "3px solid transparent",
+                      transition: "background 0.1s",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "#fafaf6")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  >
+                    {/* User */}
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: t.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {o.user.name}
+                      </p>
+                      <p style={{ fontSize: 11, color: t.textFaint, margin: 0 }}>{o.user.email}</p>
+                    </div>
+
+                    {/* Event */}
+                    <Link
+                      href={`/dashboard/events/${o.event.id}/attendees`}
+                      style={{ fontSize: 13, color: t.textSecondary, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}
+                      onMouseEnter={(e) => ((e.target as HTMLElement).style.color = t.accent)}
+                      onMouseLeave={(e) => ((e.target as HTMLElement).style.color = t.textSecondary)}
+                    >
+                      {o.event.title}
+                    </Link>
+
+                    {/* Method */}
+                    <span style={{ fontSize: 12, color: t.textMuted }}>
+                      {METHOD_LABEL[o.paymentMethod] || o.paymentMethod}
+                    </span>
+
+                    {/* Amount */}
+                    <span style={{ fontSize: 13, fontWeight: 600, color: t.text, fontVariantNumeric: "tabular-nums" }}>
+                      {fmtMoney(o.amount, o.currency)}
+                    </span>
+
+                    {/* Status */}
+                    <StatusBadge status={o.paymentStatus} />
+
+                    {/* Date */}
+                    <span style={{ fontSize: 12, color: t.textFaint }}>{fmtDate(o.createdAt)}</span>
+
+                    {/* Actions */}
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: 4 }}>
+                      {isPendingManual && (
+                        <button
+                          onClick={() => markAs(o.id, "PAID")}
+                          disabled={processing === o.id}
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: 4,
+                            padding: "5px 10px", fontSize: 11, fontWeight: 600,
+                            color: t.green, background: t.greenSoft,
+                            border: "none", borderRadius: 3,
+                            cursor: processing === o.id ? "default" : "pointer",
+                            opacity: processing === o.id ? 0.5 : 1,
+                          }}
+                        >
+                          {processing === o.id
+                            ? <Loader2 className="animate-spin" style={{ width: 11, height: 11 }} />
+                            : <CheckCircle2 style={{ width: 11, height: 11 }} />}
+                          Mark Paid
+                        </button>
+                      )}
+                      {o.paymentStatus === "PAID" && (
+                        <button
+                          onClick={() => markAs(o.id, "REFUNDED")}
+                          disabled={processing === o.id}
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: 4,
+                            padding: "5px 10px", fontSize: 11, fontWeight: 600,
+                            color: t.textMuted, background: t.borderLight,
+                            border: "none", borderRadius: 3,
+                            cursor: processing === o.id ? "default" : "pointer",
+                            opacity: processing === o.id ? 0.5 : 1,
+                          }}
+                        >
+                          {processing === o.id
+                            ? <Loader2 className="animate-spin" style={{ width: 11, height: 11 }} />
+                            : <RefreshCw style={{ width: 11, height: 11 }} />}
+                          Refund
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <OrganizerPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        </div>
+      </div>
+    </>
   );
 }

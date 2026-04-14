@@ -6,266 +6,128 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import {
-  LayoutDashboard,
-  Users,
-  CalendarDays,
-  MessageSquare,
-  ChevronLeft,
-  ChevronRight,
-  X,
-  DollarSign,
-  Tag,
-  Mail,
+  LayoutDashboard, Users, CalendarDays, MessageSquare,
+  ChevronLeft, X, DollarSign, Tag, Mail,
 } from "lucide-react";
+import { t } from "@/components/admin/AdminUI";
 
-/* ═══════════════════════════════════════════
-   Design tokens
-   ═══════════════════════════════════════════ */
-const t = {
-  bg: "#fff",
-  bgHover: "#fafaf8",
-  bgActive: "#f5f5f0",
-  border: "#e5e5e0",
-  borderLight: "#f0f0ec",
-  text: "#1a1a1a",
-  textSecondary: "#555",
-  textMuted: "#888",
-  textFaint: "#bbb",
-  accent: "#e63946",
-  accentSoft: "rgba(230,57,70,0.06)",
-  sans: "'DM Sans', sans-serif",
-};
+interface NavItem  { label: string; href: string; icon: React.ReactNode; count?: number }
+interface NavGroup { title: string; items: NavItem[] }
 
-interface NavItem {
-  label: string;
-  href: string;
-  icon: React.ReactNode;
-  count?: number;
-}
-
-interface NavGroup {
-  title: string;
-  items: NavItem[];
-}
-
-const iconSize = { width: "20px", height: "20px" };
+const SZ = { width: "16px", height: "16px" };
 
 const navGroups: NavGroup[] = [
   {
     title: "Overview",
     items: [
-      {
-        label: "Dashboard",
-        href: "/admin",
-        icon: <LayoutDashboard style={iconSize} />,
-      },
+      { label: "Dashboard",   href: "/admin",            icon: <LayoutDashboard style={SZ} /> },
     ],
   },
   {
     title: "Management",
     items: [
-      {
-        label: "Users",
-        href: "/admin/users",
-        icon: <Users style={iconSize} />,
-      },
-      {
-        label: "Events",
-        href: "/admin/events",
-        icon: <CalendarDays style={iconSize} />,
-      },
-      {
-        label: "Orders",
-        href: "/admin/orders",
-        icon: <DollarSign style={iconSize} />,
-      },
-      {
-        label: "Feedback",
-        href: "/admin/feedback",
-        icon: <MessageSquare style={iconSize} />,
-      },
+      { label: "Users",       href: "/admin/users",      icon: <Users       style={SZ} /> },
+      { label: "Events",      href: "/admin/events",     icon: <CalendarDays style={SZ} /> },
+      { label: "Orders",      href: "/admin/orders",     icon: <DollarSign  style={SZ} /> },
+      { label: "Feedback",    href: "/admin/feedback",   icon: <MessageSquare style={SZ} /> },
     ],
   },
   {
     title: "Content",
     items: [
-      {
-        label: "Categories",
-        href: "/admin/categories",
-        icon: <Tag style={iconSize} />,
-      },
-      {
-        label: "Messages",
-        href: "/admin/messages",
-        icon: <Mail style={iconSize} />,
-      },
+      { label: "Categories",  href: "/admin/categories", icon: <Tag         style={SZ} /> },
+      { label: "Messages",    href: "/admin/messages",   icon: <Mail        style={SZ} /> },
     ],
   },
 ];
 
-export default function AdminSidebar() {
-  const pathname = usePathname();
-  const { user } = useUser();
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+interface NavContentProps {
+  collapsed: boolean;
+  setCollapsed: (v: boolean) => void;
+  isActive: (href: string) => boolean;
+  user: ReturnType<typeof useUser>["user"];
+  onNavigate?: () => void;
+}
 
-  const isActive = (href: string) => {
-    if (href === "/admin") return pathname === "/admin";
-    return pathname.startsWith(href);
-  };
+/* ─── Shared nav content ─── */
+function NavContent({ collapsed, setCollapsed, isActive, user, onNavigate }: NavContentProps) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", //fontFamily: t.sans 
+      }}>
 
-  const NavContent = ({ onNavigate }: { onNavigate?: () => void }) => (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        fontFamily: t.sans,
-      }}
-    >
-      {/* ── Logo area ── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          height: "64px",
-          padding: collapsed ? "0 12px" : "0 20px",
-          borderBottom: `1px solid ${t.borderLight}`,
-          flexShrink: 0,
-        }}
-       >
-        <Link
-          href="/"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            flexShrink: 0,
-          }}
-        >
-          <img
-            src="/icons/Logomark.png"
-            alt="Evenza"
-            style={{
-              height: collapsed ? "34px" : "34px",
-              width: "auto",
-              display: "block",
-            }}
-          />
-
-          {!collapsed && (
-            <img
-              src="/icons/text.png"
-              alt="Evenza"
+      {/* Logo row */}
+      <div style={{
+        height: "60px", padding: collapsed ? "0 14px" : "0 18px",
+        borderBottom: `1px solid ${t.borderLight}`,
+        display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0,
+      }}>
+        {collapsed ? (
+          <div onClick={() => setCollapsed(false)} style={{ cursor: "pointer", display: "flex", alignItems: "center" }}>
+            <img src="/icons/Logomark.png" alt="Evenza"
+              style={{ height: "18px", width: "auto", filter: "brightness(0) invert(1)" }} />
+          </div>
+        ) : (
+          <>
+            <Link href="/" style={{
+              display: "flex", alignItems: "center", gap: "8px",
+              textDecoration: "none", fontSize: "15px", fontWeight: 600,
+              letterSpacing: "-0.02em", color: t.text, flexShrink: 0,
+            }}>
+              <img src="/icons/Logomark.png" alt=""
+                style={{ height: "18px", width: "auto", filter: "brightness(0) invert(1)" }} />
+              <span>Evenza</span>
+              <span style={{
+                fontSize: "9px", fontWeight: 700, letterSpacing: "0.1em",
+                textTransform: "uppercase", color: t.accent,
+                background: t.accentSoft, padding: "2px 5px", borderRadius: "3px",
+              }}>
+                Admin
+              </span>
+            </Link>
+            <div style={{ flex: 1 }} />
+            <button
+              onClick={() => setCollapsed(true)}
               style={{
-                height: "14px",
-                width: "auto",
-                display: "block",
-                alignItems: "center",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                width: "26px", height: "26px", borderRadius: "5px",
+                border: "none", background: "transparent", color: t.textMuted,
+                cursor: "pointer", transition: "background 0.15s, color 0.15s",
               }}
-            />
-          )}
-        </Link>
-
-        {!collapsed && (
-          <button
-            onClick={() => setCollapsed(true)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "28px",
-              height: "28px",
-              borderRadius: "4px",
-              border: "none",
-              background: "transparent",
-              color: t.textFaint,
-              cursor: "pointer",
-              transition: "color 0.15s, background 0.15s",
-              marginLeft: "60px",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = t.bgHover;
-              e.currentTarget.style.color = t.textMuted;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.color = t.textFaint;
-            }}
-            className="hidden lg:flex"
-          >
-            <ChevronLeft style={{ width: "16px", height: "16px" }} />
-          </button>
-        )}
-
-        {collapsed && (
-          <button
-            onClick={() => setCollapsed(false)}
-            style={{
-              position: "absolute",
-              right: "-12px",
-              top: "20px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "20px",
-              height: "20px",
-              borderRadius: "50%",
-              border: `1px solid ${t.border}`,
-              background: t.bg,
-              color: t.textMuted,
-              cursor: "pointer",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-              zIndex: 10,
-            }}
-            className="hidden lg:flex"
-          >
-            <ChevronRight style={{ width: "14px", height: "14px" }} />
-          </button>
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = t.surfaceActive;
+                e.currentTarget.style.color = t.textSecondary;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.color = t.textMuted;
+              }}
+            >
+              <ChevronLeft style={{ width: "14px", height: "14px" }} />
+            </button>
+          </>
         )}
       </div>
 
-      {/* ── Navigation ── */}
-      <nav
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          padding: collapsed ? "16px 8px" : "16px 12px",
-        }}
-      >
+      {/* Nav groups */}
+      <nav style={{
+        flex: 1, overflowY: "auto", scrollbarWidth: "none",
+        padding: collapsed ? "16px 8px" : "16px 10px",
+      }}>
         {navGroups.map((group, gi) => (
-          <div key={gi} style={{ marginBottom: "24px" }}>
-            {/* Group title */}
+          <div key={gi} style={{ marginBottom: "26px" }}>
             {!collapsed && (
-              <p
-                style={{
-                  fontSize: "10px",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.14em",
-                  color: t.textFaint,
-                  padding: "0 10px",
-                  margin: "0 0 8px 0",
-                  fontFamily: t.sans,
-                }}
-              >
+              <p style={{
+                fontSize: "9px", fontWeight: 700, textTransform: "uppercase",
+                letterSpacing: "0.18em", color: t.textFaint,
+                padding: "0 10px", margin: "0 0 6px 0", 
+              }}>
                 {group.title}
               </p>
             )}
-
             {collapsed && gi > 0 && (
-              <div
-                style={{
-                  height: "1px",
-                  background: t.borderLight,
-                  margin: "0 4px 12px",
-                }}
-              />
+              <div style={{ height: "1px", background: t.borderLight, margin: "0 4px 14px" }} />
             )}
-
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "2px" }}
-            >
+            <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
               {group.items.map((item) => {
                 const active = isActive(item.href);
                 return (
@@ -275,54 +137,54 @@ export default function AdminSidebar() {
                     onClick={onNavigate}
                     title={collapsed ? item.label : undefined}
                     style={{
+                      position: "relative",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: collapsed ? "center" : "flex-start",
-                      gap: "12px",
-                      padding: collapsed ? "10px" : "9px 12px",
-                      borderRadius: "6px",
+                      gap: "10px",
+                      padding: collapsed ? "9px" : "8px 12px",
+                      borderRadius: "5px",
                       textDecoration: "none",
-                      fontSize: "14px",
-                      fontWeight: active ? 600 : 500,
-                      fontFamily: t.sans,
+                      fontSize: "13px",
+                      fontWeight: active ? 600 : 400,
+                      //fontFamily: t.sans,
                       color: active ? t.text : t.textSecondary,
-                      background: active ? t.bgActive : "transparent",
+                      background: active ? t.accentSoft : "transparent",
                       transition: "background 0.12s, color 0.12s",
+                      overflow: "hidden",
                     }}
                     onMouseEnter={(e) => {
                       if (!active) {
-                        e.currentTarget.style.background = t.bgHover;
-                        e.currentTarget.style.color = t.text;
+                        (e.currentTarget as HTMLAnchorElement).style.background = t.surface;
+                        (e.currentTarget as HTMLAnchorElement).style.color = t.text;
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!active) {
-                        e.currentTarget.style.background = "transparent";
-                        e.currentTarget.style.color = t.textSecondary;
+                        (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
+                        (e.currentTarget as HTMLAnchorElement).style.color = t.textSecondary;
                       }
                     }}
                   >
-                    <span
-                      style={{
-                        display: "flex",
-                        flexShrink: 0,
-                        color: active ? t.text : t.textMuted,
-                      }}
-                    >
+                    {/* Active left bar */}
+                    {active && !collapsed && (
+                      <div style={{
+                        position: "absolute", left: 0, top: "20%", bottom: "20%",
+                        width: "2px", borderRadius: "0 2px 2px 0", background: t.accent,
+                      }} />
+                    )}
+                    <span style={{ display: "flex", flexShrink: 0, color: active ? t.accent : t.textMuted, transition: "color 0.12s" }}>
                       {item.icon}
                     </span>
                     {!collapsed && (
                       <>
                         <span style={{ flex: 1 }}>{item.label}</span>
                         {item.count !== undefined && item.count > 0 && (
-                          <span
-                            style={{
-                              fontSize: "11px",
-                              fontWeight: 600,
-                              color: t.textFaint,
-                              fontVariantNumeric: "tabular-nums",
-                            }}
-                          >
+                          <span style={{
+                            fontSize: "10px", fontWeight: 700, color: t.accent,
+                            background: t.accentSoft, padding: "1px 6px",
+                            borderRadius: "20px", fontVariantNumeric: "tabular-nums",
+                          }}>
                             {item.count}
                           </span>
                         )}
@@ -336,76 +198,42 @@ export default function AdminSidebar() {
         ))}
       </nav>
 
-      {/* ── User area ── */}
-      <div
-        style={{
-          borderTop: `1px solid ${t.borderLight}`,
-          padding: collapsed ? "16px 8px" : "16px 16px",
-          flexShrink: 0,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            justifyContent: collapsed ? "center" : "flex-start",
-          }}
-        >
+      {/* User footer */}
+      <div style={{
+        borderTop: `1px solid ${t.borderLight}`,
+        padding: collapsed ? "14px 8px" : "14px",
+        flexShrink: 0,
+      }}>
+        <div style={{
+          display: "flex", alignItems: "center", gap: "10px",
+          justifyContent: collapsed ? "center" : "flex-start",
+        }}>
           {user?.imageUrl ? (
-            <img
-              src={user.imageUrl}
-              alt=""
-              style={{
-                width: "32px",
-                height: "32px",
-                borderRadius: "50%",
-                objectFit: "cover",
-                flexShrink: 0,
-              }}
-            />
+            <img src={user.imageUrl} alt="" style={{
+              width: "30px", height: "30px", borderRadius: "50%",
+              objectFit: "cover", flexShrink: 0,
+              border: `1px solid ${t.borderLight}`,
+            }} />
           ) : (
-            <div
-              style={{
-                width: "32px",
-                height: "32px",
-                borderRadius: "50%",
-                background: t.bgActive,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <span
-                style={{ fontSize: "13px", fontWeight: 600, color: t.text }}
-              >
+            <div style={{
+              width: "30px", height: "30px", borderRadius: "50%",
+              background: t.accentSoft, display: "flex", alignItems: "center",
+              justifyContent: "center", flexShrink: 0,
+            }}>
+              <span style={{ fontSize: "12px", fontWeight: 700, color: t.accent }}>
                 {user?.firstName?.[0] || "A"}
               </span>
             </div>
           )}
           {!collapsed && (
             <div style={{ minWidth: 0, flex: 1 }}>
-              <p
-                style={{
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  color: t.text,
-                  margin: 0,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
+              <p style={{
+                fontSize: "12px", fontWeight: 600, color: t.text,
+                margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              }}>
                 {user?.fullName || "Admin"}
               </p>
-              <p
-                style={{
-                  fontSize: "11px",
-                  color: t.textMuted,
-                  margin: "1px 0 0",
-                }}
-              >
+              <p style={{ fontSize: "10px", color: t.accent, margin: "1px 0 0", fontWeight: 600, letterSpacing: "0.05em" }}>
                 Administrator
               </p>
             </div>
@@ -414,36 +242,34 @@ export default function AdminSidebar() {
       </div>
     </div>
   );
+}
+
+export default function AdminSidebar() {
+  const pathname    = usePathname();
+  const { user }    = useUser();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const isActive = (href: string) =>
+    href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
 
   return (
     <>
-      {/* ── Mobile toggle ── */}
-
-      {/* ── Mobile overlay ── */}
+      {/* Mobile overlay */}
       {mobileOpen && (
         <div
           className="lg:hidden"
           onClick={() => setMobileOpen(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.3)",
-            zIndex: 40,
-          }}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 40 }}
         />
       )}
 
-      {/* ── Mobile sidebar ── */}
+      {/* Mobile sidebar */}
       <aside
         className="lg:hidden"
         style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          height: "100%",
-          width: "260px",
-          background: t.bg,
-          zIndex: 50,
+          position: "fixed", top: 0, left: 0, height: "100%", width: "250px",
+          background: "#0e0e12", zIndex: 50,
           transform: mobileOpen ? "translateX(0)" : "translateX(-100%)",
           transition: "transform 0.25s ease",
           borderRight: `1px solid ${t.borderLight}`,
@@ -452,41 +278,43 @@ export default function AdminSidebar() {
         <button
           onClick={() => setMobileOpen(false)}
           style={{
-            position: "absolute",
-            top: "16px",
-            right: "16px",
-            width: "28px",
-            height: "28px",
-            borderRadius: "4px",
-            border: "none",
-            background: "transparent",
-            color: t.textMuted,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            position: "absolute", top: "16px", right: "16px",
+            width: "28px", height: "28px", borderRadius: "4px",
+            border: "none", background: "transparent", color: t.textMuted,
+            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
           }}
         >
-          <X style={{ width: "18px", height: "18px" }} />
+          <X style={{ width: "16px", height: "16px" }} />
         </button>
-        <NavContent onNavigate={() => setMobileOpen(false)} />
+        <NavContent
+          collapsed={false}
+          setCollapsed={setCollapsed}
+          isActive={isActive}
+          user={user}
+          onNavigate={() => setMobileOpen(false)}
+        />
       </aside>
 
-      {/* ── Desktop sidebar ── */}
+      {/* Desktop sidebar */}
       <aside
         className="hidden lg:flex"
         style={{
           flexDirection: "column",
-          width: collapsed ? "68px" : "256px",
-          background: t.bg,
+          width: collapsed ? "60px" : "230px",
+          background: "#0e0e12",
           borderRight: `1px solid ${t.borderLight}`,
-          transition: "width 0.2s ease",
+          transition: "width 0.22s ease",
           position: "relative",
           overflow: "visible",
           flexShrink: 0,
         }}
       >
-        <NavContent />
+        <NavContent
+          collapsed={collapsed}
+          setCollapsed={setCollapsed}
+          isActive={isActive}
+          user={user}
+        />
       </aside>
     </>
   );

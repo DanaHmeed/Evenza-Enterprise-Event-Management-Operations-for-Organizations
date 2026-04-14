@@ -2,71 +2,103 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import { ReactNode } from "react";
 
-// ── Design tokens (shared across admin + profile + public pages) ──
+/* ═══════════════════════════════════════════
+   Dark Design Tokens — Evenza Admin
+   ═══════════════════════════════════════════ */
 export const t = {
-  bg: "#fafaf8",
-  surface: "#fff",
-  border: "#e5e5e0",
-  borderLight: "#f0f0ec",
-  text: "#1a1a1a",
-  textSecondary: "#555",
-  textMuted: "#888",
-  textFaint: "#aaa",
-  accent: "#e63946",
-  accentSoft: "rgba(230,57,70,0.07)",
-  green: "#2d6a4f",
-  greenSoft: "rgba(45,106,79,0.08)",
-  amber: "#b45309",
-  amberSoft: "rgba(180,83,9,0.06)",
-  blue: "#1d4ed8",
-  blueSoft: "rgba(29,78,216,0.06)",
-  purple: "#7c3aed",
-  purpleSoft: "rgba(124,58,237,0.06)",
-  dark: "#1a1a2e",
+  // Backgrounds
+  bg:            "#09090c",
+  bgDeep:        "#060608",
+  surface:       "rgba(255,255,255,0.038)",
+  surfaceHover:  "rgba(255,255,255,0.06)",
+  surfaceActive: "rgba(255,255,255,0.09)",
+
+  // Borders
+  border:        "rgba(255,255,255,0.1)",
+  borderLight:   "rgba(255,255,255,0.055)",
+
+  // Text
+  text:          "#f0f0ee",
+  textSecondary: "#9a9a9a",
+  textMuted:     "#666",
+  textFaint:     "#3a3a3a",
+
+  // Accent — Evenza Red
+  accent:        "#e63946",
+  accentHover:   "#c8303d",
+  accentSoft:    "rgba(230,57,70,0.14)",
+  accentGlow:    "rgba(230,57,70,0.06)",
+
+  // Status palette
+  amber:         "#f59e0b",
+  amberSoft:     "rgba(245,158,11,0.13)",
+  blue:          "#60a5fa",
+  blueSoft:      "rgba(96,165,250,0.13)",
+  green:         "#34d399",
+  greenSoft:     "rgba(52,211,153,0.13)",
+  orange:        "#f97316",
+  orangeSoft:    "rgba(249,115,22,0.13)",
+  purple:        "#a78bfa",
+  purpleSoft:    "rgba(167,139,250,0.13)",
+
+  // Typography
   serif: "'Playfair Display', Georgia, serif",
-  sans: "'DM Sans', sans-serif",
+  sans:  "'DM Sans', sans-serif",
+  mono:  "'JetBrains Mono', 'Fira Code', monospace",
+
+  // Legacy alias
+  dark: "#1a1a2e",
 };
 
-// ── Status Badge ──
+/* ════════════════════════════════════════
+   Status Badge
+   ════════════════════════════════════════ */
 const statusStyles: Record<string, { color: string; bg: string }> = {
-  PUBLISHED: { color: t.green, bg: t.greenSoft },
-  APPROVED: { color: t.green, bg: t.greenSoft },
-  PAID: { color: t.green, bg: t.greenSoft },
-  ACTIVE: { color: t.green, bg: t.greenSoft },
-  DRAFT: { color: t.textMuted, bg: t.borderLight },
-  PENDING: { color: t.amber, bg: t.amberSoft },
-  RESERVED: { color: t.amber, bg: t.amberSoft },
-  WAITING: { color: t.amber, bg: t.amberSoft },
-  CANCELLED: { color: t.accent, bg: t.accentSoft },
-  REJECTED: { color: t.accent, bg: t.accentSoft },
-  FAILED: { color: t.accent, bg: t.accentSoft },
-  REFUNDED: { color: t.textMuted, bg: t.borderLight },
-  COMPLETED: { color: t.blue, bg: t.blueSoft },
-  EXPIRED: { color: t.textFaint, bg: t.borderLight },
-  SUSPENDED: { color: t.accent, bg: t.accentSoft },
-  USER: { color: t.textMuted, bg: t.borderLight },
-  ORGANIZER: { color: t.purple, bg: t.purpleSoft },
-  ADMIN: { color: t.accent, bg: t.accentSoft },
+  PUBLISHED: { color: t.green,    bg: t.greenSoft  },
+  APPROVED:  { color: t.green,    bg: t.greenSoft  },
+  PAID:      { color: t.green,    bg: t.greenSoft  },
+  ACTIVE:    { color: t.green,    bg: t.greenSoft  },
+  DRAFT:     { color: t.textMuted,bg: "rgba(255,255,255,0.06)" },
+  PENDING:   { color: t.amber,    bg: t.amberSoft  },
+  RESERVED:  { color: t.amber,    bg: t.amberSoft  },
+  WAITING:   { color: t.amber,    bg: t.amberSoft  },
+  CANCELLED: { color: t.accent,   bg: t.accentSoft },
+  REJECTED:  { color: t.accent,   bg: t.accentSoft },
+  FAILED:    { color: t.accent,   bg: t.accentSoft },
+  REFUNDED:  { color: t.textMuted,bg: "rgba(255,255,255,0.06)" },
+  COMPLETED: { color: t.blue,     bg: t.blueSoft   },
+  EXPIRED:   { color: t.textMuted,bg: "rgba(255,255,255,0.04)" },
+  SUSPENDED: { color: t.accent,   bg: t.accentSoft },
+  USER:      { color: t.textMuted,bg: "rgba(255,255,255,0.06)" },
+  ORGANIZER: { color: t.purple,   bg: t.purpleSoft },
+  ADMIN:     { color: t.accent,   bg: t.accentSoft },
+  ONLINE:    { color: t.green,    bg: t.greenSoft  },
+  OFFLINE:   { color: t.textMuted,bg: "rgba(255,255,255,0.06)" },
 };
 
 export function StatusBadge({ status }: { status: string }) {
-  const s = statusStyles[status] || { color: t.textMuted, bg: t.borderLight };
+  const s = statusStyles[status?.toUpperCase()] ?? {
+    color: t.textMuted,
+    bg:    "rgba(255,255,255,0.06)",
+  };
   return (
     <span
       style={{
-        display: "inline-flex",
-        alignItems: "center",
-        padding: "3px 8px",
-        fontSize: "10px",
-        fontWeight: 600,
-        fontFamily: t.sans,
+        display:       "inline-flex",
+        alignItems:    "center",
+        padding:       "2px 8px",
+        fontSize:      "10px",
+        fontWeight:    700,
+        //fontFamily:    t.sans,
         textTransform: "uppercase",
-        letterSpacing: "0.05em",
-        borderRadius: "3px",
-        color: s.color,
-        background: s.bg,
-        whiteSpace: "nowrap",
+        letterSpacing: "0.06em",
+        borderRadius:  "3px",
+        color:         s.color,
+        background:    s.bg,
+        whiteSpace:    "nowrap",
+        flexShrink:    0,
       }}
     >
       {status}
@@ -74,33 +106,42 @@ export function StatusBadge({ status }: { status: string }) {
   );
 }
 
-// ── Section Header (accent bar + label) ──
+/* ════════════════════════════════════════
+   Section Title
+   ════════════════════════════════════════ */
 export function SectionTitle({
   title,
   action,
 }: {
-  title: string;
-  action?: React.ReactNode;
+  title:   string;
+  action?: ReactNode;
 }) {
   return (
     <div
       style={{
-        display: "flex",
-        alignItems: "center",
+        display:        "flex",
+        alignItems:     "center",
         justifyContent: "space-between",
-        marginBottom: "16px",
+        marginBottom:   "16px",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        <div style={{ width: "24px", height: "2px", background: t.accent }} />
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div
+          style={{
+            width:        "16px",
+            height:       "2px",
+            background:   `linear-gradient(90deg, ${t.accent}, transparent)`,
+            borderRadius: "1px",
+          }}
+        />
         <span
           style={{
-            fontSize: "11px",
-            fontWeight: 600,
+            fontSize:      "11px",
+            fontWeight:    600,
             textTransform: "uppercase",
-            letterSpacing: "0.15em",
-            color: t.textMuted,
-            fontFamily: t.sans,
+            letterSpacing: "0.14em",
+            color:         t.textMuted,
+            //fontFamily:    t.sans,
           }}
         >
           {title}
@@ -111,67 +152,87 @@ export function SectionTitle({
   );
 }
 
-// ── Stat Card ──
+/* ════════════════════════════════════════
+   Stat Card
+   ════════════════════════════════════════ */
 export function StatCard({
   label,
   value,
   sub,
+  accent,
   onClick,
 }: {
-  label: string;
-  value: string | number;
-  sub?: string;
+  label:    string;
+  value:    string | number;
+  sub?:     string;
+  accent?:  boolean;
   onClick?: () => void;
 }) {
   return (
     <div
       onClick={onClick}
       style={{
-        background: t.surface,
-        border: `1px solid ${t.borderLight}`,
+        position:     "relative",
+        background:   t.surface,
+        border:       `1px solid ${t.borderLight}`,
         borderRadius: "6px",
-        padding: "24px",
-        cursor: onClick ? "pointer" : "default",
-        transition: "border-color 0.15s, box-shadow 0.15s",
+        padding:      "20px 22px",
+        cursor:       onClick ? "pointer" : "default",
+        overflow:     "hidden",
+        transition:   "border-color 0.18s, background 0.18s",
       }}
       onMouseEnter={(e) => {
-        if (onClick) {
-          e.currentTarget.style.borderColor = t.border;
-          e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)";
-        }
+        if (!onClick) return;
+        (e.currentTarget as HTMLElement).style.borderColor =
+          accent ? t.accent : "rgba(255,255,255,0.14)";
+        (e.currentTarget as HTMLElement).style.background = t.surfaceHover;
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = t.borderLight;
-        e.currentTarget.style.boxShadow = "none";
+        (e.currentTarget as HTMLElement).style.borderColor = t.borderLight;
+        (e.currentTarget as HTMLElement).style.background  = t.surface;
       }}
     >
+      {accent && (
+        <div
+          style={{
+            position:   "absolute",
+            top:        0,
+            left:       0,
+            right:      0,
+            height:     "1px",
+            background: `linear-gradient(90deg, ${t.accent} 0%, transparent 65%)`,
+          }}
+        />
+      )}
       <p
         style={{
-          fontFamily: t.serif,
-          fontSize: "28px",
-          fontWeight: 600,
-          color: t.text,
-          margin: "0 0 4px",
-          letterSpacing: "-0.02em",
+          //fontFamily:         t.serif,
+          fontSize:           "26px",
+          fontWeight:         600,
+          color:              accent ? t.accent : t.text,
+          margin:             "0 0 6px",
+          letterSpacing:      "-0.02em",
           fontVariantNumeric: "tabular-nums",
+          lineHeight:         1,
         }}
       >
         {value}
       </p>
       <p
         style={{
-          fontSize: "12px",
-          fontWeight: 500,
-          color: t.textMuted,
+          fontSize:      "11px",
+          fontWeight:    600,
+          color:         t.textMuted,
           textTransform: "uppercase",
-          letterSpacing: "0.08em",
-          margin: 0,
+          letterSpacing: "0.1em",
+          margin:        0,
+          //fontFamily:    t.sans,
         }}
       >
         {label}
       </p>
       {sub && (
-        <p style={{ fontSize: "12px", color: t.textFaint, marginTop: "6px" }}>
+        <p style={{ fontSize: "12px", color: t.textMuted, margin: "6px 0 0",  }}>
           {sub}
         </p>
       )}
@@ -179,48 +240,44 @@ export function StatCard({
   );
 }
 
-// ── Page Header (for admin pages) ──
+/* ════════════════════════════════════════
+   Page Header
+   ════════════════════════════════════════ */
 export function PageHeader({
   title,
   description,
   action,
 }: {
-  title: string;
+  title:        string;
   description?: string;
-  action?: React.ReactNode;
+  action?:      ReactNode;
 }) {
   return (
     <div
       style={{
-        display: "flex",
-        alignItems: "flex-start",
+        display:        "flex",
+        alignItems:     "flex-start",
         justifyContent: "space-between",
-        flexWrap: "wrap",
-        gap: "16px",
-        marginBottom: "32px",
+        flexWrap:       "wrap",
+        gap:            "16px",
+        marginBottom:   "32px",
       }}
     >
       <div>
         <h1
           style={{
-            fontFamily: t.serif,
-            fontSize: "24px",
-            fontWeight: 600,
-            color: t.text,
-            margin: 0,
-            letterSpacing: "-0.02em",
+           // fontFamily:    t.sans,
+            fontSize:      "22px",
+            fontWeight:    700,
+            color:         t.text,
+            margin:        0,
+            letterSpacing: "-0.03em",
           }}
         >
           {title}
         </h1>
         {description && (
-          <p
-            style={{
-              fontSize: "14px",
-              color: t.textMuted,
-              margin: "4px 0 0",
-            }}
-          >
+          <p style={{ fontSize: "13px", color: t.textMuted, margin: "4px 0 0", }}>
             {description}
           </p>
         )}
@@ -230,7 +287,9 @@ export function PageHeader({
   );
 }
 
-// ── Action Button ──
+/* ════════════════════════════════════════
+   Action Button
+   ════════════════════════════════════════ */
 export function ActionButton({
   children,
   onClick,
@@ -238,38 +297,37 @@ export function ActionButton({
   disabled,
   icon,
 }: {
-  children: React.ReactNode;
-  onClick?: () => void;
-  variant?: "primary" | "secondary" | "danger";
+  children:  ReactNode;
+  onClick?:  () => void;
+  variant?:  "primary" | "secondary" | "danger";
   disabled?: boolean;
-  icon?: React.ReactNode;
+  icon?:     ReactNode;
 }) {
-  const styles = {
-    primary: { bg: t.text, color: "#fff", border: t.text },
-    secondary: { bg: "transparent", color: t.textSecondary, border: t.border },
-    danger: { bg: "transparent", color: t.accent, border: t.border },
+  const map = {
+    primary:   { bg: t.accent,     color: "#fff",           border: t.accent   },
+    secondary: { bg: "transparent",color: t.textSecondary,  border: t.border   },
+    danger:    { bg: t.accentSoft, color: t.accent,         border: t.border   },
   };
-  const s = styles[variant];
-
+  const s = map[variant];
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "8px",
-        padding: "9px 18px",
-        fontSize: "13px",
-        fontWeight: 600,
-        fontFamily: t.sans,
-        color: s.color,
-        background: s.bg,
-        border: `1px solid ${s.border}`,
+        display:      "inline-flex",
+        alignItems:   "center",
+        gap:          "8px",
+        padding:      "9px 18px",
+        fontSize:     "13px",
+        fontWeight:   600,
+       // fontFamily:   t.sans,
+        color:        s.color,
+        background:   s.bg,
+        border:       `1px solid ${s.border}`,
         borderRadius: "4px",
-        cursor: disabled ? "default" : "pointer",
-        opacity: disabled ? 0.5 : 1,
-        transition: "opacity 0.15s",
+        cursor:       disabled ? "default" : "pointer",
+        opacity:      disabled ? 0.45 : 1,
+        transition:   "opacity 0.15s, background 0.15s",
       }}
     >
       {icon}
@@ -278,57 +336,54 @@ export function ActionButton({
   );
 }
 
-// ── Loading state ──
+/* ════════════════════════════════════════
+   Loading
+   ════════════════════════════════════════ */
 export function AdminLoading() {
   return (
     <div
       style={{
-        display: "flex",
-        alignItems: "center",
+        display:        "flex",
+        alignItems:     "center",
         justifyContent: "center",
-        padding: "80px 0",
+        padding:        "80px 0",
       }}
     >
       <Loader2
         className="animate-spin"
-        style={{ width: "24px", height: "24px", color: t.accent }}
+        style={{ width: "22px", height: "22px", color: t.accent }}
       />
     </div>
   );
 }
 
-// ── Empty state ──
+/* ════════════════════════════════════════
+   Empty State
+   ════════════════════════════════════════ */
 export function AdminEmpty({
   icon,
   message,
   action,
 }: {
-  icon: React.ReactNode;
+  icon:    ReactNode;
   message: string;
-  action?: React.ReactNode;
+  action?: ReactNode;
 }) {
   return (
     <div
       style={{
-        textAlign: "center",
-        padding: "64px 24px",
-        background: t.surface,
-        border: `1px solid ${t.borderLight}`,
-        borderRadius: "6px",
-        fontFamily: 'Quicksand',
+        textAlign:      "center",
+        padding:        "64px 24px",
+        background:     t.surface,
+        border:         `1px solid ${t.borderLight}`,
+        borderRadius:   "6px",
+        //fontFamily:     t.sans,
       }}
     >
-      <div style={{ color: t.borderLight, marginBottom: "16px", display: "flex", justifyContent: "center" }}>
+      <div style={{ color: t.textFaint, marginBottom: "14px", display: "flex", justifyContent: "center" }}>
         {icon}
       </div>
-      <p
-        style={{
-          fontSize: "14px",
-          color: t.textMuted,
-          fontFamily: 'Quicksand',
-          margin: 0,
-        }}
-      >
+      <p style={{ fontSize: "13px", color: t.textMuted,  margin: 0 }}>
         {message}
       </p>
       {action && <div style={{ marginTop: "20px" }}>{action}</div>}
@@ -336,32 +391,34 @@ export function AdminEmpty({
   );
 }
 
-// ── Pagination ──
+/* ════════════════════════════════════════
+   Pagination
+   ════════════════════════════════════════ */
 export function AdminPagination({
   page,
   totalPages,
   onPageChange,
 }: {
-  page: number;
-  totalPages: number;
+  page:         number;
+  totalPages:   number;
   onPageChange: (p: number) => void;
 }) {
   if (totalPages <= 1) return null;
   return (
     <div
       style={{
-        display: "flex",
-        alignItems: "center",
+        display:        "flex",
+        alignItems:     "center",
         justifyContent: "space-between",
-        marginTop: "20px",
+        marginTop:      "20px",
       }}
     >
-      <span style={{ fontSize: "13px", color: t.textFaint, fontFamily: 'Quicksand' }}>
+      <span style={{ fontSize: "12px", color: t.textMuted,  }}>
         Page {page} of {totalPages}
       </span>
-      <div style={{ display: "flex", gap: "6px" }}>
+      <div style={{ display: "flex", gap: "5px" }}>
         {[
-          { label: "‹", target: Math.max(1, page - 1), disabled: page <= 1 },
+          { label: "‹", target: Math.max(1, page - 1),          disabled: page <= 1          },
           { label: "›", target: Math.min(totalPages, page + 1), disabled: page >= totalPages },
         ].map((btn, i) => (
           <button
@@ -369,19 +426,30 @@ export function AdminPagination({
             onClick={() => onPageChange(btn.target)}
             disabled={btn.disabled}
             style={{
-              width: "32px",
-              height: "32px",
-              display: "flex",
-              alignItems: "center",
+              width:          "32px",
+              height:         "32px",
+              display:        "flex",
+              alignItems:     "center",
               justifyContent: "center",
-              border: `1px solid ${t.borderLight}`,
-              borderRadius: "4px",
-              background: t.surface,
-              color: btn.disabled ? t.borderLight : t.textSecondary,
-              cursor: btn.disabled ? "default" : "pointer",
-              fontSize: "16px",
-              fontFamily: 'Quicksand',
-              transition: "border-color 0.15s",
+              border:         `1px solid ${t.borderLight}`,
+              borderRadius:   "4px",
+              background:     t.surface,
+              color:          btn.disabled ? t.textFaint : t.textSecondary,
+              cursor:         btn.disabled ? "default" : "pointer",
+              fontSize:       "16px",
+             // fontFamily:     t.sans,
+              transition:     "border-color 0.15s, color 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              if (!btn.disabled) {
+                (e.currentTarget as HTMLElement).style.borderColor = t.border;
+                (e.currentTarget as HTMLElement).style.color        = t.text;
+              }
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = t.borderLight;
+              (e.currentTarget as HTMLElement).style.color =
+                btn.disabled ? t.textFaint : t.textSecondary;
             }}
           >
             {btn.label}
@@ -392,45 +460,42 @@ export function AdminPagination({
   );
 }
 
-// ── Table wrapper ──
+/* ════════════════════════════════════════
+   Table
+   ════════════════════════════════════════ */
 export function AdminTable({
   headers,
   children,
 }: {
-  headers: string[];
-  children: React.ReactNode;
+  headers:  string[];
+  children: ReactNode;
 }) {
   return (
     <div
       style={{
-        background: t.surface,
-        border: `1px solid ${t.borderLight}`,
+        background:   t.surface,
+        border:       `1px solid ${t.borderLight}`,
         borderRadius: "6px",
-        overflow: "visible",
+        overflow:     "visible",
       }}
     >
       <div style={{ overflowX: "auto" }}>
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            fontFamily: 'Quicksand',
-          }}
-        >
+        <table style={{ width: "100%", borderCollapse: "collapse",  }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${t.borderLight}` }}>
               {headers.map((h, i) => (
                 <th
                   key={i}
                   style={{
-                    padding: "12px 16px",
-                    fontSize: "11px",
-                    fontWeight: 600,
+                    padding:       "11px 16px",
+                    fontSize:      "10px",
+                    fontWeight:    700,
                     textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    color: t.textFaint,
-                    textAlign: "left",
-                    whiteSpace: "nowrap",
+                    letterSpacing: "0.1em",
+                    color:         t.textFaint,
+                    textAlign:     "left",
+                    whiteSpace:    "nowrap",
+                    background:    "rgba(255,255,255,0.018)",
                   }}
                 >
                   {h}
@@ -445,12 +510,14 @@ export function AdminTable({
   );
 }
 
-// ── Table row helper ──
+/* ════════════════════════════════════════
+   Table Row
+   ════════════════════════════════════════ */
 export function AdminTableRow({
   children,
   onClick,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   onClick?: () => void;
 }) {
   return (
@@ -458,14 +525,15 @@ export function AdminTableRow({
       onClick={onClick}
       style={{
         borderBottom: `1px solid ${t.borderLight}`,
-        cursor: onClick ? "pointer" : "default",
-        transition: "background 0.1s",
+        cursor:       onClick ? "pointer" : "default",
+        transition:   "background 0.1s",
       }}
       onMouseEnter={(e) => {
-        if (onClick) e.currentTarget.style.background = t.bg;
+        if (onClick)
+          (e.currentTarget as HTMLElement).style.background = t.surfaceHover;
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.background = "transparent";
+        (e.currentTarget as HTMLElement).style.background = "transparent";
       }}
     >
       {children}
@@ -473,23 +541,25 @@ export function AdminTableRow({
   );
 }
 
-// ── Table cell ──
+/* ════════════════════════════════════════
+   Table Cell
+   ════════════════════════════════════════ */
 export function AdminTableCell({
   children,
   bold,
   muted,
 }: {
-  children: React.ReactNode;
-  bold?: boolean;
-  muted?: boolean;
+  children: ReactNode;
+  bold?:    boolean;
+  muted?:   boolean;
 }) {
   return (
     <td
       style={{
-        padding: "14px 16px",
-        fontSize: "13px",
+        padding:    "13px 16px",
+        fontSize:   "13px",
         fontWeight: bold ? 600 : 400,
-        color: muted ? t.textMuted : t.text,
+        color:      muted ? t.textMuted : t.text,
         whiteSpace: "nowrap",
       }}
     >

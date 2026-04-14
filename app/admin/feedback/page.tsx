@@ -97,9 +97,9 @@ export default function AdminFeedbackPage() {
   const filters: StatusFilter[] = ["ALL", "PENDING", "APPROVED", "REJECTED"];
 
   return (
-    <div style={{ fontFamily: 'Quicksand' }}>
+    <div>
       <div style={{ marginBottom: "24px" }}>
-        <h1 style={{ fontFamily: 'Quicksand', fontSize: "24px", fontWeight: 600, color: t.text, margin: 4 }}>Feedback</h1>
+        <h1 style={{ fontSize: "24px", fontWeight: 600, color: t.text, margin: 4 }}>Feedback</h1>
         <p style={{ fontSize: "13px", color: t.textMuted, marginTop: "4px", marginLeft: 4 }}>
           {total} total reviews.
           {feedbacks.filter((f) => f.status === "PENDING").length > 0 && (
@@ -117,7 +117,7 @@ export default function AdminFeedbackPage() {
           <input
             type="text" value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Search user or event..."
-            style={{ width: "100%", padding: "9px 14px 9px 34px", fontSize: "13px", fontFamily: 'Quicksand', border: `1px solid ${t.border}`, borderRadius: "4px", outline: "none", color: t.text, background: t.surface }}
+            style={{ width: "100%", padding: "9px 14px 9px 34px", fontSize: "13px",  border: `1px solid ${t.border}`, borderRadius: "4px", outline: "none", color: t.text, background: t.surface }}
           />
         </div>
         <div style={{ display: "flex", gap: "4px" }}>
@@ -126,7 +126,7 @@ export default function AdminFeedbackPage() {
               key={s}
               onClick={() => { setStatusFilter(s); setPage(1); }}
               style={{
-                padding: "8px 14px", fontSize: "12px", fontWeight: 500, fontFamily: 'Quicksand',
+                padding: "8px 14px", fontSize: "12px", fontWeight: 500, 
                 border: `1px solid ${statusFilter === s ? t.text : t.border}`, borderRadius: "4px",
                 background: statusFilter === s ? t.text : t.surface,
                 color: statusFilter === s ? "#fff" : t.textMuted, cursor: "pointer",
@@ -243,7 +243,7 @@ function ActionBtn({ label, color, bg, icon, loading, onClick }: { label: string
       disabled={loading}
       style={{
         display: "inline-flex", alignItems: "center", gap: "6px", padding: "7px 14px",
-        fontSize: "12px", fontWeight: 600, fontFamily: 'Quicksand',
+        fontSize: "12px", fontWeight: 600, 
         color, background: bg, border: "none", borderRadius: "4px",
         cursor: loading ? "default" : "pointer", opacity: loading ? 0.5 : 1,
       }}

@@ -72,9 +72,9 @@ export default function AdminOrdersPage() {
   };
 
   return (
-    <div style={{ fontFamily: 'Quicksand' }}>
+    <div >
       <div style={{ marginBottom: "24px" }}>
-        <h1 style={{ fontFamily: 'Quicksand', fontSize: "24px", fontWeight: 600, color: t.text, margin: 4 }}>Orders</h1>
+        <h1 style={{ fontSize: "24px", fontWeight: 600, color: t.text, margin: 4 }}>Orders</h1>
         <p style={{ fontSize: "13px", color: t.textMuted, marginTop: "4px", marginLeft:4 }}>{total} total orders on the platform.</p>
       </div>
 
@@ -91,7 +91,7 @@ export default function AdminOrdersPage() {
               width: "100%",
               padding: "9px 14px 9px 34px",
               fontSize: "13px",
-              fontFamily: 'Quicksand',
+             // fontFamily: 'Quicksand',
               border: `1px solid ${t.border}`,
               borderRadius: "4px",
               outline: "none",
@@ -109,7 +109,7 @@ export default function AdminOrdersPage() {
                 padding: "8px 14px",
                 fontSize: "12px",
                 fontWeight: 500,
-                fontFamily: 'Quicksand',
+                //fontFamily: 'Quicksand',
                 border: `1px solid ${status === s ? t.text : t.border}`,
                 borderRadius: "4px",
                 background: status === s ? t.text : t.surface,

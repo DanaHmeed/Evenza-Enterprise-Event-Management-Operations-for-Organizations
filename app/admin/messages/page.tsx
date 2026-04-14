@@ -104,7 +104,7 @@ export default function AdminMessagesPage() {
               border: `1px solid ${unreadOnly === val ? t.text : t.border}`,
               borderRadius: "4px",
               background: unreadOnly === val ? t.text : t.surface,
-              color: unreadOnly === val ? "#fff" : t.textMuted,
+              color: unreadOnly === val ? "#050505" : t.textMuted,
               cursor: "pointer",
               marginLeft: 4,
             }}

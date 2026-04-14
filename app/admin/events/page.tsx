@@ -1,19 +1,13 @@
 // app/admin/events/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  CalendarDays,
-  Search,
-  MoreHorizontal,
-  CheckCircle2,
-  Clock,
-  Ban,
-  Trash2,
-  ExternalLink,
+  CalendarDays, Search, MoreHorizontal,
+  CheckCircle2, Clock, Ban, Trash2, ExternalLink,
 } from "lucide-react";
-import { t, StatusBadge, AdminPagination, AdminEmpty, AdminLoading } from "@/components/admin/AdminUI";
+import { t, StatusBadge, AdminPagination, AdminEmpty } from "@/components/admin/AdminUI";
 
 interface EventData {
   id: string;
@@ -25,210 +19,202 @@ interface EventData {
   price?: number | null;
   capacity: number;
   seatsRemaining: number;
-  organizer: { id: string; name: string };
+  organizer?: { id: string; name: string } | null;
   category?: { name: string } | null;
   _count: { registrations: number };
 }
 
 type StatusFilter = "ALL" | "PUBLISHED" | "DRAFT" | "CANCELLED" | "COMPLETED";
+const FILTERS: StatusFilter[] = ["ALL", "PUBLISHED", "DRAFT", "CANCELLED", "COMPLETED"];
+const fmtDate = (d: string) =>
+  new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+function SkeletonRow() {
+  return (
+    <div style={{
+      display: "grid", gridTemplateColumns: "3fr 1.4fr 1fr 1fr 1fr 72px",
+      gap: "8px", padding: "12px 18px", alignItems: "center",
+      borderTop: `1px solid ${t.borderLight}`,
+    }}>
+      {[["80%","50%"],["60%"],["70%"],["40%"],["50%"],["30%"]].map((ws, col) => (
+        <div key={col} style={{ display:"flex", flexDirection:"column", gap:"5px" }}>
+          {ws.map((w, i) => (
+            <div key={i} style={{
+              height: i===0?"12px":"10px", width: w, borderRadius:"3px",
+              background:"rgba(255,255,255,0.06)", animation:"shimmer 1.6s ease-in-out infinite",
+            }} />
+          ))}
+        </div>
+      ))}
+      <style>{`@keyframes shimmer{0%,100%{opacity:.5}50%{opacity:1}}`}</style>
+    </div>
+  );
+}
 
 export default function AdminEventsPage() {
-const [events, setEvents] = useState<EventData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [searchDebounced, setSearchDebounced] = useState("");
+  const [events,       setEvents]       = useState<EventData[]>([]);
+  const [loading,      setLoading]      = useState(true);
+  const [search,       setSearch]       = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [menuId, setMenuId] = useState<string | null>(null);
-  const [processing, setProcessing] = useState<string | null>(null);
+  const [page,         setPage]         = useState(1);
+  const [totalPages,   setTotalPages]   = useState(1);
+  const [total,        setTotal]        = useState(0);
+  const [menuId,       setMenuId]       = useState<string | null>(null);
+  const [processing,   setProcessing]   = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  // Debounce search
   useEffect(() => {
-    const timer = setTimeout(() => setSearchDebounced(search), 400);
-    return () => clearTimeout(timer);
+    const id = setTimeout(() => setDebouncedSearch(search), 350);
+    return () => clearTimeout(id);
   }, [search]);
 
-  // Reset page when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [searchDebounced, statusFilter]);
+  useEffect(() => { setPage(1); }, [debouncedSearch, statusFilter]);
 
-  // Single fetch effect
   useEffect(() => {
-    fetchEvents();
-  }, [page, searchDebounced, statusFilter]);
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
 
-  const fetchEvents = async () => {
+    const params = new URLSearchParams({
+      page: page.toString(), pageSize: "15",
+      sortBy: "createdAt", sortOrder: "desc", all: "true",
+    });
+    if (debouncedSearch)        params.set("search", debouncedSearch);
+    if (statusFilter !== "ALL") params.set("status", statusFilter);
+
     setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      params.set("page", page.toString());
-      params.set("pageSize", "20");
-      params.set("sortBy", "createdAt");
-      params.set("sortOrder", "desc");
-      params.set("all", "true");
-      if (searchDebounced) params.set("search", searchDebounced);
-      if (statusFilter !== "ALL") params.set("status", statusFilter);
-
-      const res = await fetch(`/api/events?${params}`);
-      if (res.ok) {
-        const data = await res.json();
+    fetch(`/api/events?${params}`, { signal: ctrl.signal })
+      .then((r) => r.ok ? r.json() : Promise.reject())
+      .then((data) => {
         setEvents(data.data || []);
         setTotalPages(data.pagination?.totalPages || 1);
         setTotal(data.pagination?.total || 0);
-      }
-    } catch { /* */ } finally {
-      setLoading(false);
-    }
-  };
+      })
+      .catch((err) => { if (err?.name !== "AbortError") console.error(err); })
+      .finally(() => { if (!ctrl.signal.aborted) setLoading(false); });
 
-  const patchEvent = async (eventId: string, body: Record<string, unknown>) => {
-    setProcessing(eventId);
+    return () => ctrl.abort();
+  }, [page, debouncedSearch, statusFilter]);
+
+  const patchEvent = async (id: string, body: Record<string, unknown>) => {
+    setProcessing(id);
     try {
-      const res = await fetch(`/api/events/${eventId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch(`/api/events/${id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      if (res.ok) {
-        setEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, ...body } as EventData : e)));
-      }
-    } catch { alert("Failed to update event"); }
+      if (res.ok) setEvents((p) => p.map((e) => e.id === id ? { ...e, ...body } as EventData : e));
+    } catch { alert("Failed to update event."); }
     finally { setProcessing(null); setMenuId(null); }
   };
 
-  const deleteEvent = async (eventId: string) => {
-    if (!confirm("Delete this event?")) return;
-    setProcessing(eventId);
+  const deleteEvent = async (id: string) => {
+    if (!confirm("Delete this event? This cannot be undone.")) return;
+    setProcessing(id);
     try {
-      const res = await fetch(`/api/events/${eventId}`, { method: "DELETE" });
-      if (res.ok) setEvents((prev) => prev.filter((e) => e.id !== eventId));
-    } catch { alert("Failed to delete event"); }
+      const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
+      if (res.ok) { setEvents((p) => p.filter((e) => e.id !== id)); setTotal((n) => n - 1); }
+    } catch { alert("Failed to delete event."); }
     finally { setProcessing(null); setMenuId(null); }
   };
-
-  const fmtDate = (d: string) =>
-    new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-
-  const filters: StatusFilter[] = ["ALL", "PUBLISHED", "DRAFT", "CANCELLED", "COMPLETED"];
 
   return (
-    <div style={{ fontFamily: 'Quicksand' }}>
-      <div style={{ marginBottom: "24px" }}>
-        <h1 style={{ fontFamily: 'Quicksand', fontSize: "24px", fontWeight: 600, color: t.text, margin: 0 }}>Events</h1>
-        <p style={{ fontSize: "13px", color: t.textMuted, marginTop: "4px" }}>{total} total events on the platform.</p>
+    <div style={{ fontFamily: t.sans }}>
+      <div style={{ marginBottom: "22px" }}>
+        <h1 style={{ fontSize: "22px", fontWeight: 700, color: t.text, margin: "0 0 4px", letterSpacing: "-0.03em" }}>
+          Events
+        </h1>
+        <p style={{ fontSize: "13px", color: t.textMuted, margin: 0 }}>
+          {loading ? "Loading…" : `${total.toLocaleString()} total events`}
+        </p>
       </div>
 
-      {/* Filters */}
-      <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
-        <div style={{ position: "relative", flex: "1 1 280px", maxWidth: "320px" }}>
-          <Search style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", width: "14px", height: "14px", color: t.textFaint }} />
+      <div style={{ display: "flex", gap: "10px", marginBottom: "16px", flexWrap: "wrap" }}>
+        <div style={{ position: "relative", flex: "1 1 260px", maxWidth: "320px" }}>
+          <Search style={{ position:"absolute", left:"11px", top:"50%", transform:"translateY(-50%)", width:"13px", height:"13px", color:t.textMuted, pointerEvents:"none" }} />
           <input
             type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search events..."
-            style={{ width: "100%", padding: "9px 14px 9px 34px", fontSize: "13px", fontFamily: 'Quicksand', border: `1px solid ${t.border}`, borderRadius: "4px", outline: "none", color: t.text, background: t.surface }}
+            placeholder="Search events…"
+            style={{ width:"100%", padding:"8px 14px 8px 32px", fontSize:"13px", fontFamily:t.sans, borderRadius:"4px", outline:"none", color:t.text, background:"rgba(255,255,255,0.05)", border:`1px solid ${t.border}`, boxSizing:"border-box", transition:"border-color 0.15s" }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = t.accent)}
+            onBlur={(e)  => (e.currentTarget.style.borderColor = t.border)}
           />
         </div>
-        <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-          {filters.map((s) => (
-            <button
-              key={s}
-              onClick={() => { setStatusFilter(s); setPage(1); }}
-              style={{
-                padding: "8px 14px", fontSize: "12px", fontWeight: 500, fontFamily: 'Quicksand',
-                border: `1px solid ${statusFilter === s ? t.text : t.border}`, borderRadius: "4px",
-                background: statusFilter === s ? t.text : t.surface,
-                color: statusFilter === s ? "#fff" : t.textMuted, cursor: "pointer",
-              }}
-            >
-              {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
-            </button>
-          ))}
+        <div style={{ display:"flex", gap:"4px", flexWrap:"wrap" }}>
+          {FILTERS.map((s) => {
+            const active = statusFilter === s;
+            return (
+              <button key={s} onClick={() => setStatusFilter(s)} style={{ padding:"7px 13px", fontSize:"12px", fontWeight:500, fontFamily:t.sans, borderRadius:"4px", cursor:"pointer", border:`1px solid ${active ? t.accent : t.borderLight}`, background: active ? t.accentSoft : "transparent", color: active ? t.accent : t.textMuted, transition:"all 0.12s" }}
+                onMouseEnter={(e) => { if(!active) e.currentTarget.style.borderColor = t.border; }}
+                onMouseLeave={(e) => { if(!active) e.currentTarget.style.borderColor = t.borderLight; }}
+              >
+                {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {loading ? <AdminLoading /> : events.length === 0 ? (
-        <AdminEmpty icon={<CalendarDays style={{ width: "32px", height: "32px" }} />} message="No events found." />
+      {!loading && events.length === 0 ? (
+        <AdminEmpty icon={<CalendarDays style={{ width:"30px", height:"30px" }} />} message="No events found." />
       ) : (
-        <div style={{ background: t.surface, border: `1px solid ${t.borderLight}`, borderRadius: "4px", overflow: "hidden" }}>
-          <div
-            className="hidden lg:grid"
-            style={{ gridTemplateColumns: "3fr 1.5fr 1fr 1fr 1fr 80px", gap: "8px", padding: "10px 20px", background: t.borderLight, fontSize: "10px", fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: t.textFaint }}
-          >
-            <span>Event</span><span>Organizer</span><span>Date</span><span>Status</span><span>Capacity</span><span style={{ textAlign: "right" }}>Actions</span>
+        <div style={{ background:t.surface, border:`1px solid ${t.borderLight}`, borderRadius:"6px", overflow:"hidden", opacity: loading ? 0.65 : 1, transition:"opacity 0.15s" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"3fr 1.4fr 1fr 1fr 1fr 72px", gap:"8px", padding:"10px 18px", background:"rgba(255,255,255,0.022)", fontSize:"10px", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.1em", color:t.textFaint }}>
+            <span>Event</span><span>Organizer</span><span>Date</span><span>Status</span><span>Capacity</span>
+            <span style={{ textAlign:"right" }}>Actions</span>
           </div>
 
-          {events.map((event, i) => {
-            const registered = event.capacity - event.seatsRemaining;
+          {loading && Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)}
+
+          {!loading && events.map((event, i) => {
+            const registered = (event.capacity ?? 0) - (event.seatsRemaining ?? 0);
             return (
-              <div
-                key={event.id}
-                style={{ display: "grid", gridTemplateColumns: "3fr 1.5fr 1fr 1fr 1fr 80px", gap: "8px", padding: "12px 20px", alignItems: "center", borderTop: i > 0 ? `1px solid ${t.borderLight}` : "none", transition: "background 0.1s" }}
-                className="grid-cols-1 lg:grid-cols-none"
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#fafaf6")}
+              <div key={event.id} style={{ display:"grid", gridTemplateColumns:"3fr 1.4fr 1fr 1fr 1fr 72px", gap:"8px", padding:"11px 18px", alignItems:"center", borderTop: i > 0 ? `1px solid ${t.borderLight}` : "none", transition:"background 0.1s" }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = t.surfaceHover)}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               >
-                {/* Event */}
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
-                  <div style={{ width: "36px", height: "36px", borderRadius: "4px", overflow: "hidden", background: t.borderLight, flexShrink: 0 }}>
-                    {event.banner ? (
-                      <img src={event.banner} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    ) : (
-                      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <CalendarDays style={{ width: "14px", height: "14px", color: t.textFaint }} />
-                      </div>
-                    )}
+                <div style={{ display:"flex", alignItems:"center", gap:"10px", minWidth:0 }}>
+                  <div style={{ width:"34px", height:"34px", borderRadius:"4px", overflow:"hidden", flexShrink:0, background:"rgba(255,255,255,0.07)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    {event.banner
+                      ? <img src={event.banner} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy" />
+                      : <CalendarDays style={{ width:"13px", height:"13px", color:t.textFaint }} />}
                   </div>
-                  <div style={{ minWidth: 0 }}>
-                    <p style={{ fontSize: "13px", fontWeight: 600, color: t.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{event.title}</p>
-                    <p style={{ fontSize: "11px", color: t.textFaint, margin: 0 }}>
-                      {event.category?.name || "—"} · {event.eventType === "FREE" ? "Free" : `$${event.price}`}
-                    </p>
+                  <div style={{ minWidth:0 }}>
+                    <p style={{ fontSize:"13px", fontWeight:600, color:t.text, margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{event.title}</p>
+                    <p style={{ fontSize:"11px", color:t.textMuted, margin:0 }}>{event.category?.name || "—"} · {event.eventType === "FREE" ? "Free" : `$${event.price}`}</p>
                   </div>
                 </div>
 
-                <span style={{ fontSize: "12px", color: t.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{event.organizer.name}</span>
-                <span style={{ fontSize: "12px", color: t.textMuted }}>{fmtDate(event.startDate)}</span>
+                <span style={{ fontSize:"12px", color:t.textMuted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{event.organizer?.name ?? "—"}</span>
+                <span style={{ fontSize:"12px", color:t.textMuted }}>{fmtDate(event.startDate)}</span>
                 <StatusBadge status={event.status} />
-                <span style={{ fontSize: "12px", color: t.textMuted, fontVariantNumeric: "tabular-nums" }}>{registered}/{event.capacity}</span>
+                <span style={{ fontSize:"12px", color:t.textMuted, fontVariantNumeric:"tabular-nums" }}>{registered}/{event.capacity ?? "?"}</span>
 
-                {/* Actions */}
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: "2px", position: "relative" }}>
-                  <Link
-                    href={`/events/${event.id}`}
-                    style={{ width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", color: t.textFaint, borderRadius: "4px" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = t.borderLight)}
+                <div style={{ display:"flex", justifyContent:"flex-end", gap:"2px", position:"relative" }}>
+                  <Link href={`/events/${event.id}`} style={{ width:"28px", height:"28px", display:"flex", alignItems:"center", justifyContent:"center", color:t.textMuted, borderRadius:"4px", transition:"background 0.1s" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = t.surfaceActive)}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                   >
-                    <ExternalLink style={{ width: "13px", height: "13px" }} />
+                    <ExternalLink style={{ width:"12px", height:"12px" }} />
                   </Link>
-                  <div style={{ position: "relative" }}>
-                    <button
-                      onClick={() => setMenuId(menuId === event.id ? null : event.id)}
-                      style={{ width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", color: t.textFaint, cursor: "pointer", borderRadius: "4px" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = t.borderLight)}
+                  <div style={{ position:"relative" }}>
+                    <button onClick={() => setMenuId(menuId === event.id ? null : event.id)}
+                      style={{ width:"28px", height:"28px", display:"flex", alignItems:"center", justifyContent:"center", border:"none", background:"transparent", color:t.textMuted, cursor:"pointer", borderRadius:"4px", transition:"background 0.1s" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = t.surfaceActive)}
                       onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                     >
-                      <MoreHorizontal style={{ width: "14px", height: "14px" }} />
+                      <MoreHorizontal style={{ width:"14px", height:"14px" }} />
                     </button>
-
                     {menuId === event.id && (
                       <>
-                        <div style={{ position: "fixed", inset: 0, zIndex: 10 }} onClick={() => setMenuId(null)} />
-                        <div style={{ position: "absolute", right: 0, top: "100%", marginTop: "4px", width: "160px", background: t.surface, border: `1px solid ${t.border}`, borderRadius: "4px", boxShadow: "0 4px 16px rgba(0,0,0,0.08)", zIndex: 20, padding: "4px 0", fontFamily: 'Quicksand' }}>
-                          {event.status === "DRAFT" && (
-                            <MenuItem icon={<CheckCircle2 />} label="Publish" color={t.green} onClick={() => patchEvent(event.id, { status: "PUBLISHED" })} disabled={processing === event.id} />
-                          )}
-                          {event.status === "PUBLISHED" && (
-                            <MenuItem icon={<Clock />} label="Unpublish" color={t.amber} onClick={() => patchEvent(event.id, { status: "DRAFT" })} disabled={processing === event.id} />
-                          )}
-                          {event.status !== "CANCELLED" && (
-                            <MenuItem icon={<Ban />} label="Cancel" color={t.accent} onClick={() => patchEvent(event.id, { status: "CANCELLED" })} disabled={processing === event.id} />
-                          )}
-                          <div style={{ height: "1px", background: t.borderLight, margin: "4px 0" }} />
-                          <MenuItem icon={<Trash2 />} label="Delete" color={t.accent} onClick={() => deleteEvent(event.id)} disabled={processing === event.id} />
+                        <div style={{ position:"fixed", inset:0, zIndex:10 }} onClick={() => setMenuId(null)} />
+                        <div style={{ position:"absolute", right:0, top:"100%", marginTop:"4px", width:"158px", background:"#17171c", border:`1px solid ${t.border}`, borderRadius:"5px", boxShadow:"0 8px 28px rgba(0,0,0,0.45)", zIndex:20, padding:"4px" }}>
+                          {event.status === "DRAFT"     && <DropItem icon={<CheckCircle2/>} label="Publish"   color={t.green}  onClick={() => patchEvent(event.id,{status:"PUBLISHED"})} disabled={processing===event.id} />}
+                          {event.status === "PUBLISHED" && <DropItem icon={<Clock/>}        label="Unpublish" color={t.amber}  onClick={() => patchEvent(event.id,{status:"DRAFT"})}      disabled={processing===event.id} />}
+                          {event.status !== "CANCELLED" && <DropItem icon={<Ban/>}          label="Cancel"    color={t.accent} onClick={() => patchEvent(event.id,{status:"CANCELLED"})}  disabled={processing===event.id} />}
+                          <div style={{ height:"1px", background:t.borderLight, margin:"3px 0" }} />
+                          <DropItem icon={<Trash2/>} label="Delete" color={t.accent} onClick={() => deleteEvent(event.id)} disabled={processing===event.id} />
                         </div>
                       </>
                     )}
@@ -245,17 +231,14 @@ const [events, setEvents] = useState<EventData[]>([]);
   );
 }
 
-// Reusable menu item to reduce repetition
-function MenuItem({ icon, label, color, onClick, disabled }: { icon: React.ReactNode; label: string; color: string; onClick: () => void; disabled: boolean }) {
+function DropItem({ icon, label, color, onClick, disabled }: { icon:React.ReactNode; label:string; color:string; onClick:()=>void; disabled:boolean }) {
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      style={{ width: "100%", display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px", fontSize: "13px", color, background: "transparent", border: "none", cursor: disabled ? "default" : "pointer", fontFamily: 'Quicksand ', opacity: disabled ? 0.5 : 1 }}
-      onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.background = "#f0f0ec"; }}
-      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+    <button onClick={onClick} disabled={disabled}
+      style={{ width:"100%", display:"flex", alignItems:"center", gap:"8px", padding:"7px 10px", fontSize:"12px", fontWeight:500, color, background:"transparent", border:"none", cursor:disabled?"default":"pointer", fontFamily:"'DM Sans',sans-serif", opacity:disabled?0.45:1, borderRadius:"3px", transition:"background 0.1s" }}
+      onMouseEnter={(e) => { if(!disabled) e.currentTarget.style.background="rgba(255,255,255,0.06)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background="transparent"; }}
     >
-      <span style={{ width: "13px", height: "13px", display: "flex" }}>{icon}</span>
+      <span style={{ width:"13px", height:"13px", display:"flex", flexShrink:0 }}>{icon}</span>
       {label}
     </button>
   );

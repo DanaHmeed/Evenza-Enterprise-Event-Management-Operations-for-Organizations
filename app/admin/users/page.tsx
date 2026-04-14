@@ -95,9 +95,9 @@ export default function AdminUsersPage() {
   const filters: RoleFilter[] = ["ALL", "USER", "ORGANIZER", "ADMIN"];
 
   return (
-    <div style={{ fontFamily: 'Quicksand' }}>
+    <div >
       <div style={{ marginBottom: "24px" }}>
-        <h1 style={{ fontFamily: 'Quicksand', fontSize: "24px", fontWeight: 600, color: t.text, margin: 4 }}>Users</h1>
+        <h1 style={{ fontSize: "24px", fontWeight: 600, color: t.text, margin: 4 }}>Users</h1>
         <p style={{ fontSize: "13px", color: t.textMuted, marginTop: "4px",marginLeft:4 }}>{total} total users on the platform.</p>
       </div>
 
@@ -110,7 +110,7 @@ export default function AdminUsersPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search name or email..."
-            style={{ width: "100%", padding: "9px 14px 9px 34px", fontSize: "13px", fontFamily: 'Quicksand', border: `1px solid ${t.border}`, borderRadius: "4px", outline: "none", color: t.text, background: t.surface }}
+            style={{ width: "100%", padding: "9px 14px 9px 34px", fontSize: "13px",  border: `1px solid ${t.border}`, borderRadius: "4px", outline: "none", color: t.text, background: t.surface }}
           />
         </div>
         <div style={{ display: "flex", gap: "4px" }}>
@@ -119,10 +119,10 @@ export default function AdminUsersPage() {
               key={r}
               onClick={() => { setRoleFilter(r); setPage(1); }}
               style={{
-                padding: "8px 14px", fontSize: "12px", fontWeight: 500, fontFamily: 'Quicksand',
+                padding: "8px 14px", fontSize: "12px", fontWeight: 500, 
                 border: `1px solid ${roleFilter === r ? t.text : t.border}`, borderRadius: "4px",
                 background: roleFilter === r ? t.text : t.surface,
-                color: roleFilter === r ? "#fff" : t.textMuted, cursor: "pointer",
+                color: roleFilter === r ? "#0a0a0a" : t.textMuted, cursor: "pointer",
               }}
             >
               {r === "ALL" ? "All" : r.charAt(0) + r.slice(1).toLowerCase()}
@@ -185,14 +185,14 @@ export default function AdminUsersPage() {
                   {menuId === u.id && (
                     <>
                       <div style={{ position: "fixed", inset: 0, zIndex: 10 }} onClick={() => setMenuId(null)} />
-                      <div style={{ position: "absolute", right: 0, top: "100%", marginTop: "4px", width: "180px", background: t.surface, border: `1px solid ${t.border}`, borderRadius: "4px", boxShadow: "0 4px 16px rgba(0,0,0,0.08)", zIndex: 20, padding: "4px 0", fontFamily: 'Quicksand' }}>
+                      <div style={{ position: "absolute", right: 0, top: "100%", marginTop: "4px", width: "180px", background: t.surface, border: `1px solid ${t.border}`, borderRadius: "4px", boxShadow: "0 4px 16px rgba(0,0,0,0.08)", zIndex: 20, padding: "4px 0"}}>
                         <p style={{ padding: "6px 12px", fontSize: "10px", fontWeight: 600, color: t.textFaint, textTransform: "uppercase", letterSpacing: "0.08em" }}>Change Role</p>
                         {(["USER", "ORGANIZER", "ADMIN"] as const).filter((r) => r !== u.role).map((role) => (
                           <button
                             key={role}
                             onClick={() => patchUser(u.id, { role })}
                             disabled={processing === u.id}
-                            style={{ width: "100%", display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px", fontSize: "13px", color: t.textSecondary, background: "transparent", border: "none", cursor: "pointer", fontFamily: 'Quicksand', opacity: processing === u.id ? 0.5 : 1 }}
+                            style={{ width: "100%", display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px", fontSize: "13px", color: t.textSecondary, background: "transparent", border: "none", cursor: "pointer", opacity: processing === u.id ? 0.5 : 1 }}
                             onMouseEnter={(e) => (e.currentTarget.style.background = t.borderLight)}
                             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                           >
@@ -204,7 +204,7 @@ export default function AdminUsersPage() {
                         <button
                           onClick={() => patchUser(u.id, { isActive: !u.isActive })}
                           disabled={processing === u.id}
-                          style={{ width: "100%", display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px", fontSize: "13px", color: u.isActive ? t.amber : t.green, background: "transparent", border: "none", cursor: "pointer", fontFamily:'Quicksand' }}
+                          style={{ width: "100%", display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px", fontSize: "13px", color: u.isActive ? t.amber : t.green, background: "transparent", border: "none", cursor: "pointer",  }}
                           onMouseEnter={(e) => (e.currentTarget.style.background = t.borderLight)}
                           onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                         >
@@ -215,7 +215,7 @@ export default function AdminUsersPage() {
                         <button
                           onClick={() => deleteUser(u.id)}
                           disabled={processing === u.id}
-                          style={{ width: "100%", display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px", fontSize: "13px", color: t.accent, background: "transparent", border: "none", cursor: "pointer", fontFamily: 'Quicksand' }}
+                          style={{ width: "100%", display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px", fontSize: "13px", color: t.accent, background: "transparent", border: "none", cursor: "pointer" }}
                           onMouseEnter={(e) => (e.currentTarget.style.background = t.accentSoft)}
                           onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                         >

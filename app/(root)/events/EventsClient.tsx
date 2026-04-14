@@ -253,6 +253,7 @@ export default function EventsClient({
           <h1
             style={{
               fontFamily: "'Playfair Display', Georgia, serif",
+              //fontFamily:"Rubik",
               fontSize: "clamp(2rem, 4vw, 3.25rem)",
               fontWeight: 600,
               color: "#1a1a1a",

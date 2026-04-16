@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import "@/styles/globals.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
+import ChatBot from "@/components/shared/ChatBot";
+
 import { Rubik } from 'next/font/google'
 const rubik = Rubik({
   subsets: ['latin'],
@@ -40,7 +42,9 @@ export default function RootLayout({
       }}
     >
       <html lang="en" suppressHydrationWarning>
-        <body>{children}</body>
+        <body>{children}
+          <ChatBot />
+        </body>
       </html>
     </ClerkProvider>
   );

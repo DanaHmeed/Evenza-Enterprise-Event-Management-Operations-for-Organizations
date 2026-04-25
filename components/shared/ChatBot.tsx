@@ -2,7 +2,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-
+import { BotMessageSquare } from "lucide-react";
+import Image from "next/image";
 interface Message {
   role: "user" | "assistant";
   content: string;
@@ -13,7 +14,7 @@ export default function ChatBot() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hi! I'm Evenza Assistant 👋 Ask me anything about events, tickets, or the platform.",
+      content: "Hi! I'm Evenza Assistant, Ask me anything about events, tickets, or the platform.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -91,7 +92,7 @@ export default function ChatBot() {
             display: "flex",
             flexDirection: "column",
             zIndex: 9999,
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "Rubik, sans-serif",
             overflow: "hidden",
             animation: "chatSlideUp 0.22s ease",
           }}
@@ -107,20 +108,15 @@ export default function ChatBot() {
               background: "#fafaf8",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <div
-                style={{
-                  width: "32px",
-                  height: "32px",
-                  background: "#b64f06",
-                  borderRadius: "8px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "14px",
-                }}
-              >
-                ✦
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <div>
+                <Image
+                  src="/icons/chatLogo.png"
+                  alt="Evenza Assistant Avatar"
+                  width={70}
+                  height={70}
+                />
+      
               </div>
               <div>
                 <p style={{ margin: 0, fontSize: "13px", fontWeight: 600, color: "#1a1a1a", letterSpacing: "-0.01em" }}>
@@ -254,7 +250,7 @@ export default function ChatBot() {
                 borderRadius: "10px",
                 padding: "9px 14px",
                 fontSize: "13.5px",
-                fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "Rubik, sans-serif",
                 outline: "none",
                 background: "#fafaf8",
                 color: "#1a1a1a",
@@ -321,7 +317,7 @@ export default function ChatBot() {
           boxShadow: "0 4px 20px rgba(0,0,0,0.18)",
           zIndex: 9999,
           transition: "transform 0.15s ease, box-shadow 0.15s ease",
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "Rubik, sans-serif",
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = "scale(1.06)";
@@ -338,15 +334,7 @@ export default function ChatBot() {
             <path d="M18 6L6 18M6 6l12 12" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
           </svg>
         ) : (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-              stroke="#fff"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <BotMessageSquare size={26} color="#fff" />
         )}
       </button>
 

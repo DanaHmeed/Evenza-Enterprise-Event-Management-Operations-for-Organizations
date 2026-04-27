@@ -6,6 +6,9 @@ import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import { Loader2, ShieldAlert } from "lucide-react";
+import { Rubik } from "next/font/google";
+
+const rubik = Rubik({ subsets: ["latin"], variable: "--font-rubik" });
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, isSignedIn, isLoaded } = useUser();
@@ -57,6 +60,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div
+      className={rubik.className}
       style={{
         display:  "flex",
         height:   "100vh",

@@ -117,12 +117,12 @@ export default function AdminCategoriesPage() {
           borderRadius: "6px", padding: "22px", marginBottom: "16px",
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px" }}>
-            <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.16em", color: t.textMuted }}>
+            <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.16em", color: t.text }}>
               {editingId ? "Edit Category" : "New Category"}
             </span>
             <button onClick={closeForm} style={{
               background: "transparent", border: "none", cursor: "pointer",
-              color: t.textMuted, display: "flex", alignItems: "center", padding: "2px",
+              color: t.text, display: "flex", alignItems: "center", padding: "2px",
             }}>
               <X style={{ width: "15px", height: "15px" }} />
             </button>
@@ -130,7 +130,7 @@ export default function AdminCategoriesPage() {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "16px" }}>
             <div>
-              <label style={{ display: "block", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: t.textMuted, marginBottom: "6px" }}>
+              <label style={{ display: "block", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: t.text, marginBottom: "6px" }}>
                 Name *
               </label>
               <input
@@ -143,7 +143,7 @@ export default function AdminCategoriesPage() {
               />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: t.textMuted, marginBottom: "6px" }}>
+              <label style={{ display: "block", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: t.text, marginBottom: "6px" }}>
                 Slug *
               </label>
               <input
@@ -156,7 +156,7 @@ export default function AdminCategoriesPage() {
             </div>
           </div>
 
-          <label style={{ display: "block", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: t.textMuted, marginBottom: "8px" }}>
+          <label style={{ display: "block", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: t.text, marginBottom: "8px" }}>
             Color
           </label>
           <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
@@ -213,7 +213,7 @@ export default function AdminCategoriesPage() {
                 transition: "border-color 0.15s, color 0.15s",
               }}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.color = t.text; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.color = t.textMuted; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.color = t.text; }}
             >
               Cancel
             </button>
@@ -263,13 +263,13 @@ export default function AdminCategoriesPage() {
                 <p style={{ fontSize: "13px", fontWeight: 600, color: t.text, margin: 0 }}>
                   {cat.name}
                 </p>
-                <p style={{ fontSize: "11px", color: t.textMuted, margin: 0, fontFamily: t.mono }}>
+                <p style={{ fontSize: "11px", color: t.text, margin: 0, fontFamily: t.mono }}>
                   /{cat.slug}
                 </p>
               </div>
 
               <span style={{
-                fontSize: "11px", color: t.textMuted,
+                fontSize: "11px", color: t.text,
                 display: "flex", alignItems: "center", gap: "4px", flexShrink: 0,
               }}>
                 <CalendarDays style={{ width: "11px", height: "11px" }} />
@@ -282,11 +282,11 @@ export default function AdminCategoriesPage() {
                 style={{
                   width: "28px", height: "28px", display: "flex", alignItems: "center",
                   justifyContent: "center", border: "none", background: "transparent",
-                  color: t.textMuted, cursor: "pointer", borderRadius: "4px",
+                  color: t.text, cursor: "pointer", borderRadius: "4px",
                   transition: "background 0.1s, color 0.1s",
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = t.surfaceActive; e.currentTarget.style.color = t.text; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent";   e.currentTarget.style.color = t.textMuted; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent";   e.currentTarget.style.color = t.text; }}
               >
                 <Pencil style={{ width: "12px", height: "12px" }} />
               </button>
@@ -298,12 +298,12 @@ export default function AdminCategoriesPage() {
                 style={{
                   width: "28px", height: "28px", display: "flex", alignItems: "center",
                   justifyContent: "center", border: "none", background: "transparent",
-                  color: t.textMuted, cursor: "pointer", borderRadius: "4px",
+                  color: t.text, cursor: "pointer", borderRadius: "4px",
                   opacity: deleting === cat.id ? 0.5 : 1,
                   transition: "background 0.1s, color 0.1s",
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = t.accentSoft; e.currentTarget.style.color = t.accent; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = t.textMuted; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = t.text; }}
               >
                 {deleting === cat.id
                   ? <Loader2 className="animate-spin" style={{ width: "12px", height: "12px" }} />

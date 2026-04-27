@@ -104,7 +104,7 @@ export default function AdminUsersPage() {
       {/* Filters */}
       <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: "1 1 280px", maxWidth: "320px" }}>
-          <Search style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", width: "14px", height: "14px", color: t.textFaint }} />
+          <Search style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", width: "14px", height: "14px", color: t.text }} />
           <input
             type="text"
             value={search}
@@ -175,7 +175,7 @@ export default function AdminUsersPage() {
                 <div style={{ position: "relative" }}>
                   <button
                     onClick={() => setMenuId(menuId === u.id ? null : u.id)}
-                    style={{ width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", color: t.textFaint, cursor: "pointer", borderRadius: "4px" }}
+                    style={{ width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", color: t.text, cursor: "pointer", borderRadius: "4px" }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = t.borderLight)}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                   >
@@ -186,7 +186,7 @@ export default function AdminUsersPage() {
                     <>
                       <div style={{ position: "fixed", inset: 0, zIndex: 10 }} onClick={() => setMenuId(null)} />
                       <div style={{ position: "absolute", right: 0, top: "100%", marginTop: "4px", width: "180px", background: t.surface, border: `1px solid ${t.border}`, borderRadius: "4px", boxShadow: "0 4px 16px rgba(0,0,0,0.08)", zIndex: 20, padding: "4px 0"}}>
-                        <p style={{ padding: "6px 12px", fontSize: "10px", fontWeight: 600, color: t.textFaint, textTransform: "uppercase", letterSpacing: "0.08em" }}>Change Role</p>
+                        <p style={{ padding: "6px 12px", fontSize: "10px", fontWeight: 600, color: t.text, textTransform: "uppercase", letterSpacing: "0.08em" }}>Change Role</p>
                         {(["USER", "ORGANIZER", "ADMIN"] as const).filter((r) => r !== u.role).map((role) => (
                           <button
                             key={role}

@@ -83,10 +83,10 @@ export default function AdminDashboardPage() {
   const today = new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
 
   return (
-    <div style={{ fontFamily:t.sans }}>
+    <div>
       <div style={{ marginBottom:"28px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"12px", marginBottom:"4px" }}>
-          <h1 style={{ fontSize:"22px", fontWeight:700, color:t.text, margin:0, letterSpacing:"-0.03em" }}>Dashboard</h1>
+          <h1 style={{ fontSize:"22px", fontWeight:600, color:t.text, margin:0, letterSpacing:"-0.03em" }}>Admin Panel</h1>
           <span style={{ display:"flex", alignItems:"center", gap:"5px", fontSize:"11px", color:t.green, fontWeight:600 }}>
             <span style={{ width:"6px", height:"6px", borderRadius:"50%", background:t.green, boxShadow:`0 0 8px ${t.green}`, display:"inline-block" }} />
             {stale ? "Refreshing…" : "Live"}
@@ -202,7 +202,7 @@ export default function AdminDashboardPage() {
           {label:"Messages",   href:"/admin/messages",   icon:<Mail          style={{width:"14px",height:"14px"}}/>},
         ].map((item) => (
           <Link key={item.href} href={item.href}
-            style={{ display:"flex", alignItems:"center", gap:"10px", padding:"11px 14px", background:t.surface, border:`1px solid ${t.borderLight}`, borderRadius:"5px", textDecoration:"none", fontSize:"12px", fontWeight:500, fontFamily:t.sans, transition:"border-color 0.15s, background 0.15s" }}
+            style={{ display:"flex", alignItems:"center", gap:"10px", padding:"11px 14px", background:t.surface, border:`1px solid ${t.borderLight}`, borderRadius:"5px", textDecoration:"none", fontSize:"12px", fontWeight:500,transition:"border-color 0.15s, background 0.15s" }}
             onMouseEnter={(e) => {(e.currentTarget as HTMLElement).style.borderColor=t.border;(e.currentTarget as HTMLElement).style.background=t.surfaceHover;}}
             onMouseLeave={(e) => {(e.currentTarget as HTMLElement).style.borderColor=t.borderLight;(e.currentTarget as HTMLElement).style.background=t.surface;}}
           >

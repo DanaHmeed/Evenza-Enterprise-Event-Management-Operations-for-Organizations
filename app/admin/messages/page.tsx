@@ -84,9 +84,9 @@ export default function AdminMessagesPage() {
     new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
 
   return (
-    <div style={{ fontFamily: 'Quicksand' }}>
+    <div>
       <div style={{ marginBottom: "24px" }}>
-        <h1 style={{ fontFamily: 'Quicksand', fontSize: "24px", fontWeight: 600, color: t.text, margin: 4 }}>Contact Messages</h1>
+        <h1 style={{ fontSize: "24px", fontWeight: 600, color: t.text, margin: 4 }}>Contact Messages</h1>
         <p style={{ fontSize: "13px", color: t.textMuted, marginTop: "4px" , marginLeft: 4}}>{total} messages from the contact form.</p>
       </div>
 
@@ -100,7 +100,6 @@ export default function AdminMessagesPage() {
               padding: "8px 14px",
               fontSize: "12px",
               fontWeight: 500,
-              fontFamily: 'Quicksand',
               border: `1px solid ${unreadOnly === val ? t.text : t.border}`,
               borderRadius: "4px",
               background: unreadOnly === val ? t.text : t.surface,
@@ -187,7 +186,6 @@ export default function AdminMessagesPage() {
                             padding: "7px 14px",
                             fontSize: "12px",
                             fontWeight: 600,
-                            fontFamily: 'Quicksand',
                             color: t.green,
                             background: t.greenSoft,
                             border: "none",
@@ -210,7 +208,6 @@ export default function AdminMessagesPage() {
                           padding: "7px 14px",
                           fontSize: "12px",
                           fontWeight: 600,
-                          fontFamily: 'Quicksand',
                           color: t.accent,
                           background: t.accentSoft,
                           border: "none",
@@ -231,7 +228,6 @@ export default function AdminMessagesPage() {
                           padding: "7px 14px",
                           fontSize: "12px",
                           fontWeight: 600,
-                          fontFamily: 'Quicksand',
                           color: t.textSecondary,
                           background: t.borderLight,
                           border: "none",

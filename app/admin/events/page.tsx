@@ -178,7 +178,7 @@ export default function AdminEventsPage() {
                   <div style={{ width:"34px", height:"34px", borderRadius:"4px", overflow:"hidden", flexShrink:0, background:"rgba(255,255,255,0.07)", display:"flex", alignItems:"center", justifyContent:"center" }}>
                     {event.banner
                       ? <img src={event.banner} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy" />
-                      : <CalendarDays style={{ width:"13px", height:"13px", color:t.textFaint }} />}
+                      : <CalendarDays style={{ width:"13px", height:"13px", color:t.text }} />}
                   </div>
                   <div style={{ minWidth:0 }}>
                     <p style={{ fontSize:"13px", fontWeight:600, color:t.text, margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{event.title}</p>

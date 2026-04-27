@@ -2,9 +2,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { DollarSign, Search, Loader2, ExternalLink } from "lucide-react";
-import { t, StatusBadge, SectionTitle, AdminPagination, AdminEmpty, AdminLoading } from "@/components/admin/AdminUI";
+import { DollarSign, Search, ExternalLink } from "lucide-react";
+import { t, StatusBadge, AdminPagination, AdminEmpty, AdminLoading } from "@/components/admin/AdminUI";
 
 interface OrderData {
   id: string;
@@ -109,14 +108,15 @@ export default function AdminOrdersPage() {
                 padding: "8px 14px",
                 fontSize: "12px",
                 fontWeight: 500,
-                //fontFamily: 'Quicksand',
                 border: `1px solid ${status === s ? t.text : t.border}`,
                 borderRadius: "4px",
                 background: status === s ? t.text : t.surface,
-                color: status === s ? "#fff" : t.textMuted,
+                color: status === s ? "#0a0a0a" : t.textSecondary,
                 cursor: "pointer",
                 transition: "all 0.15s",
               }}
+              onMouseEnter={(e) => { if (status !== s) e.currentTarget.style.background = t.surfaceHover; }}
+              onMouseLeave={(e) => { if (status !== s) e.currentTarget.style.background = t.surface; }}
             >
               {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
             </button>
@@ -145,7 +145,7 @@ export default function AdminOrdersPage() {
               fontWeight: 600,
               textTransform: "uppercase" as const,
               letterSpacing: "0.08em",
-              color: t.textFaint,
+              color: t.textSecondary,
             }}
             className="hidden lg:grid"
           >
@@ -171,12 +171,12 @@ export default function AdminOrdersPage() {
                 transition: "background 0.1s",
               }}
               className="grid-cols-1 lg:grid-cols-none"
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#fafaf6")}
+              onMouseEnter={(e) => (e.currentTarget.style.background = t.surfaceHover)}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
               <div style={{ minWidth: 0 }}>
                 <p style={{ fontWeight: 600, color: t.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{order.user.name}</p>
-                <p style={{ fontSize: "11px", color: t.textFaint, margin: 0 }}>{order.user.email}</p>
+                <p style={{ fontSize: "11px", color: t.textSecondary, margin: 0 }}>{order.user.email}</p>
               </div>
               <p style={{ color: t.textSecondary, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {order.event.title}

@@ -22,7 +22,7 @@ const t = {
   surface: "#fff",
   border: "#e5e5e0",
   borderLight: "#f0f0ec",
-  text: "#1a1a1a",
+  text: "#020202",
   textSecondary: "#555",
   textMuted: "#888",
   textFaint: "#aaa",
@@ -71,9 +71,36 @@ export default function ContactPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const validate = (fields: { name: string; email: string; subject: string; message: string }) => {
+    const errs: Record<string, string> = {};
+    if (!fields.name.trim()) errs.name = "Name is required";
+    if (!fields.email.trim()) {
+      errs.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) {
+      errs.email = "Enter a valid email address";
+    }
+    if (!fields.subject.trim()) errs.subject = "Subject is required";
+    if (!fields.message.trim()) errs.message = "Message is required";
+    return errs;
+  };
+
+  const handleBlur = (field: string) => {
+    setFocusedField(null);
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    const errs = validate({ name, email, subject, message });
+    setErrors(errs);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const allTouched = { name: true, email: true, subject: true, message: true };
+    setTouched(allTouched);
+    const errs = validate({ name, email, subject, message });
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     setSubmitting(true);
     // Replace with actual API call
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -83,6 +110,8 @@ export default function ContactPage() {
     setEmail("");
     setSubject("");
     setMessage("");
+    setErrors({});
+    setTouched({});
   };
 
   const inputStyle = (field: string): React.CSSProperties => ({
@@ -92,11 +121,18 @@ export default function ContactPage() {
     fontFamily: t.sans,
     color: t.text,
     background: t.bg,
-    border: `1px solid ${focusedField === field ? t.text : t.border}`,
+    border: `1px solid ${touched[field] && errors[field] ? t.accent : focusedField === field ? t.text : t.border}`,
     borderRadius: "4px",
     outline: "none",
     transition: "border-color 0.2s ease",
   });
+
+  const errorMsg = (field: string) =>
+    touched[field] && errors[field] ? (
+      <p style={{ margin: "6px 0 0", fontSize: "12px", color: t.accent }}>
+        {errors[field]}
+      </p>
+    ) : null;
 
   const labelStyle: React.CSSProperties = {
     display: "block",
@@ -104,18 +140,21 @@ export default function ContactPage() {
     fontWeight: 600,
     textTransform: "uppercase",
     letterSpacing: "0.08em",
-    color: t.textMuted,
+    color: t.textSecondary,
     marginBottom: "8px",
   };
 
   return (
     <div style={{ background: t.bg, fontFamily: t.sans, minHeight: "100vh" }}>
+      <style>{`
+        .contact-input::placeholder { color: #777; }
+      `}</style>
       {/* ─────────────────────────────────
           HERO — Split layout
           ───────────────────────────────── */}
       <section
         style={{
-          background: t.dark,
+          background: "#06060a",
           position: "relative",
           overflow: "hidden",
         }}
@@ -127,8 +166,8 @@ export default function ContactPage() {
             top: "40%",
             left: "20%",
             transform: "translate(-50%, -50%)",
-            width: "500px",
-            height: "500px",
+            width: "700px",
+            height: "700px",
             background:
               "radial-gradient(circle, rgba(230,57,70,0.06) 0%, transparent 70%)",
             pointerEvents: "none",
@@ -445,10 +484,12 @@ export default function ContactPage() {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       onFocus={() => setFocusedField("name")}
-                      onBlur={() => setFocusedField(null)}
+                      onBlur={() => handleBlur("name")}
                       placeholder="Your name"
+                      className="contact-input"
                       style={inputStyle("name")}
                     />
+                    {errorMsg("name")}
                   </div>
                   <div>
                     <label style={labelStyle}>Email *</label>
@@ -458,10 +499,12 @@ export default function ContactPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       onFocus={() => setFocusedField("email")}
-                      onBlur={() => setFocusedField(null)}
+                      onBlur={() => handleBlur("email")}
                       placeholder="you@example.com"
+                      className="contact-input"
                       style={inputStyle("email")}
                     />
+                    {errorMsg("email")}
                   </div>
                 </div>
 
@@ -474,10 +517,12 @@ export default function ContactPage() {
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     onFocus={() => setFocusedField("subject")}
-                    onBlur={() => setFocusedField(null)}
+                    onBlur={() => handleBlur("subject")}
                     placeholder="What is this about?"
+                    className="contact-input"
                     style={inputStyle("subject")}
                   />
+                  {errorMsg("subject")}
                 </div>
 
                 {/* Message */}
@@ -488,14 +533,16 @@ export default function ContactPage() {
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     onFocus={() => setFocusedField("message")}
-                    onBlur={() => setFocusedField(null)}
+                    onBlur={() => handleBlur("message")}
                     placeholder="Tell us more about your question or request..."
                     rows={6}
+                    className="contact-input"
                     style={{
                       ...inputStyle("message"),
                       resize: "none" as const,
                     }}
                   />
+                  {errorMsg("message")}
                 </div>
 
                 {/* Submit */}

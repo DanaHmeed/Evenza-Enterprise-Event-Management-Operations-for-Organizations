@@ -160,7 +160,7 @@ export default function AdminEventsPage() {
         <AdminEmpty icon={<CalendarDays style={{ width:"30px", height:"30px" }} />} message="No events found." />
       ) : (
         <div style={{ background:t.surface, border:`1px solid ${t.borderLight}`, borderRadius:"6px", overflow:"hidden", opacity: loading ? 0.65 : 1, transition:"opacity 0.15s" }}>
-          <div style={{ display:"grid", gridTemplateColumns:"3fr 1.4fr 1fr 1fr 1fr 72px", gap:"8px", padding:"10px 18px", background:"rgba(255,255,255,0.022)", fontSize:"10px", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.1em", color:t.textFaint }}>
+          <div style={{ display:"grid", gridTemplateColumns:"3fr 1.4fr 1fr 1fr 1fr 72px", gap:"8px", padding:"10px 18px", background:"rgba(255,255,255,0.022)", fontSize:"10px", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.1em", color:t.textSecondary }}>
             <span>Event</span><span>Organizer</span><span>Date</span><span>Status</span><span>Capacity</span>
             <span style={{ textAlign:"right" }}>Actions</span>
           </div>
@@ -210,11 +210,11 @@ export default function AdminEventsPage() {
                       <>
                         <div style={{ position:"fixed", inset:0, zIndex:10 }} onClick={() => setMenuId(null)} />
                         <div style={{ position:"absolute", right:0, top:"100%", marginTop:"4px", width:"158px", background:"#17171c", border:`1px solid ${t.border}`, borderRadius:"5px", boxShadow:"0 8px 28px rgba(0,0,0,0.45)", zIndex:20, padding:"4px" }}>
-                          {event.status === "DRAFT"     && <DropItem icon={<CheckCircle2/>} label="Publish"   color={t.green}  onClick={() => patchEvent(event.id,{status:"PUBLISHED"})} disabled={processing===event.id} />}
-                          {event.status === "PUBLISHED" && <DropItem icon={<Clock/>}        label="Unpublish" color={t.amber}  onClick={() => patchEvent(event.id,{status:"DRAFT"})}      disabled={processing===event.id} />}
-                          {event.status !== "CANCELLED" && <DropItem icon={<Ban/>}          label="Cancel"    color={t.accent} onClick={() => patchEvent(event.id,{status:"CANCELLED"})}  disabled={processing===event.id} />}
+                          {event.status === "DRAFT"     && <DropItem icon={<CheckCircle2 style={{ width:"14px", height:"14px" }}/>} label="Publish"   color={t.green}  onClick={() => patchEvent(event.id,{status:"PUBLISHED"})} disabled={processing===event.id} />}
+                          {event.status === "PUBLISHED" && <DropItem icon={<Clock style={{ width:"14px", height:"14px" }}/>}        label="Unpublish" color={t.amber}  onClick={() => patchEvent(event.id,{status:"DRAFT"})}      disabled={processing===event.id} />}
+                          {event.status !== "CANCELLED" && <DropItem icon={<Ban style={{ width:"14px", height:"14px" }}/>}          label="Cancel"    color={t.accent} onClick={() => patchEvent(event.id,{status:"CANCELLED"})}  disabled={processing===event.id} />}
                           <div style={{ height:"1px", background:t.borderLight, margin:"3px 0" }} />
-                          <DropItem icon={<Trash2/>} label="Delete" color={t.accent} onClick={() => deleteEvent(event.id)} disabled={processing===event.id} />
+                          <DropItem icon={<Trash2 style={{ width:"14px", height:"14px" }}/>} label="Delete" color={t.accent} onClick={() => deleteEvent(event.id)} disabled={processing===event.id} />
                         </div>
                       </>
                     )}
@@ -238,7 +238,7 @@ function DropItem({ icon, label, color, onClick, disabled }: { icon:React.ReactN
       onMouseEnter={(e) => { if(!disabled) e.currentTarget.style.background="rgba(255,255,255,0.06)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.background="transparent"; }}
     >
-      <span style={{ width:"13px", height:"13px", display:"flex", flexShrink:0 }}>{icon}</span>
+      <span style={{ width:"14px", height:"14px", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{icon}</span>
       {label}
     </button>
   );

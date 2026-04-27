@@ -157,19 +157,24 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
       let ticket = null;
       if (status === "APPROVED") {
-        const ticketNumber = generateTicketNumber();
-        ticket = await tx.ticket.create({
-          data: {
-            ticketNumber,
-            qrCode: generateQRData(registrationId, eventId),
-            eventId,
-            userId: updatedRegistration.userId,
-            registrationId,
-            price: 0,
-            currency: event.currency || "USD",
-            status: "PAID",
-          },
-        });
+        const existing = await tx.ticket.findUnique({ where: { registrationId } });
+        if (!existing) {
+          const ticketNumber = generateTicketNumber();
+          ticket = await tx.ticket.create({
+            data: {
+              ticketNumber,
+              qrCode: generateQRData(registrationId, eventId),
+              eventId,
+              userId: updatedRegistration.userId,
+              registrationId,
+              price: 0,
+              currency: event.currency || "USD",
+              status: "PAID",
+            },
+          });
+        } else {
+          ticket = existing;
+        }
       }
 
       if (status === "REJECTED") {

@@ -138,7 +138,7 @@ export default function AdminUsersPage() {
           {/* Table header */}
           <div
             className="hidden md:grid"
-            style={{ gridTemplateColumns: "3fr 1fr 1fr 1fr 80px", gap: "8px", padding: "10px 20px", background: t.borderLight, fontSize: "10px", fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: t.textFaint }}
+            style={{ gridTemplateColumns: "3fr 1fr 1fr 1fr 80px", gap: "8px", padding: "10px 20px", background: t.borderLight, fontSize: "10px", fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: t.textSecondary }}
           >
             <span>User</span><span>Role</span><span>Status</span><span>Joined</span><span style={{ textAlign: "right" }}>Actions</span>
           </div>
@@ -148,7 +148,7 @@ export default function AdminUsersPage() {
               key={u.id}
               style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1fr 1fr 80px", gap: "8px", padding: "12px 20px", alignItems: "center", borderTop: i > 0 ? `1px solid ${t.borderLight}` : "none", transition: "background 0.1s" }}
               className="grid-cols-1 md:grid-cols-none"
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#fafaf6")}
+              onMouseEnter={(e) => (e.currentTarget.style.background = t.surfaceHover)}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
               {/* User */}
@@ -162,7 +162,7 @@ export default function AdminUsersPage() {
                 )}
                 <div style={{ minWidth: 0 }}>
                   <p style={{ fontSize: "13px", fontWeight: 600, color: t.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.name}</p>
-                  <p style={{ fontSize: "11px", color: t.textFaint, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</p>
+                  <p style={{ fontSize: "11px", color: t.textSecondary, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</p>
                 </div>
               </div>
 

@@ -87,7 +87,7 @@ function EventMenu({
         }}
       >
         <MenuBtn
-          icon={<Pencil />}
+          icon={<Pencil style={{ width: 14, height: 14 }} />}
           label="Edit"
           color={t.textSecondary}
           href={`/dashboard/events/${eventId}/edit`}
@@ -95,7 +95,7 @@ function EventMenu({
         />
         {status === "DRAFT" && (
           <MenuBtn
-            icon={<CheckCircle2 />}
+            icon={<CheckCircle2 style={{ width: 14, height: 14 }} />}
             label="Publish"
             color={t.green}
             onClick={() => onPatch(eventId, "PUBLISHED")}
@@ -104,7 +104,7 @@ function EventMenu({
         )}
         {status === "PUBLISHED" && (
           <MenuBtn
-            icon={<Clock />}
+            icon={<Clock style={{ width: 14, height: 14 }} />}
             label="Unpublish"
             color={t.amber}
             onClick={() => onPatch(eventId, "DRAFT")}
@@ -113,7 +113,7 @@ function EventMenu({
         )}
         {status !== "CANCELLED" && (
           <MenuBtn
-            icon={<Ban />}
+            icon={<Ban style={{ width: 14, height: 14 }} />}
             label="Cancel"
             color={t.red}
             onClick={() => onPatch(eventId, "CANCELLED")}
@@ -122,7 +122,7 @@ function EventMenu({
         )}
         <div style={{ height: 1, background: t.borderLight, margin: "4px 0" }} />
         <MenuBtn
-          icon={<Trash2 />}
+          icon={<Trash2 style={{ width: 14, height: 14 }} />}
           label="Delete"
           color={t.red}
           onClick={() => onDelete(eventId)}
@@ -493,14 +493,14 @@ function MenuBtn({
   if (href) {
     return (
       <Link href={href} style={style} onMouseEnter={hover} onMouseLeave={leave} onClick={onClick}>
-        <span style={{ width: 13, height: 13, display: "flex", flexShrink: 0 }}>{icon}</span>
+        <span style={{ width: 14, height: 14, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{icon}</span>
         {label}
       </Link>
     );
   }
   return (
     <button onClick={onClick} disabled={disabled} style={style} onMouseEnter={hover} onMouseLeave={leave}>
-      <span style={{ width: 13, height: 13, display: "flex", flexShrink: 0 }}>{icon}</span>
+      <span style={{ width: 14, height: 14, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{icon}</span>
       {label}
     </button>
   );

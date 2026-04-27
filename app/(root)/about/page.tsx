@@ -1,7 +1,6 @@
 // app/(root)/about/page.tsx
 "use client";
 
-import { useRef } from "react";
 import Link from "next/link";
 import {
   Globe,
@@ -41,12 +40,7 @@ const t = {
 /* ═══════════════════════════════════════════
    Data
    ═══════════════════════════════════════════ */
-const stats = [
-  { value: "1,200+", label: "Events Created" },
-  { value: "8,500+", label: "Registered Attendees" },
-  { value: "50+", label: "Organizers" },
-  { value: "12", label: "Event Categories" },
-];
+
 
 const capabilities = [
   {
@@ -141,7 +135,8 @@ export default function AboutPage() {
         style={{
           position: "relative",
           overflow: "hidden",
-          background: "#1a1a2e",
+          background: "#06060a",
+          //background: "#1a1a2e",
           padding: "120px 48px 100px",
         }}
       >
@@ -150,11 +145,11 @@ export default function AboutPage() {
           style={{
             position: "absolute",
             top: "50%",
-            left: "30%",
+            left: "20%",
             transform: "translate(-50%, -50%)",
-            width: "600px",
+            width: "700px",
             height: "600px",
-            background: "radial-gradient(circle, rgba(230,57,70,0.08) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(241, 71, 86, 0.08) 0%, transparent 70%)",
             pointerEvents: "none",
           }}
         />
@@ -202,7 +197,7 @@ export default function AboutPage() {
           >
             Bringing people together
             <br />
-            through live experiences
+            through live experiences.
           </h1>
 
           <p
@@ -220,65 +215,6 @@ export default function AboutPage() {
           </p>
         </div>
       </section>
-
-      {/* ─────────────────────────────────
-          STATS BAR
-          ───────────────────────────────── */}
-      <section
-        style={{
-          background: t.surface,
-          borderBottom: `1px solid ${t.border}`,
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "1100px",
-            margin: "0 auto",
-            padding: "0 48px",
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: "0",
-          }}
-          className="grid-cols-2 sm:grid-cols-4"
-        >
-          {stats.map((stat, i) => (
-            <div
-              key={i}
-              style={{
-                padding: "40px 0",
-                textAlign: "center",
-                borderRight: i < stats.length - 1 ? `1px solid ${t.borderLight}` : "none",
-              }}
-            >
-              <p
-                style={{
-                  fontFamily: t.serif,
-                  fontSize: "32px",
-                  fontWeight: 600,
-                  color: t.text,
-                  margin: "0 0 4px 0",
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                {stat.value}
-              </p>
-              <p
-                style={{
-                  fontSize: "12px",
-                  fontWeight: 500,
-                  color: t.textMuted,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  margin: 0,
-                }}
-              >
-                {stat.label}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* ─────────────────────────────────
           MISSION
           ───────────────────────────────── */}

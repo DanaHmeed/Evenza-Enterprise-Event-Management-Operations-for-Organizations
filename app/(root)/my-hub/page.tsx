@@ -18,7 +18,7 @@ const t = {
   surface: "#ffffff",
   border: "#e8e8e4",
   borderLight: "#ebebea",
-  text: "#111111",
+  text: "#000000",
   textSecondary: "#555555",
   textMuted: "#aaaaaa",
   textFaint: "#cccccc",
@@ -127,8 +127,8 @@ export default async function MyHubPage() {
               <p
                 style={{
                   fontSize: "13px",
-                  color: t.textMuted,
-                  fontWeight: 300,
+                  color: t.textSecondary,
+                  fontWeight: 400,
                   margin: "5px 0 0",
                 }}
               >
@@ -202,7 +202,7 @@ export default async function MyHubPage() {
                 style={{
                   fontSize: "11px",
                   fontWeight: 300,
-                  color: t.textMuted,
+                  color: t.textSecondary,
                   margin: "5px 0 0",
                   letterSpacing: "0.02em",
                 }}
@@ -271,10 +271,10 @@ function Section({
         <span
           style={{
             fontSize: "10px",
-            fontWeight: 500,
+            fontWeight: 600,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: t.textMuted,
+            color: t.textSecondary,
           }}
         >
           {title}
@@ -369,7 +369,7 @@ function UpcomingCard({ reg }: { reg: HubRegistration }) {
           style={{
             fontSize: "12px",
             fontWeight: 300,
-            color: t.textMuted,
+            color: t.textSecondary,
             margin: "3px 0 0",
           }}
         >
@@ -483,7 +483,7 @@ function RecommendedCard({ event }: { event: HubEvent }) {
           style={{
             fontSize: "11px",
             fontWeight: 300,
-            color: t.textMuted,
+            color: t.textSecondary,
             margin: "4px 0 0",
           }}
         >
@@ -605,7 +605,7 @@ function EmptyState({ message, cta, href }: { message: string; cta: string; href
         style={{
           fontSize: "13px",
           fontWeight: 300,
-          color: t.textMuted,
+          color: t.textSecondary,
           margin: "0 0 14px",
         }}
       >

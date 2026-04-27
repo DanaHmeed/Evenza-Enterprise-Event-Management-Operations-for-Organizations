@@ -126,11 +126,14 @@ export default function AdminFeedbackPage() {
               key={s}
               onClick={() => { setStatusFilter(s); setPage(1); }}
               style={{
-                padding: "8px 14px", fontSize: "12px", fontWeight: 500, 
+                padding: "8px 14px", fontSize: "12px", fontWeight: 500,
                 border: `1px solid ${statusFilter === s ? t.text : t.border}`, borderRadius: "4px",
                 background: statusFilter === s ? t.text : t.surface,
-                color: statusFilter === s ? "#fff" : t.textMuted, cursor: "pointer",
+                color: statusFilter === s ? "#0a0a0a" : t.textSecondary, cursor: "pointer",
+                transition: "all 0.15s",
               }}
+              onMouseEnter={(e) => { if (statusFilter !== s) e.currentTarget.style.background = t.surfaceHover; }}
+              onMouseLeave={(e) => { if (statusFilter !== s) e.currentTarget.style.background = t.surface; }}
             >
               {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
             </button>
@@ -159,7 +162,7 @@ export default function AdminFeedbackPage() {
                 <div
                   onClick={() => setExpandedId(expanded ? null : fb.id)}
                   style={{ display: "flex", alignItems: "center", gap: "12px", padding: "14px 20px", cursor: "pointer", transition: "background 0.1s" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#fafaf6")}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = t.surfaceHover)}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 >
                   {/* Avatar */}
@@ -173,7 +176,7 @@ export default function AdminFeedbackPage() {
 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: "13px", fontWeight: 600, color: t.text, margin: 0 }}>{fb.user.name}</p>
-                    <p style={{ fontSize: "11px", color: t.textFaint, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <p style={{ fontSize: "11px", color: t.textSecondary, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       on {fb.event.title}
                     </p>
                   </div>

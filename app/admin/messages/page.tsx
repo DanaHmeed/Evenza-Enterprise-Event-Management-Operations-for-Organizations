@@ -147,7 +147,7 @@ export default function AdminMessagesPage() {
                     cursor: "pointer",
                     transition: "background 0.1s",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#fafaf6")}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = t.surfaceHover)}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 >
                   {!msg.isRead && (
@@ -161,7 +161,7 @@ export default function AdminMessagesPage() {
                       {msg.name} · {msg.email}
                     </p>
                   </div>
-                  <span style={{ fontSize: "11px", color: t.textFaint, flexShrink: 0 }}>{fmtDate(msg.createdAt)}</span>
+                  <span style={{ fontSize: "11px", color: t.textSecondary, flexShrink: 0 }}>{fmtDate(msg.createdAt)}</span>
                   {expanded ? (
                     <ChevronUp style={{ width: "14px", height: "14px", color: t.textFaint }} />
                   ) : (

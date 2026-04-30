@@ -42,7 +42,7 @@ export default function AdminOrdersPage() {
     try {
       const params = new URLSearchParams();
       params.set("page", page.toString());
-      params.set("pageSize", "20");
+      params.set("pageSize", "12");
       if (status !== "ALL") params.set("status", status);
       if (search) params.set("search", search);
 

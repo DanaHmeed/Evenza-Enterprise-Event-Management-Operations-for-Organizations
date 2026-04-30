@@ -116,7 +116,7 @@ export default function OrganizerRevenuePage() {
   ) => {
     setLoading(true);
     try {
-      const qs = new URLSearchParams({ page: String(p), pageSize: "20" });
+      const qs = new URLSearchParams({ page: String(p), pageSize: "12" });
       if (f !== "ALL") qs.set("status", f);
       if (s) qs.set("search", s);
 
@@ -138,8 +138,8 @@ export default function OrganizerRevenuePage() {
 
   const markAs = async (orderId: string, paymentStatus: "PAID" | "REFUNDED" | "FAILED") => {
     const label =
-      paymentStatus === "PAID"     ? "mark as paid" :
-      paymentStatus === "REFUNDED" ? "refund" : "mark as failed";
+      paymentStatus === "PAID"     ? "approve this payment" :
+      paymentStatus === "REFUNDED" ? "refund" : "reject this order";
     if (!confirm(`Are you sure you want to ${label} this order?`)) return;
 
     setProcessing(orderId);
@@ -150,9 +150,9 @@ export default function OrganizerRevenuePage() {
         body: JSON.stringify({ action: ACTION_MAP[paymentStatus] }),
       });
       if (res.ok) {
-        fetchOrders(filter, search, page);
+        await fetchOrders(filter, search, page);
         setToast({
-          message: paymentStatus === "PAID" ? "Payment confirmed" : paymentStatus === "REFUNDED" ? "Order refunded" : "Order marked failed",
+          message: paymentStatus === "PAID" ? "Payment approved" : paymentStatus === "REFUNDED" ? "Order refunded" : "Order rejected",
           description: paymentStatus === "PAID" ? "Registration and ticket have been issued." : undefined,
           variant: paymentStatus === "FAILED" ? "error" : "success",
         });
@@ -384,7 +384,7 @@ export default function OrganizerRevenuePage() {
 
                     {/* Actions */}
                     <div style={{ display: "flex", justifyContent: "flex-end", gap: 4 }}>
-                      {isPendingManual && (
+                      {o.paymentStatus === "PENDING" && (
                         <button
                           onClick={() => markAs(o.id, "PAID")}
                           disabled={processing === o.id}
@@ -400,7 +400,26 @@ export default function OrganizerRevenuePage() {
                           {processing === o.id
                             ? <Loader2 className="animate-spin" style={{ width: 11, height: 11 }} />
                             : <CheckCircle2 style={{ width: 11, height: 11 }} />}
-                          Mark Paid
+                          Approve
+                        </button>
+                      )}
+                      {o.paymentStatus === "PENDING" && (
+                        <button
+                          onClick={() => markAs(o.id, "FAILED")}
+                          disabled={processing === o.id}
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: 4,
+                            padding: "5px 10px", fontSize: 11, fontWeight: 600,
+                            color: t.red, background: t.redSoft,
+                            border: "none", borderRadius: 3,
+                            cursor: processing === o.id ? "default" : "pointer",
+                            opacity: processing === o.id ? 0.5 : 1,
+                          }}
+                        >
+                          {processing === o.id
+                            ? <Loader2 className="animate-spin" style={{ width: 11, height: 11 }} />
+                            : <AlertCircle style={{ width: 11, height: 11 }} />}
+                          Reject
                         </button>
                       )}
                       {o.paymentStatus === "PAID" && (

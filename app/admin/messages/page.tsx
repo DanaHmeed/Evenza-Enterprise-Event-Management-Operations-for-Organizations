@@ -34,7 +34,7 @@ export default function AdminMessagesPage() {
     try {
       const params = new URLSearchParams();
       params.set("page", page.toString());
-      params.set("pageSize", "20");
+      params.set("pageSize", "12");
       if (unreadOnly) params.set("unread", "true");
 
       const res = await fetch(`/api/admin/messages?${params}`);

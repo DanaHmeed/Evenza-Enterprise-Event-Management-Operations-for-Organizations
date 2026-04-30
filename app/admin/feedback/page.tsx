@@ -55,7 +55,7 @@ export default function AdminFeedbackPage() {
     try {
       const params = new URLSearchParams();
       params.set("page", page.toString());
-      params.set("pageSize", "20");
+      params.set("pageSize", "12");
       if (statusFilter !== "ALL") params.set("status", statusFilter);
       if (search) params.set("search", search);
       const res = await fetch(`/api/feedback?${params}`);

@@ -50,7 +50,7 @@ export function useOrganizerEvents(params: {
   status?: string;
   search?: string;
 }) {
-  const { page, pageSize = 20, status, search } = params;
+  const { page, pageSize = 12, status, search } = params;
   const sp = new URLSearchParams();
   sp.set("page", page.toString());
   sp.set("pageSize", pageSize.toString());
@@ -78,7 +78,7 @@ export function useOrganizerAttendees(params: {
   search?: string;
   eventId?: string;
 }) {
-  const { page, pageSize = 20, status, search, eventId } = params;
+  const { page, pageSize = 12, status, search, eventId } = params;
   const sp = new URLSearchParams();
   sp.set("page", page.toString());
   sp.set("pageSize", pageSize.toString());
@@ -107,7 +107,7 @@ export function useOrganizerOrders(params: {
   status?: string;
   search?: string;
 }) {
-  const { page, pageSize = 20, status, search } = params;
+  const { page, pageSize = 12, status, search } = params;
   const sp = new URLSearchParams();
   sp.set("page", page.toString());
   sp.set("pageSize", pageSize.toString());
@@ -134,7 +134,7 @@ export function useOrganizerFeedbacks(params: {
   pageSize?: number;
   status?: string;
 }) {
-  const { page, pageSize = 20, status } = params;
+  const { page, pageSize = 12, status } = params;
   const sp = new URLSearchParams();
   sp.set("page", page.toString());
   sp.set("pageSize", pageSize.toString());

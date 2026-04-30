@@ -70,7 +70,7 @@ export default function OrganizerFeedbackPage() {
 
   const { feedbacks, stats, pagination, isLoading } = useOrganizerFeedbacks({
     page,
-    pageSize: 20,
+    pageSize: 12,
   });
 
   const fmtDate = (d: string) =>

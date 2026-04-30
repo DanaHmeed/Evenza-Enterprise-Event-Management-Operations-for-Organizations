@@ -51,7 +51,7 @@ export default function AdminUsersPage() {
     try {
       const params = new URLSearchParams();
       params.set("page", page.toString());
-      params.set("pageSize", "20");
+      params.set("pageSize", "12");
       if (search) params.set("search", search);
       if (roleFilter !== "ALL") params.set("role", roleFilter);
       const res = await fetch(`/api/users?${params}`);

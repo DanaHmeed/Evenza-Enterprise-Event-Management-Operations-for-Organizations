@@ -90,7 +90,7 @@ export async function POST(request: NextRequest, { params }: Params) {
         ticket = await tx.ticket.create({
           data: {
             ticketNumber,
-            qrCode: generateQRData(registration.id, eventId),
+            qrCode: `pending-free-${registration.id}`,
             eventId,
             userId: authResult.userId,
             registrationId: registration.id,
@@ -98,6 +98,10 @@ export async function POST(request: NextRequest, { params }: Params) {
             currency: event.currency || "USD",
             status: "PAID", // Free events are instantly "paid"
           },
+        });
+        await tx.ticket.update({
+          where: { id: ticket.id },
+          data: { qrCode: generateQRData(ticket.id, eventId) },
         });
       }
 

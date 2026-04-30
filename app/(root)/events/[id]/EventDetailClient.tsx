@@ -349,6 +349,8 @@ interface EventDetailClientProps {
   event: EventData;
   feedbacks: FeedbackData[];
   feedbackStats: { count: number; averageRating: number };
+  initialIsRegistered?: boolean;
+  initialRegistrationStatus?: string | null;
 }
 
 // ─── Formatters (outside component) ───
@@ -371,13 +373,15 @@ export default function EventDetailClient({
   event,
   feedbacks,
   feedbackStats,
+  initialIsRegistered = false,
+  initialRegistrationStatus = null,
 }: EventDetailClientProps) {
   const router = useRouter();
   const { isSignedIn, isLoaded: isClerkLoaded, user } = useUser();
 
   const [registering, setRegistering] = useState(false);
-  const [isRegistered, setIsRegistered] = useState(false);
-  const [registrationStatus, setRegistrationStatus] = useState<string | null>(null);
+  const [isRegistered, setIsRegistered] = useState(initialIsRegistered);
+  const [registrationStatus, setRegistrationStatus] = useState<string | null>(initialRegistrationStatus);
   const [actionMessage, setActionMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const initialChecksDone = useRef(false);
@@ -400,7 +404,7 @@ export default function EventDetailClient({
   }, []);
 
   useEffect(() => {
-    if (!isClerkLoaded || !isSignedIn || initialChecksDone.current) return;
+    if (!isClerkLoaded || !isSignedIn || initialChecksDone.current || initialIsRegistered) return;
     initialChecksDone.current = true;
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
@@ -412,7 +416,7 @@ export default function EventDetailClient({
       } catch { /* silent */ }
     }, 250);
     return () => { controller.abort(); window.clearTimeout(timer); };
-  }, [isClerkLoaded, isSignedIn, event.id]);
+  }, [isClerkLoaded, isSignedIn, event.id, initialIsRegistered]);
 
   // ─── Handlers ───
   const handleRegister = useCallback(async () => {
@@ -426,7 +430,13 @@ export default function EventDetailClient({
         setRegistrationStatus(data.data?.registration?.status || "APPROVED");
         setActionMessage({ type: "success", text: data.message || "Registered successfully!" });
       } else {
-        setActionMessage({ type: "error", text: data.error || "Registration failed" });
+        const msg: string = data.error || "Registration failed";
+        if (msg.toLowerCase().includes("already registered")) {
+          setIsRegistered(true);
+          setRegistrationStatus(data.data?.status || "APPROVED");
+        } else {
+          setActionMessage({ type: "error", text: msg });
+        }
       }
     } catch { setActionMessage({ type: "error", text: "Something went wrong" }); }
     finally { setRegistering(false); }
@@ -669,12 +679,19 @@ export default function EventDetailClient({
                   )}
                   {isRegistered && (
                     <>
-                      <div style={S.registeredBadge}>
-                        <CheckCircle2 style={{ width: "15px", height: "15px", color: t.green }} />
-                        <span style={S.registeredText}>
-                          {registrationStatus === "PENDING" ? "Pending Approval" : "You're Registered"}
-                        </span>
-                      </div>
+                      <button
+                        disabled
+                        style={{
+                          ...S.btnPrimary,
+                          background: registrationStatus === "PENDING" ? t.amber : t.green,
+                          opacity: 1,
+                          cursor: "default",
+                          boxShadow: "none",
+                        }}
+                      >
+                        <CheckCircle2 style={{ width: "15px", height: "15px", color: "#fff" }} />
+                        {registrationStatus === "PENDING" ? "Pending Approval" : "Registered"}
+                      </button>
                       {canCancel && (
                         <button style={S.btnSecondary} disabled={registering} onClick={handleCancelRegistration}>
                           Cancel Registration
@@ -727,12 +744,19 @@ export default function EventDetailClient({
                   </button>
                 ) : isRegistered ? (
                   <>
-                    <div style={{ ...S.registeredBadge, borderRadius: "4px" }}>
-                      <CheckCircle2 style={{ width: "15px", height: "15px", color: t.green }} />
-                      <span style={S.registeredText}>
-                        {registrationStatus === "PENDING" ? "Pending Approval" : "You're Registered"}
-                      </span>
-                    </div>
+                    <button
+                      disabled
+                      style={{
+                        ...S.btnPrimary,
+                        background: registrationStatus === "PENDING" ? t.amber : t.green,
+                        opacity: 1,
+                        cursor: "default",
+                        boxShadow: "none",
+                      }}
+                    >
+                      <CheckCircle2 style={{ width: "15px", height: "15px", color: "#fff" }} />
+                      {registrationStatus === "PENDING" ? "Pending Approval" : "Registered"}
+                    </button>
                     {canCancel && (
                       <button style={S.btnSecondary} disabled={registering} onClick={handleCancelRegistration}>
                         Cancel Registration

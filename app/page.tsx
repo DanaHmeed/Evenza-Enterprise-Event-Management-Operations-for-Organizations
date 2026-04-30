@@ -19,7 +19,6 @@ import {
   Lock,
   Clock,
 } from "lucide-react";
-// Stagger container variants for feature cards
 const staggerContainer = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.08 } },
@@ -415,19 +414,6 @@ const features = [
       </svg>
     ),
   },
-  {
-    title: "Email Campaigns",
-    tag: "MARKETING",
-    num: "08",
-    desc: "Built-in email tools for invitations, reminders, and post-event follow-ups.",
-    accent: "#6d2501",
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-        <polyline points="22,6 12,13 2,6" />
-      </svg>
-    ),
-  },
 ];
 
 const row1 = [...features, ...features];
@@ -697,7 +683,7 @@ export function IntelligentWorkflow() {
             SMART EVENT CONTROL
           </p>
 
-          <h2 className="text-3xl md:text-4xl font-bold text-[#010127] leading-tight font-[Quicksand]">
+          <h2 className="text-2xl md:text-4xl text-[#010127] leading-tight font-[Rubik]">
             Plan → Launch → Optimize
             <br />
             {/* <span className="bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
@@ -913,7 +899,7 @@ function HowItWorksSection() {
       style={{
         padding: "140px 0",
         background: "#0a0a0f",
-        fontFamily: "'Quicksand', sans-serif",
+        fontFamily: "Rubik",
         position: "relative",
         overflow: "hidden",
       }}
@@ -1055,7 +1041,7 @@ function HowItWorksSection() {
                 <div
                   style={{
                     flexShrink: 0,
-                    width: "120px",
+                    width: "100px",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -1066,8 +1052,8 @@ function HowItWorksSection() {
                   <span
                     data-num
                     style={{
-                      fontSize: "80px",
-                      fontWeight: 700,
+                      fontSize: "70px",
+                      fontWeight: 600,
                       color: "rgba(255,255,255,0.06)",
                       lineHeight: 1,
                       letterSpacing: "-0.04em",
@@ -2430,7 +2416,7 @@ const scaleIn = {
             <motion.h2
               custom={1}
               style={{
-                fontFamily: "'Playfair Display', Georgia, serif",
+                fontFamily: "Quicksand, sans-serif",
                 fontSize: "clamp(1.75rem, 3.5vw, 2.75rem)",
                 fontWeight: 700,
                 lineHeight: 1.15,

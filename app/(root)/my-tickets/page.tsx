@@ -4,17 +4,18 @@
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
+import { QRCodeSVG } from "qrcode.react";
 import {
   Ticket,
   Calendar,
   MapPin,
   Globe,
   Loader2,
-  QrCode,
   CheckCircle2,
   Clock,
   XCircle,
   ArrowUpRight,
+  X,
 } from "lucide-react";
 
 interface TicketData {
@@ -39,10 +40,83 @@ interface TicketData {
   } | null;
 }
 
+const statusConfig: Record<string, { color: string; bg: string; icon: React.ReactNode }> = {
+  VALID: { color: "text-green-700", bg: "bg-green-50 border-green-200", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+  PAID: { color: "text-green-700", bg: "bg-green-50 border-green-200", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+  USED: { color: "text-blue-700", bg: "bg-blue-50 border-blue-200", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+  RESERVED: { color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: <Clock className="w-3.5 h-3.5" /> },
+  CANCELLED: { color: "text-gray-600", bg: "bg-gray-50 border-gray-200", icon: <XCircle className="w-3.5 h-3.5" /> },
+  REFUNDED: { color: "text-gray-600", bg: "bg-gray-50 border-gray-200", icon: <XCircle className="w-3.5 h-3.5" /> },
+};
+
+function QRModal({ ticket, onClose }: { ticket: TicketData; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.55)" }}
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="text-center mb-5">
+          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Your Ticket</p>
+          <h3 className="text-base font-bold text-gray-900 line-clamp-2">{ticket.event.title}</h3>
+          <p className="text-xs text-gray-500 mt-1">
+            {new Date(ticket.event.startDate).toLocaleDateString("en-US", {
+              weekday: "long", month: "long", day: "numeric", year: "numeric",
+            })}
+          </p>
+        </div>
+
+        <div className="flex justify-center mb-5">
+          <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl">
+            {ticket.qrCode ? (
+              <QRCodeSVG
+                value={ticket.qrCode}
+                size={200}
+                level="M"
+                marginSize={0}
+              />
+            ) : (
+              <div className="w-[200px] h-[200px] flex items-center justify-center text-gray-400 text-sm">
+                QR unavailable
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="text-center border-t border-dashed border-gray-200 pt-4">
+          <p className="text-xs text-gray-500 mb-1">Ticket Number</p>
+          <p className="font-mono font-bold text-gray-900 tracking-widest text-sm">{ticket.ticketNumber}</p>
+          {ticket.registration?.checkedIn && (
+            <span className="inline-flex items-center gap-1 mt-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-200">
+              <CheckCircle2 className="w-3 h-3" /> Already checked in
+            </span>
+          )}
+        </div>
+
+        <p className="text-center text-xs text-gray-400 mt-4">
+          Show this QR code at the event entrance
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function MyTicketsPage() {
   const { user, isSignedIn } = useUser();
   const [tickets, setTickets] = useState<TicketData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTicket, setSelectedTicket] = useState<TicketData | null>(null);
 
   useEffect(() => {
     if (!isSignedIn || !user) return;
@@ -64,20 +138,17 @@ export default function MyTicketsPage() {
   const fmtTime = (d: string) =>
     new Date(d).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
   const isPast = (d: string) => new Date(d) < new Date();
+  const isActive = (t: TicketData) => !isPast(t.event.endDate) && (t.status === "VALID" || t.status === "PAID");
 
-  const statusConfig: Record<string, { color: string; bg: string; icon: React.ReactNode }> = {
-    VALID: { color: "text-green-700", bg: "bg-green-50 border-green-200", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
-    USED: { color: "text-blue-700", bg: "bg-blue-50 border-blue-200", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
-    RESERVED: { color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: <Clock className="w-3.5 h-3.5" /> },
-    CANCELLED: { color: "text-gray-600", bg: "bg-gray-50 border-gray-200", icon: <XCircle className="w-3.5 h-3.5" /> },
-    REFUNDED: { color: "text-gray-600", bg: "bg-gray-50 border-gray-200", icon: <XCircle className="w-3.5 h-3.5" /> },
-  };
-
-  const upcoming = tickets.filter((t) => !isPast(t.event.endDate) && t.status === "VALID");
-  const past = tickets.filter((t) => isPast(t.event.endDate) || t.status !== "VALID");
+  const upcoming = tickets.filter(isActive);
+  const past = tickets.filter((t) => !isActive(t));
 
   return (
     <section className="min-h-screen bg-gray-50">
+      {selectedTicket && (
+        <QRModal ticket={selectedTicket} onClose={() => setSelectedTicket(null)} />
+      )}
+
       <div className="max-w-4xl mx-auto px-6 pt-16 pb-20">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
@@ -136,13 +207,26 @@ export default function MyTicketsPage() {
                                 <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${ss.bg} ${ss.color}`}>{ss.icon}{ticket.status}</span>
                               </div>
                             </div>
+
+                            {/* QR Code */}
                             <div className="flex flex-col items-center justify-center sm:border-l sm:border-dashed sm:border-gray-200 sm:pl-4 gap-2">
-                              <div className="w-16 h-16 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center">
-                                <QrCode className="w-8 h-8 text-gray-300" />
-                              </div>
-                              <Link href={`/events/${ticket.event.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-orange-600 hover:text-orange-700">
-                                View <ArrowUpRight className="w-3 h-3" />
-                              </Link>
+                              <button
+                                onClick={() => setSelectedTicket(ticket)}
+                                className="w-16 h-16 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center hover:border-orange-300 hover:bg-orange-50 transition-colors group cursor-pointer"
+                                title="Show QR code"
+                              >
+                                {ticket.qrCode ? (
+                                  <QRCodeSVG value={ticket.qrCode} size={48} level="L" />
+                                ) : (
+                                  <Ticket className="w-6 h-6 text-gray-300 group-hover:text-orange-400 transition-colors" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => setSelectedTicket(ticket)}
+                                className="text-xs font-medium text-orange-600 hover:text-orange-700 flex items-center gap-1"
+                              >
+                                Show QR <ArrowUpRight className="w-3 h-3" />
+                              </button>
                             </div>
                           </div>
                         </div>

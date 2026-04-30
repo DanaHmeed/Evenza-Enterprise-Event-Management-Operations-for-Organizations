@@ -52,6 +52,13 @@ export async function POST(request: NextRequest, { params }: Params) {
       });
     }
 
+    // Cancel any existing PENDING orders for this user+event so they don't
+    // accumulate as duplicate rows every time the user retries checkout.
+    await prisma.order.updateMany({
+      where: { userId, eventId, paymentStatus: "PENDING" },
+      data: { paymentStatus: "FAILED" },
+    });
+
     const body = await request.json();
     const { paymentMethod } = body;
 
@@ -97,13 +104,17 @@ export async function POST(request: NextRequest, { params }: Params) {
         const ticket = await tx.ticket.create({
           data: {
             ticketNumber,
-            qrCode: generateQRData(registration.id, eventId),
+            qrCode: `pending-${registration.id}`,
             userId, eventId,
             registrationId: registration.id,
             price: event.price ?? 0,
             currency: event.currency || "USD",
             status: "RESERVED",
           },
+        });
+        await tx.ticket.update({
+          where: { id: ticket.id },
+          data: { qrCode: generateQRData(ticket.id, eventId) },
         });
 
         const order = await tx.order.create({
@@ -157,13 +168,17 @@ export async function POST(request: NextRequest, { params }: Params) {
         const ticket = await tx.ticket.create({
           data: {
             ticketNumber,
-            qrCode: generateQRData(registration.id, eventId),
+            qrCode: `pending-manual-${registration.id}`,
             userId, eventId,
             registrationId: registration.id,
             price: event.price ?? 0,
             currency: event.currency || "USD",
             status: "RESERVED",
           },
+        });
+        await tx.ticket.update({
+          where: { id: ticket.id },
+          data: { qrCode: generateQRData(ticket.id, eventId) },
         });
 
         const order = await tx.order.create({

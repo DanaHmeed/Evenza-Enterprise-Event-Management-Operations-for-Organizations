@@ -1,5 +1,5 @@
 // lib/auth/require-role.ts
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import prisma from "@/lib/db/prisma";
 import { Role } from "@/lib/generated/prisma/enums";
 import { NextResponse } from "next/server";
@@ -21,24 +21,36 @@ export async function getCurrentUser(): Promise<AuthResult | null> {
 
   if (!userId) return null;
 
-  const user = await prisma.user.findUnique({
+  let user = await prisma.user.findUnique({
     where: { id: userId },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      role: true,
-      isActive: true,
-    },
+    select: { id: true, email: true, name: true, role: true, isActive: true },
   });
 
-  if (!user || !user.isActive) return null;
+  // Lazy sync: if the Clerk user exists but isn't in the DB yet (webhook missed),
+  // create the record now so authenticated users are never locked out.
+  if (!user) {
+    try {
+      const client = await clerkClient();
+      const clerkUser = await client.users.getUser(userId);
+      const email = clerkUser.emailAddresses[0]?.emailAddress || "";
+      const name =
+        [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") ||
+        "User";
 
-  return {
-    userId: user.id,
-    role: user.role,
-    user,
-  };
+      user = await prisma.user.upsert({
+        where: { id: userId },
+        update: {},
+        create: { id: userId, email, name, role: "USER", isActive: true },
+        select: { id: true, email: true, name: true, role: true, isActive: true },
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  if (!user.isActive) return null;
+
+  return { userId: user.id, role: user.role, user };
 }
 
 export async function requireRole(

@@ -332,19 +332,19 @@ export function FeedbackSection({
             onClick={() => setShowFeedbackForm(true)}
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLButtonElement).style.background =
-                "#2c3050";
+                "#c62e3a";
               (e.currentTarget as HTMLButtonElement).style.transform =
                 "translateY(-1px)";
               (e.currentTarget as HTMLButtonElement).style.boxShadow =
-                "0 6px 24px rgba(30,34,53,0.26)";
+                "0 6px 20px rgba(230,57,70,0.32)";
             }}
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLButtonElement).style.background =
-                "#1e2235";
+                t.accent;
               (e.currentTarget as HTMLButtonElement).style.transform =
                 "translateY(0)";
               (e.currentTarget as HTMLButtonElement).style.boxShadow =
-                "0 2px 12px rgba(30,34,53,0.18)";
+                "0 2px 10px rgba(230,57,70,0.22)";
             }}
             onMouseDown={(e) => {
               (e.currentTarget as HTMLButtonElement).style.transform =
@@ -355,17 +355,17 @@ export function FeedbackSection({
                 "translateY(-1px)";
             }}
             style={{
-              padding: "8px 16px",
-              background: "#3f3f3f",
+              padding: "8px 18px",
+              background: t.accent,
               color: "#ffffff",
-              fontFamily: t.sans,
+              fontFamily: t.serif,
               fontSize: "14px",
-              fontWeight: 500,
+              fontWeight: 600,
               letterSpacing: "0.02em",
               border: "none",
-              borderRadius: "10px",
+              borderRadius: "6px",
               cursor: "pointer",
-              boxShadow: "0 2px 12px rgba(44, 49, 70, 0.18)",
+              boxShadow: `0 2px 10px rgba(230,57,70,0.22)`,
               transition: "background 0.2s, transform 0.15s, box-shadow 0.2s",
               outline: "none",
               whiteSpace: "nowrap" as const,
@@ -435,15 +435,36 @@ export function FeedbackSection({
 
           <div style={FS.formActions}>
             <button
-              loading={submittingFeedback}
-              disabled={feedbackRating === 0}
+              disabled={feedbackRating === 0 || submittingFeedback}
               onClick={handleSubmitFeedback}
-            >
+              style={{
+              fontFamily: t.serif,
+              fontSize: "14px",
+              fontWeight: 600,
+              letterSpacing: "0.02em",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              transition: "background 0.2s, transform 0.15s, box-shadow 0.2s",
+              outline: "none",
+              whiteSpace: "nowrap" as const,
+            }}>
               Submit Review
             </button>
             <button className=""
               onClick={() => setShowFeedbackForm(false)}
-            >
+            style={{
+              fontFamily: t.serif,
+              fontSize: "14px",
+              fontWeight: 600,
+              letterSpacing: "0.02em",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              transition: "background 0.2s, transform 0.15s, box-shadow 0.2s",
+              outline: "none",
+              whiteSpace: "nowrap" as const,
+            }}>
               Cancel
             </button>
           </div>

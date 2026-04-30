@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   MessageSquare,
   CreditCard,
+  ScanLine,
 } from "lucide-react";
 
 /* ═══════════════════════════════════════════
@@ -59,6 +60,12 @@ const navGroups: NavGroup[] = [
     items: [
       { label: "My Events",    href: "/dashboard/events",          icon: <CalendarDays    style={iconSize} /> },
       { label: "Create Event", href: "/dashboard/events/create",   icon: <CalendarPlus    style={iconSize} /> },
+    ],
+  },
+  {
+    title: "Check-In",
+    items: [
+      { label: "Scanner",      href: "/dashboard/scanner",         icon: <ScanLine        style={iconSize} /> },
     ],
   },
   {
@@ -169,7 +176,7 @@ function NavContent({
       <nav
         style={{
           flex: 1,
-          overflowY: "auto",
+          overflowY: "hidden",
           padding: collapsed ? "16px 8px" : "16px 10px",
         }}
       >

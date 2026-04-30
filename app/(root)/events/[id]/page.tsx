@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import prisma from "@/lib/db/prisma";
 import { unstable_cache } from "next/cache";
 import { notFound } from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
 import EventDetailClient from "./EventDetailClient";
 import EventDetailSkeleton from "./EventDetailSkeleton";
 
@@ -111,6 +112,8 @@ const getEventFeedbacks = unstable_cache(
 
 // ── Split into streaming chunks ──
 async function EventContent({ eventId }: { eventId: string }) {
+  const { userId } = await auth();
+
   const [event, { feedbacks, stats }] = await Promise.all([
     getEventById(eventId),
     getEventFeedbacks(eventId),
@@ -127,6 +130,20 @@ async function EventContent({ eventId }: { eventId: string }) {
       data: { viewCount: { increment: 1 } },
     })
     .catch(() => {});
+
+  // Check registration status server-side so the button is correct on first render
+  let initialIsRegistered = false;
+  let initialRegistrationStatus: string | null = null;
+  if (userId) {
+    const registration = await prisma.registration.findFirst({
+      where: { eventId, userId },
+      select: { status: true },
+    });
+    if (registration) {
+      initialIsRegistered = true;
+      initialRegistrationStatus = registration.status;
+    }
+  }
 
   const serializedEvent = {
     ...event,
@@ -147,6 +164,8 @@ async function EventContent({ eventId }: { eventId: string }) {
         createdAt: f.createdAt.toISOString(),
       }))}
       feedbackStats={stats}
+      initialIsRegistered={initialIsRegistered}
+      initialRegistrationStatus={initialRegistrationStatus}
     />
   );
 }

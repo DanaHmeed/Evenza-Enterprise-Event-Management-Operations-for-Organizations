@@ -1,0 +1,354 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String          @id
+  email           String          @unique
+  name            String
+  role            Role            @default(USER)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  avatar          String?
+  bio             String?
+  isActive        Boolean         @default(true)
+  phone           String?
+  experience      String?
+  industry        String?
+  jobTitle        String?
+  location        String?
+  organization    String?
+  organizedEvents Event[]         @relation("OrganizerEvents")
+  feedbacks       Feedback[]
+  notifications   Notification[]
+  orders          Order[]
+  registrations   Registration[]
+  tickets         Ticket[]
+  waitlistEntries WaitlistEntry[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Event {
+  id                   String          @id @default(cuid())
+  title                String
+  description          String
+  organizerId          String
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  address              String?
+  capacity             Int
+  city                 String?
+  currency             String?         @default("USD")
+  endDate              DateTime
+  eventType            EventType       @default(FREE)
+  isOnline             Boolean         @default(false)
+  price                Float?          @default(0)
+  seatsRemaining       Int
+  startDate            DateTime
+  status               EventStatus     @default(DRAFT)
+  timezone             String          @default("Asia/Hebron")
+  venueName            String?
+  approvalRequired     Boolean         @default(false)
+  banner               String?
+  country              String?
+  meetingLink          String?
+  registrationDeadline DateTime
+  cancelReason         String?
+  cancelledAt          DateTime?
+  categoryId           String
+  gallery              String[]
+  isFeatured           Boolean         @default(false)
+  latitude             Float?
+  longitude            Float?
+  publishedAt          DateTime?
+  slug                 String          @unique
+  summary              String?
+  videoUrl             String?
+  viewCount            Int             @default(0)
+  waitlistEnabled      Boolean         @default(false)
+  category             Category        @relation(fields: [categoryId], references: [id])
+  organizer            User            @relation("OrganizerEvents", fields: [organizerId], references: [id])
+  feedbacks            Feedback[]
+  orders               Order[]
+  registrations        Registration[]
+  tickets              Ticket[]
+  waitlistEntries      WaitlistEntry[]
+  tags                 Tag[]           @relation("EventTags")
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([startDate])
+  @@index([city])
+  @@index([eventType])
+  @@index([status])
+  @@index([organizerId])
+  @@index([isFeatured])
+  @@index([title])
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?
+  color       String?
+  createdAt   DateTime @default(now())
+  events      Event[]
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  events    Event[]  @relation("EventTags")
+}
+
+model Registration {
+  id          String             @id @default(cuid())
+  userId      String
+  eventId     String
+  status      RegistrationStatus @default(PENDING)
+  createdAt   DateTime           @default(now())
+  checkedIn   Boolean            @default(false)
+  checkedInAt DateTime?
+  notes       String?
+  source      String?            @default("web")
+  updatedAt   DateTime           @updatedAt
+  event       Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticket      Ticket?
+
+  @@unique([userId, eventId])
+  @@index([eventId])
+  @@index([userId])
+  @@index([status])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, status])
+}
+
+model Ticket {
+  id              String       @id @default(cuid())
+  eventId         String
+  userId          String
+  price           Float
+  currency        String       @default("USD")
+  status          TicketStatus @default(RESERVED)
+  createdAt       DateTime     @default(now())
+  isUsed          Boolean      @default(false)
+  usedAt          DateTime?
+  paymentIntentId String?
+  ticketNumber    String       @unique
+  qrCode          String       @unique
+  registrationId  String       @unique
+  updatedAt       DateTime     @updatedAt
+  validatedBy     String?
+  event           Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registration    Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([userId])
+  @@index([status])
+  @@index([ticketNumber])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model Order {
+  id              String        @id @default(cuid())
+  userId          String
+  eventId         String
+  amount          Float
+  currency        String        @default("USD")
+  paymentMethod   PaymentMethod
+  paymentStatus   PaymentStatus @default(PENDING)
+  stripeSessionId String?       @unique
+  createdAt       DateTime      @default(now())
+  receiptUrl      String?
+  refundAmount    Float?
+  refundedAt      DateTime?
+  updatedAt       DateTime      @updatedAt
+  event           Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([eventId])
+  @@index([paymentStatus])
+  @@index([stripeSessionId])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model Feedback {
+  id           String         @id @default(cuid())
+  userId       String
+  eventId      String
+  rating       Int            @default(5)
+  comment      String?
+  createdAt    DateTime       @default(now())
+  moderatedAt  DateTime?
+  moderatedBy  String?
+  rejectReason String?
+  status       FeedbackStatus @default(PENDING)
+  title        String?
+  updatedAt    DateTime       @updatedAt
+  event        Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@index([eventId])
+  @@index([status])
+  @@index([userId, eventId])
+}
+
+model WaitlistEntry {
+  id         String         @id @default(cuid())
+  userId     String
+  eventId    String
+  position   Int
+  notifiedAt DateTime?
+  expiredAt  DateTime?
+  status     WaitlistStatus @default(WAITING)
+  createdAt  DateTime       @default(now())
+  event      Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@index([eventId, position])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
+model ContactMessage {
+  id        String    @id @default(cuid())
+  name      String
+  email     String
+  subject   String
+  message   String
+  isRead    Boolean   @default(false)
+  repliedAt DateTime?
+  repliedBy String?
+  createdAt DateTime  @default(now())
+
+  @@index([isRead])
+}
+
+model PlatformSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  type      String   @default("text")
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String
+  metadata  Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([actorId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+enum Role {
+  USER
+  ORGANIZER
+  ADMIN
+}
+
+enum EventType {
+  FREE
+  PAID
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+enum RegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum TicketStatus {
+  RESERVED
+  PAID
+  CANCELLED
+  REFUNDED
+  EXPIRED
+}
+
+enum PaymentMethod {
+  STRIPE
+  CASH
+  BANK_TRANSFER
+  JAWWAL_PAY
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum FeedbackStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum WaitlistStatus {
+  WAITING
+  NOTIFIED
+  EXPIRED
+  CONVERTED
+}
+
+enum NotificationType {
+  REGISTRATION_CONFIRMED
+  REGISTRATION_APPROVED
+  REGISTRATION_REJECTED
+  EVENT_REMINDER
+  EVENT_CANCELLED
+  EVENT_UPDATED
+  WAITLIST_SPOT_AVAILABLE
+  FEEDBACK_APPROVED
+  FEEDBACK_REJECTED
+  TICKET_ISSUED
+  PAYMENT_RECEIVED
+  SYSTEM_ANNOUNCEMENT
+}

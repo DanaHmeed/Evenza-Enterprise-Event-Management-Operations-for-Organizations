@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { Tag, Plus, Pencil, Trash2, Loader2, X, CalendarDays } from "lucide-react";
-import { t, AdminLoading, AdminEmpty } from "@/components/admin/AdminUI";
+import { t, AdminLoading, AdminEmpty, AdminBreadcrumb } from "@/components/admin/AdminUI";
 
 interface Category {
   id: string; name: string; slug: string;
@@ -18,7 +18,6 @@ const presetColors = [
 
 const darkInput: React.CSSProperties = {
   width: "100%", padding: "9px 14px", fontSize: "13px",
-  fontFamily: "'DM Sans', sans-serif",
   background: "rgba(255,255,255,0.05)",
   border: "1px solid rgba(255,255,255,0.1)",
   borderRadius: "4px", outline: "none",
@@ -81,7 +80,8 @@ export default function AdminCategoriesPage() {
   };
 
   return (
-    <div style={{ fontFamily: t.sans, maxWidth: "820px" }}>
+    <div style={{ maxWidth: "820px" }}>
+      <AdminBreadcrumb items={[{ label: "Admin", href: "/admin" }, { label: "Categories" }]} />
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "24px" }}>
@@ -98,7 +98,7 @@ export default function AdminCategoriesPage() {
           style={{
             display: "inline-flex", alignItems: "center", gap: "6px",
             padding: "9px 18px", fontSize: "13px", fontWeight: 600,
-            fontFamily: t.sans, color: "#fff",
+            color: "#fff",
             background: t.accent, border: "none", borderRadius: "4px",
             cursor: "pointer", transition: "background 0.15s", flexShrink: 0,
           }}
@@ -192,7 +192,7 @@ export default function AdminCategoriesPage() {
               style={{
                 display: "inline-flex", alignItems: "center", gap: "6px",
                 padding: "9px 18px", fontSize: "13px", fontWeight: 600,
-                fontFamily: t.sans, color: "#fff", background: t.accent,
+                color: "#fff", background: t.accent,
                 border: "none", borderRadius: "4px",
                 cursor: submitting ? "default" : "pointer",
                 opacity: submitting || !name.trim() || !slug.trim() ? 0.45 : 1,
@@ -208,7 +208,7 @@ export default function AdminCategoriesPage() {
               onClick={closeForm}
               style={{
                 padding: "9px 18px", fontSize: "13px", fontWeight: 500,
-                fontFamily: t.sans, color: t.textMuted, background: "transparent",
+                color: t.textMuted, background: "transparent",
                 border: `1px solid ${t.border}`, borderRadius: "4px", cursor: "pointer",
                 transition: "border-color 0.15s, color 0.15s",
               }}

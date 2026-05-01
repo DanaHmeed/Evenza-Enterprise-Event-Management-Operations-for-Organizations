@@ -7,7 +7,7 @@ import {
   CalendarDays, Search, MoreHorizontal,
   CheckCircle2, Clock, Ban, Trash2, ExternalLink,
 } from "lucide-react";
-import { t, StatusBadge, AdminPagination, AdminEmpty } from "@/components/admin/AdminUI";
+import { t, StatusBadge, AdminPagination, AdminEmpty, AdminBreadcrumb } from "@/components/admin/AdminUI";
 
 interface EventData {
   id: string;
@@ -120,7 +120,8 @@ export default function AdminEventsPage() {
   };
 
   return (
-    <div style={{ fontFamily: t.sans }}>
+    <div>
+      <AdminBreadcrumb items={[{ label: "Admin", href: "/admin" }, { label: "Events" }]} />
       <div style={{ marginBottom: "22px" }}>
         <h1 style={{ fontSize: "22px", fontWeight: 700, color: t.text, margin: "0 0 4px", letterSpacing: "-0.03em" }}>
           Events
@@ -136,7 +137,7 @@ export default function AdminEventsPage() {
           <input
             type="text" value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Search events…"
-            style={{ width:"100%", padding:"8px 14px 8px 32px", fontSize:"13px", fontFamily:t.sans, borderRadius:"4px", outline:"none", color:t.text, background:"rgba(255,255,255,0.05)", border:`1px solid ${t.border}`, boxSizing:"border-box", transition:"border-color 0.15s" }}
+            style={{ width:"100%", padding:"8px 14px 8px 32px", fontSize:"13px", borderRadius:"4px", outline:"none", color:t.text, background:"rgba(255,255,255,0.05)", border:`1px solid ${t.border}`, boxSizing:"border-box", transition:"border-color 0.15s" }}
             onFocus={(e) => (e.currentTarget.style.borderColor = t.accent)}
             onBlur={(e)  => (e.currentTarget.style.borderColor = t.border)}
           />
@@ -145,7 +146,7 @@ export default function AdminEventsPage() {
           {FILTERS.map((s) => {
             const active = statusFilter === s;
             return (
-              <button key={s} onClick={() => setStatusFilter(s)} style={{ padding:"7px 13px", fontSize:"12px", fontWeight:500, fontFamily:t.sans, borderRadius:"4px", cursor:"pointer", border:`1px solid ${active ? t.accent : t.borderLight}`, background: active ? t.accentSoft : "transparent", color: active ? t.accent : t.textMuted, transition:"all 0.12s" }}
+              <button key={s} onClick={() => setStatusFilter(s)} style={{ padding:"7px 13px", fontSize:"12px", fontWeight:500, borderRadius:"4px", cursor:"pointer", border:`1px solid ${active ? t.accent : t.borderLight}`, background: active ? t.accentSoft : "transparent", color: active ? t.accent : t.textMuted, transition:"all 0.12s" }}
                 onMouseEnter={(e) => { if(!active) e.currentTarget.style.borderColor = t.border; }}
                 onMouseLeave={(e) => { if(!active) e.currentTarget.style.borderColor = t.borderLight; }}
               >
@@ -234,7 +235,7 @@ export default function AdminEventsPage() {
 function DropItem({ icon, label, color, onClick, disabled }: { icon:React.ReactNode; label:string; color:string; onClick:()=>void; disabled:boolean }) {
   return (
     <button onClick={onClick} disabled={disabled}
-      style={{ width:"100%", display:"flex", alignItems:"center", gap:"8px", padding:"7px 10px", fontSize:"12px", fontWeight:500, color, background:"transparent", border:"none", cursor:disabled?"default":"pointer", fontFamily:"'DM Sans',sans-serif", opacity:disabled?0.45:1, borderRadius:"3px", transition:"background 0.1s" }}
+      style={{ width:"100%", display:"flex", alignItems:"center", gap:"8px", padding:"7px 10px", fontSize:"12px", fontWeight:500, color, background:"transparent", border:"none", cursor:disabled?"default":"pointer",  opacity:disabled?0.45:1, borderRadius:"3px", transition:"background 0.1s" }}
       onMouseEnter={(e) => { if(!disabled) e.currentTarget.style.background="rgba(255,255,255,0.06)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.background="transparent"; }}
     >

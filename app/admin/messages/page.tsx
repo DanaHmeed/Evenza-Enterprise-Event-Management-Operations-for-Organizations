@@ -2,8 +2,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Mail, Loader2, Trash2, Check, ChevronDown, ChevronUp } from "lucide-react";
-import { t, SectionTitle, AdminPagination, AdminEmpty, AdminLoading } from "@/components/admin/AdminUI";
+import { Mail, Trash2, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { t, AdminPagination, AdminEmpty, AdminLoading, AdminBreadcrumb } from "@/components/admin/AdminUI";
 
 interface Message {
   id: string;
@@ -85,6 +85,7 @@ export default function AdminMessagesPage() {
 
   return (
     <div>
+      <AdminBreadcrumb items={[{ label: "Admin", href: "/admin" }, { label: "Messages" }]} />
       <div style={{ marginBottom: "24px" }}>
         <h1 style={{ fontSize: "24px", fontWeight: 600, color: t.text, margin: 4 }}>Contact Messages</h1>
         <p style={{ fontSize: "13px", color: t.textMuted, marginTop: "4px" , marginLeft: 4}}>{total} messages from the contact form.</p>

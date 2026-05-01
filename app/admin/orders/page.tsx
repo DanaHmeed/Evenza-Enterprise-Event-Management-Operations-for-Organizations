@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { DollarSign, Search, ExternalLink } from "lucide-react";
-import { t, StatusBadge, AdminPagination, AdminEmpty, AdminLoading } from "@/components/admin/AdminUI";
+import { t, StatusBadge, AdminPagination, AdminEmpty, AdminLoading, AdminBreadcrumb } from "@/components/admin/AdminUI";
 
 interface OrderData {
   id: string;
@@ -71,7 +71,8 @@ export default function AdminOrdersPage() {
   };
 
   return (
-    <div >
+    <div>
+      <AdminBreadcrumb items={[{ label: "Admin", href: "/admin" }, { label: "Orders" }]} />
       <div style={{ marginBottom: "24px" }}>
         <h1 style={{ fontSize: "24px", fontWeight: 600, color: t.text, margin: 4 }}>Orders</h1>
         <p style={{ fontSize: "13px", color: t.textMuted, marginTop: "4px", marginLeft:4 }}>{total} total orders on the platform.</p>

@@ -8,7 +8,7 @@ import {
   Users, CalendarDays, DollarSign, ArrowRight,
   MessageSquare, Star, Mail, Clock, ShieldCheck,
 } from "lucide-react";
-import { t, StatusBadge, SectionTitle, StatCard } from "@/components/admin/AdminUI";
+import { t, StatusBadge, SectionTitle, StatCard, AdminBreadcrumb } from "@/components/admin/AdminUI";
 
 interface Stats {
   totalUsers: number; totalOrganizers: number; newUsersThisMonth: number;
@@ -84,6 +84,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div>
+      <AdminBreadcrumb items={[{ label: "Admin Panel" }]} />
       <div style={{ marginBottom:"28px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:"12px", marginBottom:"4px" }}>
           <h1 style={{ fontSize:"22px", fontWeight:600, color:t.text, margin:0, letterSpacing:"-0.03em" }}>Admin Panel</h1>

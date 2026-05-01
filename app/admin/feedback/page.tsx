@@ -15,7 +15,7 @@ import {
   Trash2,
   Loader2,
 } from "lucide-react";
-import { t, StatusBadge, AdminPagination, AdminEmpty, AdminLoading } from "@/components/admin/AdminUI";
+import { t, StatusBadge, AdminPagination, AdminEmpty, AdminLoading, AdminBreadcrumb } from "@/components/admin/AdminUI";
 
 interface FeedbackData {
   id: string;
@@ -98,9 +98,10 @@ export default function AdminFeedbackPage() {
 
   return (
     <div>
+      <AdminBreadcrumb items={[{ label: "Admin", href: "/admin" }, { label: "Feedback" }]} />
       <div style={{ marginBottom: "24px" }}>
         <h1 style={{ fontSize: "24px", fontWeight: 600, color: t.text, margin: 4 }}>Feedback</h1>
-        <p style={{ fontSize: "13px", color: t.textMuted, marginTop: "4px", marginLeft: 4 }}>
+        <p style={{ fontSize: "13px", color: t.text, marginTop: "4px", marginLeft: 4 }}>
           {total} total reviews.
           {feedbacks.filter((f) => f.status === "PENDING").length > 0 && (
             <span style={{ color: t.amber, fontWeight: 600, marginLeft: "6px" }}>
@@ -169,7 +170,7 @@ export default function AdminFeedbackPage() {
                   {fb.user.avatar ? (
                     <img src={fb.user.avatar} alt="" style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                   ) : (
-                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: t.borderLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "12px", fontWeight: 600, color: t.textMuted }}>
+                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: t.borderLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "12px", fontWeight: 600, color: t.text }}>
                       {fb.user.name.charAt(0)}
                     </div>
                   )}
@@ -193,11 +194,11 @@ export default function AdminFeedbackPage() {
                   </div>
 
                   <StatusBadge status={fb.status} />
-                  <span style={{ fontSize: "11px", color: t.textFaint, flexShrink: 0 }}>{fmtDate(fb.createdAt)}</span>
+                  <span style={{ fontSize: "11px", color: t.text, flexShrink: 0 }}>{fmtDate(fb.createdAt)}</span>
                   {expanded ? (
-                    <ChevronUp style={{ width: "14px", height: "14px", color: t.textFaint, flexShrink: 0 }} />
+                    <ChevronUp style={{ width: "14px", height: "14px", color: t.text, flexShrink: 0 }} />
                   ) : (
-                    <ChevronDown style={{ width: "14px", height: "14px", color: t.textFaint, flexShrink: 0 }} />
+                    <ChevronDown style={{ width: "14px", height: "14px", color: t.text, flexShrink: 0 }} />
                   )}
                 </div>
 
@@ -205,25 +206,25 @@ export default function AdminFeedbackPage() {
                 {expanded && (
                   <div style={{ padding: "0 20px 16px", borderTop: `1px solid ${t.borderLight}`, paddingTop: "16px" }}>
                     {fb.title && <p style={{ fontSize: "14px", fontWeight: 600, color: t.text, margin: "0 0 6px" }}>{fb.title}</p>}
-                    <p style={{ fontSize: "14px", color: fb.comment ? t.textSecondary : t.textFaint, lineHeight: 1.7, margin: "0 0 16px", fontStyle: fb.comment ? "normal" : "italic", whiteSpace: "pre-wrap" }}>
+                    <p style={{ fontSize: "14px", color: fb.comment ? t.textSecondary : t.text, lineHeight: 1.7, margin: "0 0 16px", fontStyle: fb.comment ? "normal" : "italic", whiteSpace: "pre-wrap" }}>
                       {fb.comment || "No comment provided."}
                     </p>
 
                     <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                       {fb.status === "PENDING" && (
                         <>
-                          <ActionBtn label="Approve" color={t.green} bg={t.greenSoft} icon={<CheckCircle2 />} loading={processing === fb.id} onClick={() => moderate(fb.id, "APPROVED")} />
-                          <ActionBtn label="Reject" color={t.accent} bg={t.accentSoft} icon={<XCircle />} loading={processing === fb.id} onClick={() => moderate(fb.id, "REJECTED")} />
+                          <ActionBtn label="Approve" color={t.green} bg={t.greenSoft} icon={<CheckCircle2 style={{ width: "12px", height: "12px" }} />} loading={processing === fb.id} onClick={() => moderate(fb.id, "APPROVED")} />
+                          <ActionBtn label="Reject" color={t.accent} bg={t.accentSoft} icon={<XCircle style={{ width: "12px", height: "12px" }} />} loading={processing === fb.id} onClick={() => moderate(fb.id, "REJECTED")} />
                         </>
                       )}
                       {fb.status === "APPROVED" && (
-                        <ActionBtn label="Revoke" color={t.amber} bg={t.amberSoft} icon={<XCircle />} loading={processing === fb.id} onClick={() => moderate(fb.id, "REJECTED")} />
+                        <ActionBtn label="Revoke" color={t.amber} bg={t.amberSoft} icon={<XCircle style={{ width: "12px", height: "12px" }} />} loading={processing === fb.id} onClick={() => moderate(fb.id, "REJECTED")} />
                       )}
                       {fb.status === "REJECTED" && (
-                        <ActionBtn label="Approve" color={t.green} bg={t.greenSoft} icon={<CheckCircle2 />} loading={processing === fb.id} onClick={() => moderate(fb.id, "APPROVED")} />
+                        <ActionBtn label="Approve" color={t.green} bg={t.greenSoft} icon={<CheckCircle2 style={{ width: "12px", height: "12px" }} />} loading={processing === fb.id} onClick={() => moderate(fb.id, "APPROVED")} />
                       )}
                       <div style={{ marginLeft: "auto" }}>
-                        <ActionBtn label="Delete" color={t.accent} bg={t.accentSoft} icon={<Trash2 />} loading={processing === fb.id} onClick={() => deleteFeedback(fb.id)} />
+                        <ActionBtn label="Delete" color={t.accent} bg={t.accentSoft} icon={<Trash2 style={{ width: "12px", height: "12px" }} />} loading={processing === fb.id} onClick={() => deleteFeedback(fb.id)} />
                       </div>
                     </div>
                   </div>
@@ -254,7 +255,7 @@ function ActionBtn({ label, color, bg, icon, loading, onClick }: { label: string
       {loading ? (
         <Loader2 className="animate-spin" style={{ width: "12px", height: "12px" }} />
       ) : (
-        <span style={{ width: "12px", height: "12px", display: "flex" }}>{icon}</span>
+        <span style={{ width: "12px", height: "12px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{icon}</span>
       )}
       {label}
     </button>

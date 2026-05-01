@@ -1,7 +1,8 @@
 // components/admin/AdminUI.tsx
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { ChevronRight, Loader2 } from "lucide-react";
+import Link from "next/link";
 import { ReactNode } from "react";
 
 /* ═══════════════════════════════════════════
@@ -103,6 +104,56 @@ export function StatusBadge({ status }: { status: string }) {
     >
       {status}
     </span>
+  );
+}
+
+/* ════════════════════════════════════════
+   Breadcrumb
+   ════════════════════════════════════════ */
+export function AdminBreadcrumb({
+  items,
+}: {
+  items: { label: string; href?: string }[];
+}) {
+  return (
+    <div style={{
+      margin: "-32px -28px 28px -28px",
+      padding: "0 28px",
+      height: 48,
+      display: "flex",
+      alignItems: "center",
+      borderBottom: `2px solid ${t.border}`,
+      background: "rgba(255,255,255,0.018)",
+      position: "sticky",
+      top: 0,
+      zIndex: 10,
+      backdropFilter: "blur(8px)",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        {items.map((item, i) => {
+          const isLast = i === items.length - 1;
+          return (
+            <span key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              {i > 0 && (
+                <ChevronRight style={{ width: 13, height: 13, color: t.text, opacity: 0.4, flexShrink: 0 }} />
+              )}
+              {isLast || !item.href ? (
+                <span style={{ color: isLast ? t.text : t.textMuted, fontWeight: isLast ? 600 : 500 }}>
+                  {item.label}
+                </span>
+              ) : (
+                <Link
+                  href={item.href}
+                  style={{ color: t.text, textDecoration: "none", fontWeight: 500 }}
+                >
+                  {item.label}
+                </Link>
+              )}
+            </span>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

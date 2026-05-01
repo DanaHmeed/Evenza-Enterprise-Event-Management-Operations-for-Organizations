@@ -11,7 +11,7 @@ import {
   UserX,
   Trash2,
 } from "lucide-react";
-import { t, StatusBadge, AdminPagination, AdminEmpty, AdminLoading } from "@/components/admin/AdminUI";
+import { t, StatusBadge, AdminPagination, AdminEmpty, AdminLoading, AdminBreadcrumb } from "@/components/admin/AdminUI";
 
 interface UserData {
   id: string;
@@ -95,7 +95,8 @@ export default function AdminUsersPage() {
   const filters: RoleFilter[] = ["ALL", "USER", "ORGANIZER", "ADMIN"];
 
   return (
-    <div >
+    <div>
+      <AdminBreadcrumb items={[{ label: "Admin", href: "/admin" }, { label: "Users" }]} />
       <div style={{ marginBottom: "24px" }}>
         <h1 style={{ fontSize: "24px", fontWeight: 600, color: t.text, margin: 4 }}>Users</h1>
         <p style={{ fontSize: "13px", color: t.textMuted, marginTop: "4px",marginLeft:4 }}>{total} total users on the platform.</p>

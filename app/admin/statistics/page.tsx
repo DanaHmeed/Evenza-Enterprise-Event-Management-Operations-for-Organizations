@@ -1,5 +1,6 @@
 // app/admin/statistics/page.tsx
 import { prisma } from "@/lib/db/prisma";
+import { AdminBreadcrumb } from "@/components/admin/AdminUI";
 
 export default async function AdminStatisticsPage() {
   // Fetch comprehensive statistics
@@ -66,6 +67,7 @@ export default async function AdminStatisticsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <AdminBreadcrumb items={[{ label: "Admin", href: "/admin" }, { label: "Statistics" }]} />
       <h1 className="text-3xl font-bold mb-8">Platform Statistics</h1>
 
       {/* Main Stats */}

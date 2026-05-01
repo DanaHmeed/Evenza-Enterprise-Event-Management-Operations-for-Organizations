@@ -882,6 +882,12 @@ export default function Navbar() {
                         label="My Hub"
                         onClick={() => setAccountOpen(false)}
                       />
+                       <AccountDropdownLink
+                        href="/my-tickets"
+                        icon={<Star size={16} />}
+                        label="My Tickets"
+                        onClick={() => setAccountOpen(false)}
+                      />
                       {isOrganizer && (
                         <>
                           <div

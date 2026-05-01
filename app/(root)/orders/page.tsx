@@ -1,9 +1,10 @@
 // app/(root)/orders/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo, memo } from "react";
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
+import Image from "next/image";
 import {
   CreditCard,
   Calendar,
@@ -16,8 +17,33 @@ import {
   XCircle,
   ArrowUpRight,
   RefreshCw,
+  CalendarDays,
 } from "lucide-react";
 
+/* ═══════════════════════════════════════════
+   Design tokens — identical to profile & tickets
+   ═══════════════════════════════════════════ */
+const t = {
+  bg: "#fafaf8",
+  surface: "#fff",
+  border: "#e5e5e0",
+  borderLight: "#f0f0ec",
+  text: "#1a1a1a",
+  textSecondary: "#555",
+  textMuted: "#888",
+  textFaint: "#aaa",
+  accent: "#e63946",
+  accentSoft: "rgba(230,57,70,0.07)",
+  green: "#2d6a4f",
+  greenSoft: "rgba(45,106,79,0.08)",
+  dark: "#1a1a2e",
+  serif: "'Playfair Display', Georgia, serif",
+  sans: "'DM Sans', sans-serif",
+};
+
+/* ═══════════════════════════════════════════
+   Types
+   ═══════════════════════════════════════════ */
 interface Order {
   id: string;
   orderNumber: string;
@@ -39,258 +65,700 @@ interface Order {
   };
 }
 
-export default function OrdersPage() {
-  const { isSignedIn } = useUser();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("ALL");
+/* ═══════════════════════════════════════════
+   Status config — module-level, never re-created
+   ═══════════════════════════════════════════ */
+const STATUS_CONFIG: Record<
+  string,
+  { color: string; bg: string; dot: string; label: string; Icon: React.ElementType }
+> = {
+  PAID:     { color: t.green,      bg: t.greenSoft,            dot: t.green,      label: "Paid",     Icon: CheckCircle2 },
+  PENDING:  { color: "#b45309",    bg: "rgba(180,83,9,0.07)",  dot: "#b45309",    label: "Pending",  Icon: Clock        },
+  FAILED:   { color: t.accent,     bg: t.accentSoft,           dot: t.accent,     label: "Failed",   Icon: XCircle      },
+  REFUNDED: { color: t.textMuted,  bg: t.borderLight,          dot: t.textFaint,  label: "Refunded", Icon: RefreshCw    },
+};
+const STATUS_FALLBACK = STATUS_CONFIG.PENDING;
 
-  useEffect(() => {
-    if (!isSignedIn) return;
-    fetchOrders();
-  }, [isSignedIn, statusFilter]);
+const FILTERS = ["ALL", "PAID", "PENDING", "FAILED", "REFUNDED"] as const;
+type Filter = typeof FILTERS[number];
 
-  const fetchOrders = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (statusFilter !== "ALL") params.set("status", statusFilter);
-      const res = await fetch(`/api/orders?${params.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
-        setOrders(data.data || []);
-      }
-    } catch {
-      console.error("Failed to fetch orders");
-    } finally {
-      setLoading(false);
-    }
-  };
+/* ═══════════════════════════════════════════
+   Pure helpers — module-level
+   ═══════════════════════════════════════════ */
+const fmtDate = (d: string) =>
+  new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+const fmtMonthDay = (d: string) =>
+  new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
-  const formatTime = (dateStr: string) =>
-    new Date(dateStr).toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
+const toNum = (v: unknown) => (typeof v === "object" ? Number(v) : (v as number));
 
-  const getStatusConfig = (status: string) => {
-    const map: Record<string, { bg: string; text: string; icon: React.ReactNode; label: string }> = {
-      PAID: {
-        bg: "bg-green-50 border-green-200",
-        text: "text-green-700",
-        icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-        label: "Paid",
-      },
-      PENDING: {
-        bg: "bg-amber-50 border-amber-200",
-        text: "text-amber-700",
-        icon: <Clock className="w-3.5 h-3.5" />,
-        label: "Pending",
-      },
-      FAILED: {
-        bg: "bg-red-50 border-red-200",
-        text: "text-red-600",
-        icon: <XCircle className="w-3.5 h-3.5" />,
-        label: "Failed",
-      },
-      REFUNDED: {
-        bg: "bg-gray-50 border-gray-200",
-        text: "text-gray-600",
-        icon: <RefreshCw className="w-3.5 h-3.5" />,
-        label: "Refunded",
-      },
-    };
-    return map[status] || map.PENDING;
-  };
+/* ═══════════════════════════════════════════
+   SectionHeader — same pattern as profile
+   ═══════════════════════════════════════════ */
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+      <div style={{ width: "24px", height: "2px", background: t.accent }} />
+      <span
+        style={{
+          fontSize: "11px",
+          fontWeight: 600,
+          textTransform: "uppercase",
+          letterSpacing: "0.15em",
+          color: t.textMuted,
+        }}
+      >
+        {title}
+      </span>
+    </div>
+  );
+}
 
-  const totalSpent = orders
-    .filter((o) => o.paymentStatus === "PAID")
-    .reduce((sum, o) => {
-      const amount = typeof o.amount === "object" ? Number(o.amount) : o.amount;
-      return sum + amount;
-    }, 0);
+/* ═══════════════════════════════════════════
+   StatusBadge — memoised, shared atom
+   ═══════════════════════════════════════════ */
+const StatusBadge = memo(function StatusBadge({ status }: { status: string }) {
+  const ss = STATUS_CONFIG[status] || STATUS_FALLBACK;
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "5px",
+        padding: "3px 9px",
+        borderRadius: "3px",
+        fontSize: "10px",
+        fontWeight: 600,
+        textTransform: "uppercase",
+        letterSpacing: "0.06em",
+        color: ss.color,
+        background: ss.bg,
+        flexShrink: 0,
+      }}
+    >
+      <span
+        style={{ width: "5px", height: "5px", borderRadius: "50%", background: ss.dot }}
+      />
+      {ss.label}
+    </span>
+  );
+});
+
+/* ═══════════════════════════════════════════
+   Filter tab bar — memoised
+   ═══════════════════════════════════════════ */
+const FilterBar = memo(function FilterBar({
+  active,
+  onChange,
+}: {
+  active: Filter;
+  onChange: (f: Filter) => void;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: "6px",
+        overflowX: "auto",
+        paddingBottom: "2px",
+        scrollbarWidth: "none",
+      }}
+    >
+      {FILTERS.map((f) => {
+        const isActive = f === active;
+        return (
+          <button
+            key={f}
+            onClick={() => onChange(f)}
+            style={{
+              padding: "7px 16px",
+              borderRadius: "4px",
+              fontSize: "12px",
+              fontWeight: 600,
+              fontFamily: t.sans,
+              whiteSpace: "nowrap",
+              cursor: "pointer",
+              border: `1px solid ${isActive ? t.text : t.borderLight}`,
+              background: isActive ? t.text : t.surface,
+              color: isActive ? "#fff" : t.textMuted,
+              transition: "background 0.15s, border-color 0.15s, color 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive) e.currentTarget.style.borderColor = t.border;
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive) e.currentTarget.style.borderColor = t.borderLight;
+            }}
+          >
+            {f === "ALL" ? "All Orders" : f.charAt(0) + f.slice(1).toLowerCase()}
+          </button>
+        );
+      })}
+    </div>
+  );
+});
+
+/* ═══════════════════════════════════════════
+   Order row card — memoised
+   ═══════════════════════════════════════════ */
+const OrderCard = memo(function OrderCard({ order }: { order: Order }) {
+  const amount = toNum(order.amount);
 
   return (
-    <section className="min-h-screen bg-white">
-      <div className="max-w-4xl mx-auto px-6 pt-16 pb-20">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
-              <Receipt className="w-5 h-5 text-orange-600" />
+    <div
+      style={{
+        background: t.surface,
+        border: `1px solid ${t.borderLight}`,
+        borderRadius: "6px",
+        overflow: "hidden",
+        transition: "border-color 0.15s, box-shadow 0.15s",
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLDivElement).style.borderColor = t.border;
+        (e.currentTarget as HTMLDivElement).style.boxShadow = "0 2px 10px rgba(0,0,0,0.04)";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLDivElement).style.borderColor = t.borderLight;
+        (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
+      }}
+    >
+      <div style={{ display: "flex" }}>
+        {/* Banner */}
+        <div
+          style={{
+            width: "112px",
+            minHeight: "112px",
+            flexShrink: 0,
+            position: "relative",
+            background: t.dark,
+            overflow: "hidden",
+          }}
+        >
+          {order.event.banner ? (
+            <Image
+              src={order.event.banner}
+              alt=""
+              fill
+              sizes="112px"
+              style={{ objectFit: "cover", opacity: 0.85 }}
+            />
+          ) : (
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                minHeight: "112px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <CalendarDays
+                style={{ width: "20px", height: "20px", color: "rgba(255,255,255,0.12)" }}
+              />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">My Orders</h1>
-          </div>
-          <p className="text-gray-500">Your purchase history and payment details.</p>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-          <div className="bg-gray-50 rounded-xl px-5 py-4">
-            <p className="text-2xl font-bold text-gray-900">{orders.length}</p>
-            <p className="text-sm text-gray-500">Total Orders</p>
-          </div>
-          <div className="bg-gray-50 rounded-xl px-5 py-4">
-            <p className="text-2xl font-bold text-green-600">
-              ${totalSpent.toFixed(2)}
-            </p>
-            <p className="text-sm text-gray-500">Total Spent</p>
-          </div>
-          <div className="bg-gray-50 rounded-xl px-5 py-4">
-            <p className="text-2xl font-bold text-gray-900">
-              {orders.filter((o) => o.paymentStatus === "PAID").length}
-            </p>
-            <p className="text-sm text-gray-500">Completed</p>
-          </div>
-        </div>
-
-        {/* Filter tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto">
-          {["ALL", "PAID", "PENDING", "FAILED", "REFUNDED"].map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`px-4 py-2 rounded-full text-sm font-medium border whitespace-nowrap transition-all ${
-                statusFilter === s
-                  ? "bg-gray-900 text-white border-gray-900"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
-              }`}
+          )}
+          {/* Date chip */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: "8px",
+              left: "8px",
+              background: "rgba(0,0,0,0.6)",
+              backdropFilter: "blur(6px)",
+              WebkitBackdropFilter: "blur(6px)",
+              borderRadius: "3px",
+              padding: "3px 7px",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: t.sans,
+                fontSize: "10px",
+                fontWeight: 600,
+                color: "rgba(255,255,255,0.85)",
+                whiteSpace: "nowrap",
+              }}
             >
-              {s === "ALL" ? "All Orders" : s.charAt(0) + s.slice(1).toLowerCase()}
-            </button>
-          ))}
+              {fmtMonthDay(order.event.startDate)}
+            </span>
+          </div>
         </div>
 
-        {/* Orders list */}
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
+        {/* Content */}
+        <div style={{ flex: 1, minWidth: 0, padding: "18px 20px" }}>
+          {/* Top row: title + status */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              gap: "12px",
+              marginBottom: "10px",
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Link
+                href={`/events/${order.event.id}`}
+                style={{
+                  fontFamily: t.serif,
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  color: t.text,
+                  textDecoration: "none",
+                  display: "block",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  letterSpacing: "-0.01em",
+                  lineHeight: 1.3,
+                }}
+              >
+                {order.event.title}
+              </Link>
+              <span
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: "10px",
+                  color: t.textFaint,
+                  letterSpacing: "0.06em",
+                  display: "block",
+                  marginTop: "3px",
+                }}
+              >
+                {order.orderNumber}
+              </span>
+            </div>
+            <StatusBadge status={order.paymentStatus} />
           </div>
-        ) : orders.length === 0 ? (
-          <div className="text-center py-20">
-            <CreditCard className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No orders yet</h3>
-            <p className="text-sm text-gray-500 mb-6">
-              When you purchase event tickets, they&apos;ll appear here.
-            </p>
+
+          {/* Meta row */}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "12px",
+              marginBottom: "14px",
+            }}
+          >
+            <span
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "5px",
+                fontSize: "12px",
+                color: t.textMuted,
+              }}
+            >
+              <Calendar style={{ width: "12px", height: "12px", flexShrink: 0 }} />
+              {fmtDate(order.event.startDate)}
+            </span>
+            <span
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "5px",
+                fontSize: "12px",
+                color: t.textMuted,
+              }}
+            >
+              {order.event.isOnline ? (
+                <Globe style={{ width: "12px", height: "12px", flexShrink: 0 }} />
+              ) : (
+                <MapPin style={{ width: "12px", height: "12px", flexShrink: 0 }} />
+              )}
+              {order.event.isOnline
+                ? "Online"
+                : order.event.city || order.event.venueName || "TBA"}
+            </span>
+          </div>
+
+          {/* Bottom row: amount + link */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              borderTop: `1px solid ${t.borderLight}`,
+              paddingTop: "12px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
+              <span
+                style={{
+                  fontFamily: t.serif,
+                  fontSize: "18px",
+                  fontWeight: 600,
+                  color: t.text,
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                ${amount.toFixed(2)}
+              </span>
+              <span style={{ fontSize: "10px", color: t.textFaint, fontWeight: 600 }}>
+                {order.currency}
+              </span>
+              {order.paidAt && (
+                <>
+                  <span style={{ color: t.borderLight, fontSize: "12px" }}>·</span>
+                  <span style={{ fontSize: "11px", color: t.textFaint }}>
+                    Paid {fmtDate(order.paidAt)}
+                  </span>
+                </>
+              )}
+            </div>
+
             <Link
-              href="/events"
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-colors"
+              href={`/events/${order.event.id}`}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+                fontSize: "12px",
+                fontWeight: 600,
+                color: t.accent,
+                textDecoration: "none",
+                fontFamily: t.sans,
+              }}
             >
-              Browse Events
+              View Event
+              <ArrowUpRight style={{ width: "12px", height: "12px" }} />
             </Link>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {orders.map((order) => {
-              const statusConfig = getStatusConfig(order.paymentStatus);
-              const amount = typeof order.amount === "object"
-                ? Number(order.amount)
-                : order.amount;
-
-              return (
-                <div
-                  key={order.id}
-                  className="border border-gray-200 rounded-xl overflow-hidden hover:border-gray-300 transition-colors"
-                >
-                  <div className="flex flex-col sm:flex-row">
-                    {/* Event thumbnail */}
-                    <div className="sm:w-48 h-32 sm:h-auto flex-shrink-0">
-                      {order.event.banner ? (
-                        <img
-                          src={order.event.banner}
-                          alt={order.event.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center min-h-[120px]">
-                          <Calendar className="w-8 h-8 text-white/20" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Order details */}
-                    <div className="flex-1 p-5">
-                      <div className="flex items-start justify-between gap-4 mb-3">
-                        <div className="flex-1 min-w-0">
-                          <Link
-                            href={`/events/${order.event.id}`}
-                            className="text-base font-bold text-gray-900 hover:text-orange-600 transition-colors line-clamp-1"
-                          >
-                            {order.event.title}
-                          </Link>
-                          <p className="text-xs text-gray-500 font-mono mt-0.5">
-                            {order.orderNumber}
-                          </p>
-                        </div>
-
-                        {/* Status badge */}
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${statusConfig.bg} ${statusConfig.text}`}
-                        >
-                          {statusConfig.icon}
-                          {statusConfig.label}
-                        </span>
-                      </div>
-
-                      {/* Event info */}
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 mb-3">
-                        <span className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5" />
-                          {formatDate(order.event.startDate)}
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          {order.event.isOnline ? (
-                            <Globe className="w-3.5 h-3.5" />
-                          ) : (
-                            <MapPin className="w-3.5 h-3.5" />
-                          )}
-                          {order.event.isOnline
-                            ? "Online"
-                            : order.event.city || order.event.venueName || "TBA"}
-                        </span>
-                      </div>
-
-                      {/* Price + actions */}
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="text-lg font-bold text-gray-900">
-                            ${amount.toFixed(2)}
-                          </span>
-                          <span className="text-xs text-gray-400 ml-1">
-                            {order.currency}
-                          </span>
-                          {order.paidAt && (
-                            <span className="text-xs text-gray-400 ml-3">
-                              Paid {formatDate(order.paidAt)}
-                            </span>
-                          )}
-                        </div>
-
-                        <Link
-                          href={`/events/${order.event.id}`}
-                          className="inline-flex items-center gap-1 text-sm font-medium text-orange-600 hover:text-orange-700"
-                        >
-                          View Event
-                          <ArrowUpRight className="w-3.5 h-3.5" />
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        </div>
       </div>
-    </section>
+    </div>
+  );
+});
+
+/* ═══════════════════════════════════════════
+   Empty state
+   ═══════════════════════════════════════════ */
+function EmptyState() {
+  return (
+    <div
+      style={{
+        textAlign: "center",
+        padding: "80px 24px",
+        background: t.surface,
+        border: `1px solid ${t.borderLight}`,
+        borderRadius: "6px",
+      }}
+    >
+      <div
+        style={{
+          width: "52px",
+          height: "52px",
+          borderRadius: "6px",
+          background: t.borderLight,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          margin: "0 auto 20px",
+        }}
+      >
+        <CreditCard style={{ width: "22px", height: "22px", color: t.textFaint }} />
+      </div>
+      <h3
+        style={{
+          fontFamily: t.serif,
+          fontSize: "20px",
+          fontWeight: 600,
+          color: t.text,
+          margin: "0 0 8px",
+          letterSpacing: "-0.01em",
+        }}
+      >
+        No orders yet
+      </h3>
+      <p
+        style={{
+          fontSize: "13px",
+          color: t.textMuted,
+          margin: "0 0 24px",
+          lineHeight: 1.6,
+        }}
+      >
+        When you purchase event tickets, they&apos;ll appear here.
+      </p>
+      <Link
+        href="/events"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "6px",
+          padding: "10px 20px",
+          background: t.text,
+          color: "#fff",
+          borderRadius: "4px",
+          fontSize: "13px",
+          fontWeight: 600,
+          textDecoration: "none",
+          fontFamily: t.sans,
+        }}
+      >
+        Browse Events
+        <ArrowUpRight style={{ width: "14px", height: "14px" }} />
+      </Link>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   Page
+   ═══════════════════════════════════════════ */
+export default function OrdersPage() {
+  const { user, isSignedIn } = useUser();
+  const [allOrders, setAllOrders]   = useState<Order[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [filter, setFilter]         = useState<Filter>("ALL");
+
+  // Single fetch on mount — filter client-side, zero extra requests
+  useEffect(() => {
+    if (!isSignedIn || !user) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/orders");
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          setAllOrders(data.data || []);
+        }
+      } catch {
+        /* silent */
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [isSignedIn, user]);
+
+  // Client-side filter — no re-fetch, instant response
+  const filtered = useMemo(
+    () => (filter === "ALL" ? allOrders : allOrders.filter((o) => o.paymentStatus === filter)),
+    [allOrders, filter]
+  );
+
+  // Stats computed once from allOrders
+  const { totalOrders, totalSpent, completed } = useMemo(() => ({
+    totalOrders: allOrders.length,
+    totalSpent:  allOrders
+      .filter((o) => o.paymentStatus === "PAID")
+      .reduce((s, o) => s + toNum(o.amount), 0),
+    completed: allOrders.filter((o) => o.paymentStatus === "PAID").length,
+  }), [allOrders]);
+
+  const handleFilter = useCallback((f: Filter) => setFilter(f), []);
+
+  return (
+    <div style={{ background: t.bg, fontFamily: t.sans, minHeight: "100vh" }}>
+      {/* ── Dark header band ── */}
+      <div
+        style={{
+          background: t.dark,
+          height: "180px",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: "30%",
+            left: "20%",
+            width: "700px",
+            height: "700px",
+            background: "radial-gradient(circle, rgba(230,57,70,0.06) 0%, transparent 70%)",
+            pointerEvents: "none",
+          }}
+        />
+      </div>
+
+      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 32px 80px" }}>
+
+        {/* ── Header card ── */}
+        <div
+          style={{
+            background: t.surface,
+            border: `1px solid ${t.border}`,
+            borderRadius: "6px",
+            marginTop: "-80px",
+            position: "relative",
+            zIndex: 1,
+            overflow: "hidden",
+          }}
+        >
+          {/* Top section: icon + title + stats */}
+          <div
+            style={{
+              padding: "28px 32px",
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "20px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+              <div
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  background: t.borderLight,
+                  borderRadius: "6px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <Receipt style={{ width: "18px", height: "18px", color: t.textMuted }} />
+              </div>
+              <div>
+                <h1
+                  style={{
+                    fontFamily: t.serif,
+                    fontSize: "24px",
+                    fontWeight: 600,
+                    color: t.text,
+                    margin: 0,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  My Orders
+                </h1>
+                <p style={{ fontSize: "13px", color: t.textMuted, margin: "3px 0 0" }}>
+                  Purchase history and payment details
+                </p>
+              </div>
+            </div>
+
+            {/* Stat chips */}
+            {!loading && allOrders.length > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  overflow: "hidden",
+                  borderRadius: "4px",
+                  border: `1px solid ${t.borderLight}`,
+                }}
+              >
+                {[
+                  { label: "Orders",    value: totalOrders,            serif: true  },
+                  { label: "Completed", value: completed,              serif: true  },
+                  { label: "Spent",     value: `$${totalSpent.toFixed(2)}`, serif: false },
+                ].map((s, i) => (
+                  <div
+                    key={s.label}
+                    style={{
+                      background: t.bg,
+                      padding: "10px 20px",
+                      textAlign: "center",
+                      borderLeft: i > 0 ? `1px solid ${t.borderLight}` : "none",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontFamily: s.serif ? t.serif : t.sans,
+                        fontSize: s.serif ? "18px" : "16px",
+                        fontWeight: 600,
+                        color: s.label === "Spent" ? t.green : t.text,
+                        margin: "0 0 1px",
+                        letterSpacing: s.serif ? "-0.01em" : "0",
+                      }}
+                    >
+                      {s.value}
+                    </p>
+                    <p
+                      style={{
+                        fontSize: "10px",
+                        fontWeight: 600,
+                        color: t.textFaint,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.1em",
+                        margin: 0,
+                      }}
+                    >
+                      {s.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Filter bar inside card, bordered top */}
+          {!loading && allOrders.length > 0 && (
+            <div
+              style={{
+                borderTop: `1px solid ${t.borderLight}`,
+                padding: "16px 32px",
+              }}
+            >
+              <FilterBar active={filter} onChange={handleFilter} />
+            </div>
+          )}
+        </div>
+
+        {/* ── Body ── */}
+        <div style={{ marginTop: "32px" }}>
+          {loading ? (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "80px 0",
+                gap: "10px",
+              }}
+            >
+              <Loader2
+                className="animate-spin"
+                style={{ width: "20px", height: "20px", color: t.accent }}
+              />
+              <span style={{ fontSize: "13px", color: t.textMuted }}>
+                Loading orders…
+              </span>
+            </div>
+          ) : allOrders.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <>
+              <SectionHeader
+                title={
+                  filter === "ALL"
+                    ? `All Orders`
+                    : `${filter.charAt(0) + filter.slice(1).toLowerCase()} Orders`
+                }
+              />
+
+              {filtered.length === 0 ? (
+                <div
+                  style={{
+                    padding: "48px 24px",
+                    textAlign: "center",
+                    background: t.surface,
+                    border: `1px solid ${t.borderLight}`,
+                    borderRadius: "6px",
+                  }}
+                >
+                  <p style={{ fontSize: "13px", color: t.textMuted, margin: 0 }}>
+                    No {filter.toLowerCase()} orders found.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {filtered.map((order) => (
+                    <OrderCard key={order.id} order={order} />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

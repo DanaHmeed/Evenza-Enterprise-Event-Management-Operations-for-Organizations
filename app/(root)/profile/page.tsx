@@ -234,16 +234,6 @@ export default function ProfilePage() {
         count: profile._count?.orders || 0,
       },
     ];
-
-    if (profile.role === "ORGANIZER" || profile.role === "ADMIN") {
-      links.push({
-        label: "Organized Events",
-        desc: "Events you created",
-        href: "/organizer/events",
-        icon: <Calendar style={{ width: "18px", height: "18px" }} />,
-        count: profile._count?.organizedEvents || 0,
-      });
-    }
     return links;
   }, [profile]);
 

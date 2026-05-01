@@ -102,16 +102,25 @@ export default function ContactPage() {
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
     setSubmitting(true);
-    // Replace with actual API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setSubmitted(true);
-    setSubmitting(false);
-    setName("");
-    setEmail("");
-    setSubject("");
-    setMessage("");
-    setErrors({});
-    setTouched({});
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, subject, message }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      setSubmitted(true);
+      setName("");
+      setEmail("");
+      setSubject("");
+      setMessage("");
+      setErrors({});
+      setTouched({});
+    } catch {
+      setErrors({ message: "Something went wrong. Please try again." });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const inputStyle = (field: string): React.CSSProperties => ({

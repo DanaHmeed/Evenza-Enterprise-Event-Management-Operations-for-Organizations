@@ -228,7 +228,7 @@ export interface FeedbackSectionProps {
 }
 
 /* ── FeedbackSection component ── */
-export function FeedbackSection({
+export default function FeedbackSection({
   eventId,
   canLeaveFeedback,
   initialFeedbacks,

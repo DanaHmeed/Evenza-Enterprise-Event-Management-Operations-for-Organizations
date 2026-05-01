@@ -21,7 +21,7 @@ import {
   CreditCard,
   User,
 } from "lucide-react";
-import { FeedbackSection } from "./feedback/page";
+import  FeedbackSection  from "./feedback/page";
 
 /* ════════════════════════════════════════════════
    Design tokens

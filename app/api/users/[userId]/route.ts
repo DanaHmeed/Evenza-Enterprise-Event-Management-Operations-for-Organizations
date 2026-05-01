@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db/prisma";
 import { getCurrentUser } from "@/lib/auth/require-role";
+import { clerkClient } from "@clerk/nextjs/server";
 
 type Params = { params: Promise<{ userId: string }> };
 
@@ -172,6 +173,14 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         },
       },
     });
+
+    // Sync role change to Clerk publicMetadata so clients read it instantly
+    if (isAdmin && body.role) {
+      const client = await clerkClient();
+      await client.users.updateUserMetadata(userId, {
+        publicMetadata: { role: body.role },
+      });
+    }
 
     // Audit log for admin actions only
     if (isAdmin && !isSelf && (body.role || typeof body.isActive === "boolean")) {

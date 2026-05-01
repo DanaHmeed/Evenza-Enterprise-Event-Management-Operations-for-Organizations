@@ -1,4 +1,4 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { currentUser, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db/prisma";
 
 export async function syncUser() {
@@ -10,13 +10,31 @@ export async function syncUser() {
     where: { id: user.id },
   });
 
-  if (existing) return existing;
+  if (existing) {
+    // Keep Clerk metadata in sync if it's missing or stale
+    const clerkRole = user.publicMetadata?.role as string | undefined;
+    if (clerkRole !== existing.role) {
+      const client = await clerkClient();
+      await client.users.updateUserMetadata(user.id, {
+        publicMetadata: { role: existing.role },
+      });
+    }
+    return existing;
+  }
 
-  return prisma.user.create({
+  const created = await prisma.user.create({
     data: {
       id: user.id,
       email: user.emailAddresses[0].emailAddress,
       role: "USER",
     },
   });
+
+  // Stamp role onto Clerk session so client reads it without an API call
+  const client = await clerkClient();
+  await client.users.updateUserMetadata(user.id, {
+    publicMetadata: { role: "USER" },
+  });
+
+  return created;
 }

@@ -12,24 +12,52 @@ const rubik = Rubik({ subsets: ["latin"], variable: "--font-rubik" });
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, isSignedIn, isLoaded } = useUser();
-  const router   = useRouter();
-  const [authorized, setAuthorized] = useState(false);
-  const [checking,   setChecking]   = useState(true);
+  const router = useRouter();
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!isLoaded) return;
     if (!isSignedIn) { router.replace("/sign-in?redirect_url=/admin"); return; }
 
+    const metaRole = user?.publicMetadata?.role as string | undefined;
+
+    if (metaRole === "ADMIN") {
+      // Fast path: role already stamped in Clerk session
+      setAuthorized(true);
+      return;
+    }
+
+    if (metaRole && metaRole !== "ADMIN") {
+      // Fast path: definitely not admin
+      setAuthorized(false);
+      router.replace("/");
+      return;
+    }
+
+    // Metadata not stamped yet (existing user before sync) — fall back to DB fetch
+    // and trigger a one-time sync so next visit is instant
     (async () => {
       try {
         const res = await fetch(`/api/users/${user?.id}`);
         if (res.ok) {
           const data = await res.json();
           const role = data.data?.role || data.role;
-          role === "ADMIN" ? setAuthorized(true) : router.replace("/");
-        } else { router.replace("/"); }
-      } catch { router.replace("/"); }
-      finally  { setChecking(false); }
+          if (role === "ADMIN") {
+            setAuthorized(true);
+            // Sync role into Clerk metadata so this fetch never runs again
+            await fetch("/api/auth/sync-role", { method: "POST" });
+          } else {
+            setAuthorized(false);
+            router.replace("/");
+          }
+        } else {
+          setAuthorized(false);
+          router.replace("/");
+        }
+      } catch {
+        setAuthorized(false);
+        router.replace("/");
+      }
     })();
   }, [isLoaded, isSignedIn, user, router]);
 
@@ -43,7 +71,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     </div>
   );
 
-  if (!isLoaded || checking) return centerScreen(
+  if (!isLoaded || authorized === null) return centerScreen(
     <>
       <Loader2 className="animate-spin" style={{ width: "22px", height: "22px", color: "#e63946" }} />
       <p style={{ fontSize: "13px", color: "#666", margin: 0 }}>Verifying admin access…</p>

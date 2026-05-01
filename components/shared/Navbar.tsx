@@ -508,7 +508,31 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const accountRef = useRef<HTMLDivElement | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [fetchedRole, setFetchedRole] = useState<string | null>(null);
+
+  // Use Clerk publicMetadata when available (instant); fall back to DB fetch for
+  // existing users whose metadata hasn't been stamped yet.
+  const metaRole = isSignedIn ? (user?.publicMetadata?.role as string | undefined) : undefined;
+  const userRole = metaRole ?? fetchedRole;
+
+  useEffect(() => {
+    if (!isSignedIn || !user || metaRole !== undefined) return;
+    // Metadata not set yet — fetch from DB and stamp it for next time
+    (async () => {
+      try {
+        const res = await fetch(`/api/users/${user.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          const role = data.data?.role || data.role || "USER";
+          setFetchedRole(role);
+          // Fire-and-forget sync so next load is instant
+          fetch("/api/auth/sync-role", { method: "POST" });
+        }
+      } catch {
+        setFetchedRole("USER");
+      }
+    })();
+  }, [isSignedIn, user, metaRole]);
 
   // Mega dropdown states
   const [exploreOpen, setExploreOpen] = useState(false);
@@ -553,26 +577,8 @@ export default function Navbar() {
     setExploreOpen(false);
     setAccountOpen(false);
   }, []);
-  const effectiveRole = isSignedIn ? userRole : null;
-  const isAdmin = effectiveRole === "ADMIN";
-  const isOrganizer = effectiveRole === "ORGANIZER" || isAdmin;
-
-  // Fetch role from database
-  useEffect(() => {
-    if (!isSignedIn || !user) return;
-    const fetchRole = async () => {
-      try {
-        const res = await fetch(`/api/users/${user.id}`);
-        if (res.ok) {
-          const data = await res.json();
-          setUserRole(data.data?.role || data.role || "USER");
-        }
-      } catch {
-        setUserRole("USER");
-      }
-    };
-    fetchRole();
-  }, [isSignedIn, user]);
+  const isAdmin = userRole === "ADMIN";
+  const isOrganizer = userRole === "ORGANIZER" || isAdmin;
 
   // Mobile accordion state
   const [mobileExploreOpen, setMobileExploreOpen] = useState(false);

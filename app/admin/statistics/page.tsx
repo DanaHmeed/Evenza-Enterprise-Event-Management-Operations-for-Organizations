@@ -40,11 +40,11 @@ export default async function AdminStatisticsPage() {
       take: 10,
       include: {
         _count: {
-          select: { events: true },
+          select: { organizedEvents: true },
         },
       },
       orderBy: {
-        events: {
+        organizedEvents: {
           _count: "desc",
         },
       },
@@ -104,7 +104,7 @@ export default async function AdminStatisticsPage() {
                   <td className="py-3 px-4 text-gray-600">{organizer.email}</td>
                   <td className="py-3 px-4">
                     <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
-                      {organizer._count.events} events
+                      {organizer._count.organizedEvents} events
                     </span>
                   </td>
                 </tr>

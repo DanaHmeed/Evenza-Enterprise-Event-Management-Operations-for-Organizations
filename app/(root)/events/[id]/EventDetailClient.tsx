@@ -620,7 +620,7 @@ export default function EventDetailClient({
             {/* ── REVIEWS ── */}
             <FeedbackSection
               eventId={event.id}
-              canLeaveFeedback={canLeaveFeedback}
+              canLeaveFeedback={!!canLeaveFeedback}
               initialFeedbacks={feedbacks}
               initialStats={feedbackStats}
               currentUser={user ? { fullName: user.fullName, imageUrl: user.imageUrl } : null}

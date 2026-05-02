@@ -453,7 +453,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div>
-                {recentEvents.map(ev => <EventRow key={ev.id} ev={ev} />)}
+                {recentEvents.map((ev: any) => <EventRow key={ev.id} ev={ev} />)}
               </div>
             )}
           </div>

@@ -154,7 +154,7 @@ export default function ForgotPasswordPage() {
       });
       if (result.status === "needs_new_password") setStep("new-password");
       else if (result.status === "complete") {
-        await setActive({ session: result.createdSessionId });
+        await setActive!({ session: result.createdSessionId });
         router.push("/");
       }
     } catch (err: any) {
@@ -190,7 +190,7 @@ export default function ForgotPasswordPage() {
       }
       if (result.status === "complete") {
         setStep("complete");
-        await setActive({ session: result.createdSessionId });
+        await setActive!({ session: result.createdSessionId });
       }
     } catch (err: any) {
       setError(

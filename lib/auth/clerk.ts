@@ -26,6 +26,7 @@ export async function syncUser() {
     data: {
       id: user.id,
       email: user.emailAddresses[0].emailAddress,
+      name: [user.firstName, user.lastName].filter(Boolean).join(" ") || user.emailAddresses[0].emailAddress,
       role: "USER",
     },
   });

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
-import { Prisma, PaymentMethod } from "@/lib/generated/prisma/client";
+import { PaymentMethod } from "@/lib/generated/prisma/client";
 
 export async function purchaseTicket({
   userId,
@@ -12,7 +12,7 @@ export async function purchaseTicket({
   paymentMethod: PaymentMethod;
   paymentRef?: string; // Optional - only for bank transfers
 }) {
-  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  return prisma.$transaction(async (tx) => {
     // 1. Get event details
     const event = await tx.event.findUnique({
       where: { id: eventId },
@@ -70,38 +70,48 @@ export async function purchaseTicket({
       throw new Error("You have already purchased a ticket for this event");
     }
 
-    // 6. Generate unique ticket number
-    const ticketNumber = `EVZ-${Date.now()}-${Math.random()
-      .toString(36)
-      .substring(2, 9)
-      .toUpperCase()}`;
+    // 6. Generate unique ticket number and QR code
+    const suffix = `${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+    const ticketNumber = `EVZ-${suffix}`;
+    const qrCode = `QR-${suffix}`;
 
     // 7. Determine payment status based on method
     // Cash and Bank Transfer need admin verification
-    const paymentStatus = 
-      paymentMethod === "CASH" || paymentMethod === "BANK_TRANSFER" 
-        ? "PENDING" 
-        : "PAID";
-
-    const ticketStatus = 
+    const paymentStatus =
       paymentMethod === "CASH" || paymentMethod === "BANK_TRANSFER"
         ? "PENDING"
         : "PAID";
 
-    // 8. Create ticket
-    const ticket = await tx.ticket.create({
+    const ticketStatus =
+      paymentMethod === "CASH" || paymentMethod === "BANK_TRANSFER"
+        ? "RESERVED"
+        : "PAID";
+
+    // 8. Create registration first (Ticket FK points to Registration)
+    const registration = await tx.registration.create({
       data: {
-        ticketNumber,
         userId,
         eventId,
-        price: event.price,
-        currency: event.currency || "USD",
-        status: ticketStatus,
-        paymentIntentId: paymentRef || null, // Store payment reference if provided
+        status: paymentStatus === "PAID" ? "APPROVED" : "PENDING",
       },
     });
 
-    // 9. Create order
+    // 9. Create ticket with registrationId
+    const ticket = await tx.ticket.create({
+      data: {
+        ticketNumber,
+        qrCode,
+        userId,
+        eventId,
+        registrationId: registration.id,
+        price: event.price,
+        currency: event.currency || "USD",
+        status: ticketStatus,
+        paymentIntentId: paymentRef || null,
+      },
+    });
+
+    // 10. Create order
     const order = await tx.order.create({
       data: {
         userId,
@@ -110,19 +120,7 @@ export async function purchaseTicket({
         currency: event.currency || "USD",
         paymentMethod,
         paymentStatus,
-        // Only use stripeSessionId for Stripe payments
         stripeSessionId: paymentMethod === "STRIPE" ? paymentRef : null,
-      },
-    });
-
-    // 10. Create registration (only if payment is confirmed or pending approval)
-    const registration = await tx.registration.create({
-      data: {
-        userId,
-        eventId,
-        ticketId: ticket.id,
-        // Auto-approve only if payment is already confirmed
-        status: paymentStatus === "PAID" ? "APPROVED" : "PENDING",
       },
     });
 

@@ -5,10 +5,10 @@ import { getHubSummary } from "@/lib/my-hub/getHubSummary";
 
 export async function GET(
   _req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { userId: id } = await params;
     const { userId } = await auth();
 
     if (!userId || userId !== id) {

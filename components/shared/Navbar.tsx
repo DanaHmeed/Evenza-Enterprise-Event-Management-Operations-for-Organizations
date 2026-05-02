@@ -512,7 +512,9 @@ export default function Navbar() {
 
   // Use Clerk publicMetadata when available (instant); fall back to DB fetch for
   // existing users whose metadata hasn't been stamped yet.
-  const metaRole = isSignedIn ? (user?.publicMetadata?.role as string | undefined) : undefined;
+  const metaRole = isSignedIn
+    ? (user?.publicMetadata?.role as string | undefined)
+    : undefined;
   const userRole = metaRole ?? fetchedRole;
 
   useEffect(() => {
@@ -882,7 +884,7 @@ export default function Navbar() {
                         label="My Hub"
                         onClick={() => setAccountOpen(false)}
                       />
-                       <AccountDropdownLink
+                      <AccountDropdownLink
                         href="/my-tickets"
                         icon={<Star size={16} />}
                         label="My Tickets"

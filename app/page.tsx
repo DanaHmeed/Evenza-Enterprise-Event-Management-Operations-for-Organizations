@@ -649,9 +649,9 @@ function FeaturesShowcase() {
 export function IntelligentWorkflow() {
   return (
     <section id= "worflow"
-    className="inet relative overflow-hidden py-16 lg:py-80 bg-white">
+    className="inet relative overflow-hidden py-80 bg-white">
       {/* Top spacing from previous section */}
-      <div className="max-w-7xl mx-auto px-4 lg:px-20 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-24 items-center">
+      <div className="max-w-7xl mx-auto px-20 lg:px-20 grid lg:grid-cols-2 gap-24 items-center">
         {/* Left Image */}
         <motion.div
           initial={{ opacity: 0, x: -60 }}
@@ -1255,10 +1255,11 @@ function PlatformShowcaseSection() {
         <div
           style={{
             display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
             gap: "20px",
             alignItems: "start",
           }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+          className="grid-cols-1 lg:grid-cols-3"
         >
           {roles.map((role, i) => (
             <div
@@ -1496,9 +1497,10 @@ function EventTypesSection() {
         <div
           style={{
             display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
             gap: "20px",
           }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+          className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
         >
           {types.map((type, i) => (
             <div
@@ -1662,20 +1664,9 @@ function PricingPreviewSection() {
   ];
 
   return (
-    <>
-    <style>{`
-      @media (max-width: 1023px) {
-        .pricing-grid { gap: 16px !important; }
-        .pricing-card {
-          border-radius: 20px !important;
-          margin-top: 0 !important;
-          margin-bottom: 0 !important;
-        }
-      }
-    `}</style>
     <section
       style={{
-        padding: "80px 0",
+        padding: "120px 0",
         fontFamily: "'Quicksand', sans-serif",
         position: "relative",
         overflow: "hidden",
@@ -1791,12 +1782,13 @@ function PricingPreviewSection() {
         <div
           style={{
             display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
             gap: "0",
             alignItems: "stretch",
             // Outer wrapper shadow for depth
             filter: "drop-shadow(0 4px 20px rgba(0,0,0,0.04))",
           }}
-          className="grid grid-cols-1 lg:grid-cols-3 pricing-grid"
+          className="grid-cols-1 md:grid-cols-3"
         >
           {plans.map((plan, i) => {
             const isLeft = i === 0;
@@ -1806,7 +1798,6 @@ function PricingPreviewSection() {
             return (
               <div
                 key={i}
-                className="pricing-card"
                 style={{
                   background: isMid
                     ? "linear-gradient(180deg, #ffffff 0%, #fafcff 100%)"
@@ -2100,7 +2091,6 @@ function PricingPreviewSection() {
         </div>
       </div>
     </section>
-    </>
   );
 }
 // ════════════════════════════════════════════════════════════
@@ -2378,15 +2368,17 @@ const scaleIn = {
         style={{
           maxWidth: "1280px",
           margin: "0 auto",
-          padding: "0 24px",
+          padding: "0 48px",
         }}
       >
         <div
           style={{
             display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "80px",
             alignItems: "center",
           }}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20"
+          className="lg:grid-cols-2 grid-cols-1"
         >
           {/* ── Left: Text Content ── */}
           <div>

@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db/prisma";
 import { requireOrganizer, isAuthError } from "@/lib/auth/require-role";
-import { RegistrationStatus } from "@prisma/client";
+import { RegistrationStatus } from "@/lib/generated/prisma/client";
 
 export async function GET(req: NextRequest) {
   try {

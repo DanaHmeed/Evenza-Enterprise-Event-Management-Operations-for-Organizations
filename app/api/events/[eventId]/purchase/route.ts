@@ -34,7 +34,6 @@ export async function POST(request: NextRequest, { params }: Params) {
     if (approvedCount >= event.capacity) {
       return NextResponse.json({ error: "Event is full" }, { status: 400 });
     }
-    // ─────────────────────────────────────────────────────────────────────
 
     // Block duplicate APPROVED registrations only
     const existingRegistration = await prisma.registration.findUnique({
@@ -127,11 +126,6 @@ export async function POST(request: NextRequest, { params }: Params) {
             stripeSessionId: session.id,
           },
         });
-
-        // ⚠️  seatsRemaining intentionally NOT decremented here.
-        //     The Stripe webhook (checkout.session.completed) does it after
-        //     real payment confirmation. This prevents abandoned checkouts
-        //     from consuming spots.
 
         return { registration, ticket, order };
       });

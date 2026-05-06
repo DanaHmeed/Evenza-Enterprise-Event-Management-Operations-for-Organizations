@@ -146,7 +146,8 @@ export default function EventsClient({
     (catId: string) => {
       const next = selectedCategory === catId ? "" : catId;
       setSelectedCategory(next);
-      fetchEvents(activeSearch, next);
+      setIsSearching(true);
+      fetchEvents(activeSearch, next).finally(() => setIsSearching(false));
     },
     [selectedCategory, activeSearch, fetchEvents]
   );
@@ -252,10 +253,10 @@ export default function EventsClient({
 
           <h1
             style={{
-              fontFamily: "'Playfair Display', Georgia, serif",
+              fontFamily: "'serif,QuickSand, -apple-system, BlinkMacSystemFont, sans-serif",
               //fontFamily:"Rubik",
               fontSize: "clamp(2rem, 4vw, 3.25rem)",
-              fontWeight: 600,
+              fontWeight: 800,
               color: "#1a1a1a",
               lineHeight: 1.15,
               letterSpacing: "-0.02em",

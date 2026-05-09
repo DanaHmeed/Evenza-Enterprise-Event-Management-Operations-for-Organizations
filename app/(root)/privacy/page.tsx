@@ -102,7 +102,7 @@ export default function PrivacyPolicyPage() {
             <p>For privacy-related questions or data requests:</p>
             <div style={{ background: t.borderLight, borderRadius: "6px", padding: "16px 20px", marginTop: "8px" }}>
               <p style={{ margin: 0, fontFamily: t.sans, fontSize: "13px", color: t.textMuted, lineHeight: 1.6 }}>
-                Evenza · An-Najah National University · Nablus, Palestine<br />
+                Evenza · Al-Quds University ·, Palestine<br />
                 <span style={{ color: t.accent, fontWeight: 500 }}>support@evenza.app</span>
               </p>
             </div>

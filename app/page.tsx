@@ -1621,7 +1621,7 @@ function PricingPreviewSection() {
         "Register for free events",
         "QR code tickets",
         "Submit feedback & reviews",
-        "In-app notifications",
+        "Join waitlists",
       ],
       cta: "Get Started",
       ctaStyle: "outline" as const,
@@ -1633,14 +1633,14 @@ function PricingPreviewSection() {
       price: "$25",
       period: "per month",
       features: [
-        "Create unlimited events",
+        "Create limited events",
         "Sell paid tickets via Stripe",
         "Attendee management tools",
         "Analytics dashboard",
         "Waitlist management",
         "Revenue tracking",
       ],
-      cta: "Start Organizing",
+      cta: "Contact Sales",
       ctaStyle: "solid" as const,
       highlighted: true,
     },
@@ -1648,14 +1648,14 @@ function PricingPreviewSection() {
       name: "Enterprise",
       desc: "For large organizations with advanced needs.",
       price: "Custom",
-      period: "",
+      period: "Coming Soon",
       features: [
-        "Everything in Organizer",
+        "Unlimited events & attendees",
         "Custom branding & themes",
         "Priority support",
-        "API access",
         "Dedicated account manager",
-        "SLA guarantee",
+      
+        
       ],
       cta: "Contact Sales",
       ctaStyle: "outline" as const,
@@ -2036,7 +2036,7 @@ function PricingPreviewSection() {
 
                 {/* CTA */}
                 <Link
-                  href={plan.name === "Enterprise" ? "/contact" : "/sign-up"}
+                  href={plan.name === "Enterprise" || "Organizer" ? "/contact" : "/sign-up"}
                   style={{
                     display: "block",
                     textAlign: "center",

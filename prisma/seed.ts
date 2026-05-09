@@ -122,7 +122,7 @@ async function main() {
       registrationDeadline: daysFromNow(5),
       eventType: "FREE",
       isOnline: false,
-      venueName: "An-Najah National University",
+      venueName: "Al-Quds University",
       city: "Nablus",
       country: "Palestine",
       capacity: 100,

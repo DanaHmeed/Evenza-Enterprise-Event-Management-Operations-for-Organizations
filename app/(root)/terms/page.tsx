@@ -43,7 +43,7 @@ export default function TermsPage() {
       content: (
         <>
           <p>
-            Welcome to Evenza (&ldquo;Platform&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;). Evenza is an event management platform developed as a graduation project at An-Najah National University, Nablus, Palestine. By accessing or using our platform at evenza.app, you agree to be bound by these Terms of Service.
+            Welcome to Evenza (&ldquo;Platform&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;). Evenza is an event management platform developed as a graduation project at Al-Quds University, Palestine. By accessing or using our platform at evenza.app, you agree to be bound by these Terms of Service.
           </p>
           <p>
             If you do not agree with any part of these terms, you must not use the Platform. We reserve the right to update these terms at any time. Continued use after changes constitutes acceptance of the revised terms.
@@ -80,7 +80,7 @@ export default function TermsPage() {
       content: (
         <>
           <p>
-            You must be at least 16 years of age to create an account on Evenza. By registering, you represent that you are of legal age to form a binding contract in your jurisdiction.
+            You must be at least 18 years of age to create an account on Evenza. By registering, you represent that you are of legal age to form a binding contract in your jurisdiction.
           </p>
           <p>
             Accounts are created and authenticated through Clerk, our identity provider. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.
@@ -94,7 +94,7 @@ export default function TermsPage() {
     {
       id: "organizer-obligations",
       number: "04",
-      title: "Organizer Obligations",
+      title: "Organizer Responsibilities",
       content: (
         <>
           <p>
@@ -236,7 +236,7 @@ export default function TermsPage() {
       content: (
         <>
           <p>
-            These Terms shall be governed by and construed in accordance with the laws applicable in Palestine. Any disputes arising from these terms or use of the Platform shall be resolved through good-faith negotiation first, and if necessary, through the competent courts in Nablus, Palestine.
+            These Terms shall be governed by and construed in accordance with the laws applicable in Palestine. Any disputes arising from these terms or use of the Platform shall be resolved through good-faith negotiation first, and if necessary, through the competent courts in  Palestine.
           </p>
         </>
       ),
@@ -252,8 +252,8 @@ export default function TermsPage() {
           </p>
           <div style={{ background: t.borderLight, borderRadius: "6px", padding: "20px 24px", marginTop: "12px" }}>
             <p style={{ margin: "0 0 4px", fontFamily: t.sans, fontSize: "14px", fontWeight: 600, color: t.text }}>Evenza Platform</p>
-            <p style={{ margin: "0 0 2px", fontFamily: t.sans, fontSize: "13px", color: t.textMuted }}>An-Najah National University</p>
-            <p style={{ margin: "0 0 2px", fontFamily: t.sans, fontSize: "13px", color: t.textMuted }}>Nablus, Palestine</p>
+            <p style={{ margin: "0 0 2px", fontFamily: t.sans, fontSize: "13px", color: t.textMuted }}>Al-Quds University</p>
+            <p style={{ margin: "0 0 2px", fontFamily: t.sans, fontSize: "13px", color: t.textMuted }}>Palestine</p>
             <p style={{ margin: "8px 0 0", fontFamily: t.sans, fontSize: "13px", color: t.accent, fontWeight: 500 }}>support@evenza.app</p>
           </div>
         </>

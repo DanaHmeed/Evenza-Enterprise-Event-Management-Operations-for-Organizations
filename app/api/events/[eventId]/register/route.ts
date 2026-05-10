@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db/prisma";
 import { requireAuth, isAuthError } from "@/lib/auth/require-role";
 import { generateTicketNumber, generateQRData } from "@/lib/utils/helpers";
+import { sendWaitlistSpotEmail } from "@/lib/email";
 
 type Params = { params: Promise<{ eventId: string }> };
 
@@ -189,6 +190,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
         const nextInLine = await tx.waitlistEntry.findFirst({
           where: { eventId, status: "WAITING" },
           orderBy: { position: "asc" },
+          include: { user: true },
         });
 
         if (nextInLine) {
@@ -205,6 +207,21 @@ export async function DELETE(request: NextRequest, { params }: Params) {
               message: `A spot is now available for "${registration.event.title}". Register now before it's taken!`,
               link: `/events/${eventId}`,
             },
+          });
+
+          // Send email outside the transaction so a mail failure doesn't roll back the DB
+          void sendWaitlistSpotEmail({
+            toEmail: nextInLine.user.email,
+            userName: nextInLine.user.name,
+            eventTitle: registration.event.title,
+            eventDate: new Date(registration.event.startDate).toLocaleDateString("en-US", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            }),
+            eventLocation: registration.event.location ?? registration.event.meetingLink ?? "See event page",
+            eventUrl: `${process.env.NEXT_PUBLIC_APP_URL}/events/${eventId}`,
           });
         }
       }

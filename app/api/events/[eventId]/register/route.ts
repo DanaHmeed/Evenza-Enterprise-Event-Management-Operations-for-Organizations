@@ -220,7 +220,9 @@ export async function DELETE(request: NextRequest, { params }: Params) {
               month: "long",
               day: "numeric",
             }),
-            eventLocation: registration.event.location ?? registration.event.meetingLink ?? "See event page",
+            eventLocation: registration.event.isOnline
+              ? (registration.event.meetingLink ?? "Online")
+              : [registration.event.venueName, registration.event.city].filter(Boolean).join(", ") || "See event page",
             eventUrl: `${process.env.NEXT_PUBLIC_APP_URL}/events/${eventId}`,
           });
         }

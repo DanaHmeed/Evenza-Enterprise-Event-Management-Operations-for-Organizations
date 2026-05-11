@@ -10,10 +10,6 @@ interface UploadResult {
   height: number;
 }
 
-/**
- * Upload a file to Cloudinary using unsigned upload preset.
- * Works client-side only (uses fetch to Cloudinary's REST API).
- */
 export async function uploadToCloudinary(file: File): Promise<UploadResult> {
   if (!CLOUD_NAME || !UPLOAD_PRESET) {
     throw new Error("Cloudinary environment variables not set");

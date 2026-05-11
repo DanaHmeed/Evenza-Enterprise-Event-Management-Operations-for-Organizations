@@ -1,17 +1,6 @@
-// hooks/use-dashboard.ts
-// Centralized SWR hooks for dashboard data.
-// Benefits:
-//   - Stale-while-revalidate: pages load instantly with cached data
-//   - Deduplication: identical requests within 2s are merged
-//   - Background refresh: data stays fresh without blocking UI
-//   - Shared cache: navigating Dashboard → Events → Dashboard is instant
-//
-// INSTALL: npm install swr
 
 import useSWR from "swr";
-import { useCallback, useMemo } from "react";
 
-// ─── Fetcher ────────────────────────────────────────────────────────
 const fetcher = async (url: string) => {
   const res = await fetch(url);
   if (!res.ok) {
@@ -22,12 +11,10 @@ const fetcher = async (url: string) => {
   return res.json();
 };
 
-// SWR options for different data freshness needs
 const CACHE_LONG = { dedupingInterval: 30_000, revalidateOnFocus: false } as const;    // stats, analytics
 const CACHE_SHORT = { dedupingInterval: 5_000, revalidateOnFocus: true } as const;     // attendees, orders
 const CACHE_INSTANT = { dedupingInterval: 60_000, revalidateOnFocus: false } as const; // role checks, rarely changes
 
-// ─── Dashboard Stats (main dashboard page) ──────────────────────────
 export function useDashboardStats() {
   const { data, error, isLoading, mutate } = useSWR(
     "/api/organizer/stats",
@@ -43,7 +30,6 @@ export function useDashboardStats() {
   };
 }
 
-// ─── Organizer Events (events list page) ────────────────────────────
 export function useOrganizerEvents(params: {
   page: number;
   pageSize?: number;
@@ -70,7 +56,6 @@ export function useOrganizerEvents(params: {
   };
 }
 
-// ─── Organizer Attendees (consolidated — no N+1) ────────────────────
 export function useOrganizerAttendees(params: {
   page: number;
   pageSize?: number;
@@ -100,7 +85,6 @@ export function useOrganizerAttendees(params: {
   };
 }
 
-// ─── Organizer Orders (consolidated — no N+1) ──────────────────────
 export function useOrganizerOrders(params: {
   page: number;
   pageSize?: number;
@@ -128,7 +112,6 @@ export function useOrganizerOrders(params: {
   };
 }
 
-// ─── Organizer Feedbacks (consolidated — no N+1) ────────────────────
 export function useOrganizerFeedbacks(params: {
   page: number;
   pageSize?: number;
@@ -154,7 +137,6 @@ export function useOrganizerFeedbacks(params: {
   };
 }
 
-// ─── Role Check (used by layout — cached aggressively) ──────────────
 export function useRoleCheck(userId: string | undefined | null) {
   const { data, error, isLoading } = useSWR(
     userId ? `/api/users/${userId}` : null,

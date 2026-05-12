@@ -3,10 +3,9 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Users, CalendarDays, DollarSign, ArrowRight,
-  MessageSquare, Star, Mail, Clock, ShieldCheck, TrendingUp,
+  MessageSquare, Star, Mail, ShieldCheck,
 } from "lucide-react";
 import { t, StatusBadge, SectionTitle, AdminBreadcrumb } from "@/components/admin/AdminUI";
 
@@ -34,7 +33,8 @@ function readCache(): { data: DashData | null; isStale: boolean } {
     const raw = sessionStorage.getItem(CACHE_KEY);
     if (!raw) return { data: null, isStale: false };
     const { ts, payload } = JSON.parse(raw) as { ts: number; payload: DashData };
-    if (Date.now() - ts < CACHE_TTL) return { data: payload, isStale: true };
+    const isStale = Date.now() - ts >= CACHE_TTL;   // expired = stale
+    return { data: payload, isStale };               // ALWAYS return the data
   } catch {}
   return { data: null, isStale: false };
 }
@@ -163,11 +163,10 @@ const fmt = (n:number) => n >= 1000 ? `${(n/1000).toFixed(1)}k` : String(n);
 
 /* ─────────────────────────── main page ─────────────────────── */
 export default function AdminDashboardPage() {
-  const router = useRouter();
-  const [data,    setData]    = useState<DashData|null>(() => readCache().data);
-  const [loading, setLoading] = useState<boolean>(() => readCache().data === null);
-  const [stale,   setStale]   = useState<boolean>(() => readCache().isStale);
-
+const _cache = readCache(); // runs once at module eval during this render
+const [data,    setData]    = useState<DashData|null>(_cache.data);
+const [loading, setLoading] = useState<boolean>(_cache.data === null);
+const [stale,   setStale]   = useState<boolean>(_cache.isStale);
   useEffect(() => {
     fetch("/api/admin/stats")
       .then(r => r.ok ? r.json() : Promise.reject())

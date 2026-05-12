@@ -9,82 +9,56 @@ export async function GET() {
     if (isAuthError(auth)) return auth;
 
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-
-    // ── Batch 1: aggregate counts ────────────────────────────────
-    // groupBy collapses 4 event-count queries → 1 DB round-trip
-    // groupBy collapses 3 registration-count queries → 1 DB round-trip
-    // Net: 19 queries → 12 queries
     const [
-      totalUsers,
-      totalOrganizers,
-      newUsersThisMonth,
-      eventsByStatus,        // replaces 4 separate event.count calls
-      registrationsByStatus, // replaces 3 separate registration.count calls
-      totalTickets,
-      totalOrders,
-      revenueAgg,
-      pendingFeedbacks,
-      totalFeedbacks,
-      unreadMessages,
-    ] = await Promise.all([
-      prisma.user.count(),
-      prisma.user.count({ where: { role: "ORGANIZER" } }),
-      prisma.user.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
-
-      // Single query for all event status counts
-      prisma.event.groupBy({
-        by: ["status"],
-        _count: { _all: true },
-      }),
-
-      // Single query for all registration status counts
-      prisma.registration.groupBy({
-        by: ["status"],
-        _count: { _all: true },
-      }),
-
-      prisma.ticket.count(),
-      prisma.order.count(),
-      prisma.order.aggregate({
-        where: { paymentStatus: "PAID" },
-        _sum: { amount: true },
-      }),
-      prisma.feedback.count({ where: { status: "PENDING" } }),
-      prisma.feedback.count(),
-      prisma.contactMessage.count({ where: { isRead: false } }),
-    ]);
-
-    // ── Batch 2: recent activity rows ────────────────────────────
-    // Run separately so batch 1 (fast scalar queries) isn't held up
-    // by the heavier relational lookups
-    const [recentUsers, recentEvents, recentOrders] = await Promise.all([
-      prisma.user.findMany({
-        take: 5,
-        orderBy: { createdAt: "desc" },
-        select: { id: true, name: true, email: true, avatar: true, role: true, createdAt: true },
-      }),
-      prisma.event.findMany({
-        take: 5,
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true, title: true, status: true, startDate: true,
-          eventType: true, price: true,
-          organizer: { select: { name: true } },
-          _count:    { select: { registrations: true } },
-        },
-      }),
-      prisma.order.findMany({
-        take: 5,
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true, amount: true, currency: true,
-          paymentStatus: true, paymentMethod: true, createdAt: true,
-          user:  { select: { name: true } },
-          event: { select: { title: true } },
-        },
-      }),
-    ]);
-
+  totalUsers,
+  totalOrganizers,
+  newUsersThisMonth,
+  eventsByStatus,
+  registrationsByStatus,
+  totalTickets,
+  totalOrders,
+  revenueAgg,
+  pendingFeedbacks,
+  totalFeedbacks,
+  unreadMessages,
+  recentUsers,
+  recentEvents,
+  recentOrders,
+] = await Promise.all([
+  prisma.user.count(),
+  prisma.user.count({ where: { role: "ORGANIZER" } }),
+  prisma.user.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
+  prisma.event.groupBy({ by: ["status"], _count: { _all: true } }),
+  prisma.registration.groupBy({ by: ["status"], _count: { _all: true } }),
+  prisma.ticket.count(),
+  prisma.order.count(),
+  prisma.order.aggregate({ where: { paymentStatus: "PAID" }, _sum: { amount: true } }),
+  prisma.feedback.count({ where: { status: "PENDING" } }),
+  prisma.feedback.count(),
+  prisma.contactMessage.count({ where: { isRead: false } }),
+  prisma.user.findMany({
+    take: 5, orderBy: { createdAt: "desc" },
+    select: { id: true, name: true, email: true, avatar: true, role: true, createdAt: true },
+  }),
+  prisma.event.findMany({
+    take: 5, orderBy: { createdAt: "desc" },
+    select: {
+      id: true, title: true, status: true, startDate: true,
+      eventType: true, price: true,
+      organizer: { select: { name: true } },
+      _count: { select: { registrations: true } },
+    },
+  }),
+  prisma.order.findMany({
+    take: 5, orderBy: { createdAt: "desc" },
+    select: {
+      id: true, amount: true, currency: true,
+      paymentStatus: true, paymentMethod: true, createdAt: true,
+      user: { select: { name: true } },
+      event: { select: { title: true } },
+    },
+  }),
+]);
     // ── Unpack groupBy results ────────────────────────────────────
     const eventCount = (status: string) =>
       eventsByStatus.find((r) => r.status === status)?._count._all ?? 0;

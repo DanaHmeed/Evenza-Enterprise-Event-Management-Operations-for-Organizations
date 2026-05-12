@@ -8,6 +8,7 @@ import {
   MessageSquare, Star, Mail, ShieldCheck,
 } from "lucide-react";
 import { t, StatusBadge, SectionTitle, AdminBreadcrumb } from "@/components/admin/AdminUI";
+import { useRouter } from "next/navigation";
 
 /* ─────────────────────────── types ─────────────────────────── */
 interface Stats {
@@ -163,7 +164,8 @@ const fmt = (n:number) => n >= 1000 ? `${(n/1000).toFixed(1)}k` : String(n);
 
 /* ─────────────────────────── main page ─────────────────────── */
 export default function AdminDashboardPage() {
-const _cache = readCache(); // runs once at module eval during this render
+const router = useRouter();  
+const _cache = readCache(); 
 const [data,    setData]    = useState<DashData|null>(_cache.data);
 const [loading, setLoading] = useState<boolean>(_cache.data === null);
 const [stale,   setStale]   = useState<boolean>(_cache.isStale);

@@ -124,34 +124,6 @@ Open <http://localhost:3000>.
 ```bash
 stripe listen --forward-to localhost:3000/api/webhooks/stripe
 ```
-
------
-
-## Project Structure
-
-```
-evenza/
-├── app/
-│   ├── (auth)/              # Sign in / sign up (Clerk)
-│   ├── (root)/              # Public pages
-│   │   ├── events/          # Event listing and detail pages
-│   │   └── page.tsx         # Home
-│   ├── dashboard/
-│   │   ├── attendee/        # My Hub, My Tickets, My Profile
-│   │   ├── organizer/       # Event management, analytics, attendees
-│   │   └── admin/           # Platform-wide admin panel
-│   └── api/
-│       ├── webhooks/stripe/ # Stripe webhook handler
-│       ├── events/          # Event CRUD
-│       ├── tickets/         # Ticket generation and QR
-│       └── chat/            # Groq chatbot endpoint
-├── components/              # Shared UI components
-├── lib/                     # Utilities, Prisma client, helpers
-├── prisma/
-│   └── schema.prisma
-└── public/
-```
-
 -----
 
 ## Key Implementation Notes

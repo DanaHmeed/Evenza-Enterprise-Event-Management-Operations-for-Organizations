@@ -1654,6 +1654,7 @@ function PricingPreviewSection() {
         "Custom branding & themes",
         "Priority support",
         "Dedicated account manager",
+        "Advanced analytics & reporting",
       
         
       ],

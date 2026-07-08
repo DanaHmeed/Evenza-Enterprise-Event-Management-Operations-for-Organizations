@@ -11,6 +11,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -18,6 +19,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #010127;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 /*  Custom Scrollbar  */
@@ -200,7 +203,7 @@ main {
   border-radius: 9999px;
   font-weight: 600;
   padding: 0.9rem 1.8rem;
-  margin: 1.5 rem 1;
+  margin: 1.5rem 0 0;
   margin-top: 1.5rem;
   white-space: nowrap;
   overflow: hidden;
@@ -242,11 +245,30 @@ main {
   transition: transform 0.3s ease-in-out 0.1s;
   transform: translate(0);
 }
+
+/* .inet — Intelligent Workflow section wrapper.
+   Was a fixed `padding: 2rem 7.1rem` on ALL screen sizes (≈113.6px per side).
+   On a 375px-wide phone that alone eats ~227px of horizontal space and
+   was a major contributor to the layout looking broken / overflowing
+   on mobile. Now scales down below desktop and keeps the original
+   7.1rem only at desktop widths. */
 .inet{
  background: linear-gradient(to right, #fbfaf8, #fffffe);
   font-weight: 600;
-  padding: 2rem 7.1rem;
+  padding: 2rem 1.25rem;
   align-items: center;
+}
+
+@media (min-width: 768px) {
+  .inet {
+    padding: 2rem 2.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .inet {
+    padding: 2rem 7.1rem;
+  }
 }
 
 /* Event register / buy ticket button hover */

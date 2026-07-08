@@ -30,6 +30,89 @@ const staggerContainer = {
 export default function LandingPage() {
   return (
     <>
+      <style>{`
+        /* ──────────────────────────────────────────────
+           Global responsive overrides (mobile / tablet)
+           Desktop (>= 1024px) is untouched by design.
+           These rules only kick in below the breakpoints
+           and use !important because most of this page is
+           styled with inline styles, which normally can't
+           respond to media queries at all.
+        ────────────────────────────────────────────── */
+
+        /* ---- Section vertical rhythm ---- */
+        @media (max-width: 1024px) {
+          .rs-section-xl { padding: 72px 0 !important; }
+          .rs-section-lg { padding: 56px 0 !important; }
+        }
+        @media (max-width: 640px) {
+          .rs-section-xl { padding: 56px 0 !important; }
+          .rs-section-lg { padding: 44px 0 !important; }
+          .rs-header-gap { margin-bottom: 40px !important; }
+        }
+
+        /* ---- Platform showcase (attendee/organizer/admin cards) ---- */
+        .platform-roles-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 20px;
+        }
+        @media (max-width: 1024px) {
+          .platform-roles-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+        @media (max-width: 640px) {
+          .platform-roles-grid { grid-template-columns: 1fr !important; }
+        }
+
+        /* ---- Event types grid ---- */
+        .event-types-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 20px;
+        }
+        @media (max-width: 1024px) {
+          .event-types-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+        @media (max-width: 480px) {
+          .event-types-grid { grid-template-columns: 1fr !important; }
+        }
+
+        /* ---- Pricing cards: force 1-up on small screens, restore
+               rounded corners + spacing since the "joined pill"
+               desktop treatment only makes sense in a single row ---- */
+        .pricing-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 0;
+        }
+        @media (max-width: 900px) {
+          .pricing-grid { grid-template-columns: 1fr !important; gap: 24px !important; }
+          .pricing-card {
+            border-radius: 20px !important;
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+          }
+        }
+
+        /* ---- CTA section: 2-col -> 1-col, tighten side padding ---- */
+        .cta-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 80px;
+        }
+        @media (max-width: 1024px) {
+          .cta-grid { grid-template-columns: 1fr !important; gap: 48px !important; }
+        }
+        .cta-wrap { padding: 0 48px; }
+        @media (max-width: 640px) {
+          .cta-wrap { padding: 0 20px !important; }
+        }
+
+        /* ---- Workflow (image + text) section ---- */
+        @media (max-width: 640px) {
+          .workflow-px { padding-left: 20px !important; padding-right: 20px !important; }
+        }
+      `}</style>
       <Navbar />
       <main className="bg-gradient-to-r from-[#fff] to-[#fffffe]">
         {" "}
@@ -128,15 +211,16 @@ function HeroSection() {
  
       <motion.div
         style={{ opacity, y }}
-        className="relative z-10"
+        className="relative z-10 w-full"
       >
         <div
           style={{
             maxWidth: "800px",
             margin: "0 auto",
             textAlign: "center",
-            padding: "0 32px",
+            padding: "0 24px",
           }}
+          className="sm:!px-8"
         >
           {/* Eyebrow */}
           <motion.div
@@ -152,8 +236,9 @@ function HeroSection() {
                 letterSpacing: "0.3em",
                 textTransform: "uppercase",
                 color: "#ea580c",
-                marginBottom: "28px",
+                marginBottom: "24px",
               }}
+              className="sm:!mb-[28px]"
             >
               Event Management Platform
             </span>
@@ -165,13 +250,14 @@ function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.7 }}
             style={{
-              fontSize: "clamp(2.5rem, 6vw, 4.25rem)",
+              fontSize: "clamp(2.25rem, 9vw, 4.25rem)",
               fontWeight: 700,
               lineHeight: 1.08,
               letterSpacing: "-0.03em",
               color: "#fff",
-              margin: "0 0 24px 0",
+              margin: "0 0 20px 0",
             }}
+            className="sm:!mb-[24px]"
           >
               WHERE EVERY EVENT
             <br />
@@ -194,12 +280,13 @@ function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35, duration: 0.7 }}
             style={{
-              fontSize: "17px",
+              fontSize: "clamp(15px, 4vw, 17px)",
               lineHeight: 1.7,
               color: "rgba(255,255,255,0.35)",
               maxWidth: "520px",
-              margin: "0 auto 48px",
+              margin: "0 auto 40px",
             }}
+            className="sm:!mb-[48px]"
           >
             Plan, launch, and scale events with precision. Complete control
             for organizers, seamless access for attendees.
@@ -239,10 +326,12 @@ function HeroSection() {
             style={{
               display: "flex",
               justifyContent: "center",
-              gap: "32px",
-              marginTop: "56px",
+              gap: "18px",
+              marginTop: "48px",
               flexWrap: "wrap",
+              rowGap: "12px",
             }}
+            className="sm:!gap-[32px] sm:!mt-[56px]"
           >
             {[
               "Free to start",
@@ -258,6 +347,7 @@ function HeroSection() {
                   fontSize: "12px",
                   color: "rgba(255, 255, 255, 0.56)",
                   fontWeight: 500,
+                  whiteSpace: "nowrap",
                 }}
               >
                 <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
@@ -281,6 +371,7 @@ function HeroSection() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.2 }}
+        className="hidden sm:block"
         style={{
           position: "absolute",
           bottom: "40px",
@@ -573,6 +664,10 @@ function FeaturesShowcase() {
         }
         .mq-fade::before { left: 0;  background: linear-gradient(90deg, #080808, transparent); }
         .mq-fade::after  { right: 0; background: linear-gradient(-90deg, #080808, transparent); }
+
+        @media (max-width: 640px) {
+          .mq-fade::before, .mq-fade::after { width: 48px; }
+        }
       `}</style>
 
       <section style={{
@@ -580,7 +675,7 @@ function FeaturesShowcase() {
         background: "#080808",
         overflow: "hidden",
         position: "relative",
-      }}>
+      }} className="rs-section-xl">
         {/* Subtle radial warmth at top */}
         <div style={{
           position: "absolute",
@@ -593,7 +688,7 @@ function FeaturesShowcase() {
         }} />
 
         {/* Header */}
-        <div style={{ maxWidth: "900px", margin: "0 auto 60px", padding: "0 40px" }}>
+        <div style={{ maxWidth: "900px", margin: "0 auto 60px", padding: "0 24px" }} className="sm:!px-10">
           <p style={{
             fontFamily: "'Space Mono', monospace",
             fontSize: "9.5px",
@@ -608,12 +703,13 @@ function FeaturesShowcase() {
 
           <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "32px", flexWrap: "wrap" }}>
               <p style={{
-            fontSize: "15px",
+            fontSize: "clamp(13px, 3.6vw, 15px)",
             fontWeight: 700,
-            letterSpacing: "0.32em",
+            letterSpacing: "0.15em",
             textTransform: "uppercase",
             color: "#f7efeb",
             margin: "0 0 20px",
+            lineHeight: 1.6,
           }}>
               From Registration to check-in one Platform handles it all.
           </p>
@@ -649,16 +745,16 @@ function FeaturesShowcase() {
 export function IntelligentWorkflow() {
   return (
     <section id= "worflow"
-    className="inet relative overflow-hidden py-80 bg-white">
+    className="inet relative overflow-hidden py-16 md:py-24 lg:py-[80px] bg-white">
       {/* Top spacing from previous section */}
-      <div className="max-w-7xl mx-auto px-20 lg:px-20 grid lg:grid-cols-2 gap-24 items-center">
+      <div className="max-w-7xl mx-auto px-6 md:px-10 lg:px-20 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center">
         {/* Left Image */}
         <motion.div
           initial={{ opacity: 0, x: -60 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="relative pl-6 lg:pl-12"
+          className="relative order-1 lg:pl-12"
         >
           <div className="rounded-3xl overflow-hidden border border-gray-200 bg-white shadow-xl">
             <Image
@@ -677,7 +773,7 @@ export function IntelligentWorkflow() {
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="space-y-10"
+          className="space-y-8 lg:space-y-10 order-2"
         >
           <p className="text-xs font-bold tracking-[0.3em] text-orange-500 uppercase">
             SMART EVENT CONTROL
@@ -691,10 +787,10 @@ export function IntelligentWorkflow() {
             </span>*/}
           </h2>
 
-          <div className="space-y-15">
-            <div className="space-y-5">
+          <div className="space-y-8 lg:space-y-[60px]">
+            <div className="space-y-3 lg:space-y-5">
               <h3 className="text-lg font-semibold text-[#010127] flex items-center gap-3">
-                <span className="w-1.5 h-1.5 bg-orange-500 mt-[2px]"></span>
+                <span className="w-1.5 h-1.5 bg-orange-500 mt-[2px] shrink-0"></span>
                 Unified Event Management
               </h3>
               <p className="text-gray-500 leading-relaxed">
@@ -705,10 +801,10 @@ export function IntelligentWorkflow() {
 
             <div className="space-y-3">
               <h3 className="text-lg font-semibold text-[#010127] flex items-center gap-3">
-                <span className="w-1.5 h-1.5 bg-orange-500 mt-[2px]"></span>
+                <span className="w-1.5 h-1.5 bg-orange-500 mt-[2px] shrink-0"></span>
                 Real-Time Insights
               </h3>
-              <p className="text-gray-500 leading-relaxed ml-5">
+              <p className="text-gray-500 leading-relaxed ml-0 sm:ml-5">
                 Monitor attendance, engagement, and revenue instantly with live
                 event analytics.
               </p>
@@ -716,7 +812,7 @@ export function IntelligentWorkflow() {
 
             <div className="space-y-3">
               <h3 className="text-lg font-semibold text-[#010127] flex items-center gap-3">
-                <span className="w-1.5 h-1.5 bg-orange-500 mt-[2px]"></span>
+                <span className="w-1.5 h-1.5 bg-orange-500 mt-[2px] shrink-0"></span>
                 Action-Ready Tools
               </h3>
               <p className="text-gray-500 leading-relaxed">
@@ -727,7 +823,7 @@ export function IntelligentWorkflow() {
 
             <div className="space-y-3">
               <h3 className="text-lg font-semibold text-[#010127] flex items-center gap-3">
-                <span className="w-1.5 h-1.5 bg-orange-500 mt-[2px]"></span>
+                <span className="w-1.5 h-1.5 bg-orange-500 mt-[2px] shrink-0"></span>
                 Always Operational
               </h3>
               <p className="text-gray-500 leading-relaxed">
@@ -742,130 +838,8 @@ export function IntelligentWorkflow() {
   );
 }
 // ════════════════════════════════════════════════════════════
-// 3. FEATURES — 12 Cards
-// ════════════════════════════════════════════════════════════
-/*function FeaturesSection() {
-  const features = [
-  {
-    icon: <CalendarCheck className="w-8 h-8" strokeWidth={1.2} />,
-    title: "Advanced Event Creation",
-    desc: "Rich descriptions, media uploads, draft/publish workflow, categories, tags, and SEO-friendly slugs.",
-  },
-  {
-    icon: <ScanLine className="w-8 h-8" strokeWidth={1.2} />,
-    title: "Live Check-In Scanner",
-    desc: "Organizers scan QR codes at the door. Real-time check-in tracking with duplicate detection.",
-  },
-  {
-    icon: <CreditCard className="w-8 h-8" strokeWidth={1.2} />,
-    title: "Flexible Payments",
-    desc: "Stripe for card payments. Bank transfers, cash, and JawwalPay for local markets. Free events too.",
-  },
-  {
-    icon: <Users className="w-8 h-8" strokeWidth={1.2} />,
-    title: "Role-Based Access Control",
-    desc: "Three roles: Attendees discover & register, Organizers manage events, Admins oversee the platform.",
-  },
-  {
-    icon: <ShieldCheck className="w-8 h-8" strokeWidth={1.2} />,
-    title: "Admin Control Center",
-    desc: "Moderate events & feedback, manage users & roles, view audit logs, and edit platform settings.",
-  },
-  {
-    icon: <Star className="w-8 h-8" strokeWidth={1.2} />,
-    title: "Feedback & Reviews",
-    desc: "Post-event ratings with title, comment, and stars. Admin moderation before public display.",
-  },
-  {
-    icon: <Search className="w-8 h-8" strokeWidth={1.2} />,
-    title: "Smart Discovery & Filters",
-    desc: "Search by keyword. Filter by category, date, price, location, event type. Pagination built-in.",
-  },
-  {
-    icon: <MapPin className="w-8 h-8" strokeWidth={1.2} />,
-    title: "Online & In-Person Events",
-    desc: "Physical venues with addresses, maps, and coordinates. Virtual events with meeting link integration.",
-  },
-  {
-    icon: <Clock className="w-8 h-8" strokeWidth={1.2} />,
-    title: "Waitlist Management",
-    desc: "Automatic waitlist when events fill up. Attendees get notified instantly when spots open.",
-  },
-];
-
-  return (
-    <section className="py-28 bg-white relative">
-      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-orange-500/20 to-transparent" />
-
-      <div className="w-full flex justify-center">
-        <div className="w-full max-w-7xl px-6">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            className="text-center mb-16"
-          >
-            <br></br> 
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-20">
-              Everything You Need to{" "}
-              <span className="text-orange-600">Run Events</span>
-            </h2>
-           <br></br> 
-          </motion.div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            variants={staggerContainer}
-            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3"
-          >
-            {features.map((f, i) => (
-              <motion.div key={i} custom={i}>
-                <FeatureCard
-                  icon={f.icon}
-                  title={f.title}
-                  description={f.desc}
-                />
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function FeatureCard({
-  icon,
-  title,
-  description,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="group relative bg-white p-7 transition-all duration-500 h-full">
-      <div className="absolute inset-0 rounded-2xl group-hover:to-transparent transition-all duration-500" />
-      <div className="relative">
-        <div className="w-10 h-10 flex items-center justify-center rounded-xl text-white mb-5 group-hover:scale-110 transition-transform duration-300">
-          {icon}
-        </div>
-        <h3 className="text-lg font-bold text-gray-900 mb-2 transition-colors">
-          {title}
-        </h3>
-        <p className="text-gray-600 text-sm leading-relaxed">{description}</p>
-      </div>
-    </div>
-  );
-}
-*/
-// ════════════════════════════════════════════════════════════
 // 4. HOW IT WORKS
 // ════════════════════════════════════════════════════════════
-// Replace HowItWorksSection in app/page.tsx with this
-
 function HowItWorksSection() {
   const steps = [
     {
@@ -903,6 +877,7 @@ function HowItWorksSection() {
         position: "relative",
         overflow: "hidden",
       }}
+      className="rs-section-xl"
     >
       {/* Subtle background glow */}
       <div
@@ -923,12 +898,13 @@ function HowItWorksSection() {
         style={{
           maxWidth: "1100px",
           margin: "0 auto",
-          padding: "0 32px",
+          padding: "0 24px",
           position: "relative",
         }}
+        className="sm:!px-8"
       >
         {/* Header — centered */}
-        <div style={{ textAlign: "center", marginBottom: "88px" }}>
+        <div style={{ textAlign: "center", marginBottom: "88px" }} className="rs-header-gap">
           <p
             style={{
               fontSize: "12px",
@@ -943,7 +919,7 @@ function HowItWorksSection() {
           </p>
           <h2
             style={{
-              fontSize: "clamp(2rem, 4vw, 3rem)",
+              fontSize: "clamp(1.9rem, 7vw, 3rem)",
               fontWeight: 700,
               color: "#fff",
               lineHeight: 1.15,
@@ -1083,7 +1059,7 @@ function HowItWorksSection() {
                 </div>
 
                 {/* Content */}
-                <div style={{ flex: 1, paddingTop: "8px" }}>
+                <div style={{ flex: 1, paddingTop: "8px", minWidth: 0 }}>
                   {/* Mobile number */}
                   <span
                     className="md:hidden"
@@ -1101,7 +1077,7 @@ function HowItWorksSection() {
 
                   <h3
                     style={{
-                      fontSize: "22px",
+                      fontSize: "20px",
                       fontWeight: 700,
                       color: "#fff",
                       margin: "0 0 10px 0",
@@ -1111,7 +1087,7 @@ function HowItWorksSection() {
                   </h3>
                   <p
                     style={{
-                      fontSize: "15px",
+                      fontSize: "14px",
                       color: "rgba(255,255,255,0.4)",
                       lineHeight: 1.7,
                       margin: "0 0 16px 0",
@@ -1164,8 +1140,6 @@ function PlatformShowcaseSection() {
       image: "/images/attendee.png",
       accent: "#3b82f6",
       accentBg: "rgba(59,130,246,0.06)",
-      span: "1 / 2", // takes left column
-      rowSpan: "1 / 3", // spans 2 rows
     },
     {
       label: "For Organizers",
@@ -1181,8 +1155,6 @@ function PlatformShowcaseSection() {
       image: "/images/organizer.png",
       accent: "#f97316",
       accentBg: "rgba(249,115,22,0.06)",
-      span: "2 / 3",
-      rowSpan: "1 / 2",
     },
     {
       label: "For Admins",
@@ -1197,9 +1169,6 @@ function PlatformShowcaseSection() {
       image: "/images/admin.png",
       accent: "#8b5cf6",
       accentBg: "rgba(139,92,246,0.06)",
-      span: "2 / 3",
-      rowSpan: "2 / 3",
-      style: { AlignCenter: "center" },
     },
   ];
 
@@ -1211,9 +1180,9 @@ function PlatformShowcaseSection() {
         fontFamily: "'Quicksand', sans-serif",
       }}
     >
-      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 32px" }}>
+      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }} className="sm:!px-8">
         {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: "72px" }}>
+        <div style={{ textAlign: "center", marginBottom: "72px" }} className="rs-header-gap">
           <p
             style={{
               fontSize: "12px",
@@ -1228,7 +1197,7 @@ function PlatformShowcaseSection() {
           </p>
           <h2
             style={{
-              fontSize: "clamp(2rem, 4vw, 3rem)",
+              fontSize: "clamp(1.9rem, 7vw, 3rem)",
               fontWeight: 700,
               color: "#1a1a1a",
               lineHeight: 1.15,
@@ -1252,15 +1221,7 @@ function PlatformShowcaseSection() {
         </div>
 
         {/* Bento grid */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "20px",
-            alignItems: "start",
-          }}
-          className="grid-cols-1 lg:grid-cols-3"
-        >
+        <div className="platform-roles-grid">
           {roles.map((role, i) => (
             <div
               key={i}
@@ -1286,7 +1247,7 @@ function PlatformShowcaseSection() {
               <div
                 style={{
                   flex: "none",
-                  height: "280px",
+                  height: "240px",
                   background: role.accentBg,
                   display: "flex",
                   alignItems: "center",
@@ -1294,6 +1255,7 @@ function PlatformShowcaseSection() {
                   overflow: "hidden",
                   position: "relative",
                 }}
+                className="sm:!h-[280px]"
               >
                 <img
                   src={role.image}
@@ -1347,7 +1309,7 @@ function PlatformShowcaseSection() {
               </div>
 
               {/* Content */}
-              <div style={{ padding: "28px 28px 32px" }}>
+              <div style={{ padding: "24px 22px 28px" }} className="sm:!p-[28px_28px_32px]">
                 <h3
                   style={{
                     fontSize: "20px",
@@ -1451,10 +1413,11 @@ function EventTypesSection() {
         background: "#fff",
         fontFamily: "'Quicksand', sans-serif",
       }}
+      className="rs-section-xl"
     >
-      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 32px" }}>
+      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }} className="sm:!px-8">
         {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: "72px" }}>
+        <div style={{ textAlign: "center", marginBottom: "72px" }} className="rs-header-gap">
           <p
             style={{
               fontSize: "12px",
@@ -1469,7 +1432,7 @@ function EventTypesSection() {
           </p>
           <h2
             style={{
-              fontSize: "clamp(2rem, 4vw, 3rem)",
+              fontSize: "clamp(1.9rem, 7vw, 3rem)",
               fontWeight: 700,
               color: "#1a1a1a",
               lineHeight: 1.15,
@@ -1494,14 +1457,7 @@ function EventTypesSection() {
         </div>
 
         {/* Cards — 3 columns, image-forward */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "20px",
-          }}
-          className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-        >
+        <div className="event-types-grid">
           {types.map((type, i) => (
             <div
               key={i}
@@ -1607,8 +1563,6 @@ function EventTypesSection() {
 // ════════════════════════════════════════════════════════════
 // 8. PRICING PREVIEW
 // ════════════════════════════════════════════════════════════
-// Replace PricingPreviewSection in app/page.tsx with this
-
 function PricingPreviewSection() {
   const plans = [
     {
@@ -1674,6 +1628,7 @@ function PricingPreviewSection() {
         // Warm tinted background
         background: "#fafaf8",
       }}
+      className="rs-section-xl"
     >
       {/* ── Decorative background elements ── */}
 
@@ -1748,15 +1703,16 @@ function PricingPreviewSection() {
         style={{
           maxWidth: "1100px",
           margin: "0 auto",
-          padding: "0 32px",
+          padding: "0 24px",
           position: "relative",
         }}
+        className="sm:!px-8"
       >
         {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: "56px" }}>
+        <div style={{ textAlign: "center", marginBottom: "56px" }} className="rs-header-gap">
           <h2
             style={{
-              fontSize: "clamp(2rem, 4.5vw, 3rem)",
+              fontSize: "clamp(1.9rem, 7vw, 3rem)",
               fontWeight: 700,
               color: "#1a1a1a",
               lineHeight: 1.15,
@@ -1781,15 +1737,12 @@ function PricingPreviewSection() {
 
         {/* Cards container */}
         <div
+          className="pricing-grid"
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "0",
             alignItems: "stretch",
             // Outer wrapper shadow for depth
             filter: "drop-shadow(0 4px 20px rgba(0,0,0,0.04))",
           }}
-          className="grid-cols-1 md:grid-cols-3"
         >
           {plans.map((plan, i) => {
             const isLeft = i === 0;
@@ -1799,6 +1752,7 @@ function PricingPreviewSection() {
             return (
               <div
                 key={i}
+                className="pricing-card"
                 style={{
                   background: isMid
                     ? "linear-gradient(180deg, #ffffff 0%, #fafcff 100%)"
@@ -1811,7 +1765,7 @@ function PricingPreviewSection() {
                       : isRight
                         ? "0 20px 20px 0"
                         : "0",
-                  padding: isMid ? "36px 36px 32px" : "32px 32px",
+                  padding: isMid ? "36px 32px 32px" : "32px 28px",
                   display: "flex",
                   flexDirection: "column",
                   position: "relative",
@@ -1930,7 +1884,7 @@ function PricingPreviewSection() {
                 >
                   <span
                     style={{
-                      fontSize: isMid ? "48px" : "42px",
+                      fontSize: isMid ? "44px" : "38px",
                       fontWeight: 700,
                       color: "#1a1a1a",
                       letterSpacing: "-0.04em",
@@ -2151,12 +2105,12 @@ function FAQSection() {
         fontFamily: "'Quicksand', sans-serif",
       }}
     >
-      <div style={{ maxWidth: "720px", margin: "0 auto", padding: "0 32px" }}>
+      <div style={{ maxWidth: "720px", margin: "0 auto", padding: "0 24px" }} className="sm:!px-8">
         {/* Header */}
         <div style={{ marginBottom: "48px" }}>
           <h2
             style={{
-              fontSize: "clamp(1.8rem, 3.5vw, 2.5rem)",
+              fontSize: "clamp(1.6rem, 6vw, 2.5rem)",
               fontWeight: 700,
               color: "#1a1a1a",
               lineHeight: 1.2,
@@ -2210,8 +2164,8 @@ function FAQSection() {
                     width: "100%",
                     display: "flex",
                     alignItems: "center",
-                    gap: "16px",
-                    padding: "20px 0",
+                    gap: "14px",
+                    padding: "18px 0",
                     background: "transparent",
                     border: "none",
                     cursor: "pointer",
@@ -2219,14 +2173,15 @@ function FAQSection() {
                     fontFamily: "'Quicksand', sans-serif",
                     transition: "opacity 0.2s",
                   }}
+                  className="sm:!gap-4 sm:!py-5"
                 >
                   {/* Icon */}
                   <span
                     style={{
                       flexShrink: 0,
-                      width: "40px",
-                      height: "40px",
-                      borderRadius: "12px",
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "10px",
                       background: isOpen ? "rgba(249,115,22,0.08)" : "#f8f8f6",
                       display: "flex",
                       alignItems: "center",
@@ -2234,6 +2189,7 @@ function FAQSection() {
                       color: isOpen ? "#220d01" : "#bbb",
                       transition: "background 0.25s, color 0.25s",
                     }}
+                    className="sm:!w-10 sm:!h-10 sm:!rounded-xl"
                   >
                     {faq.icon}
                   </span>
@@ -2242,11 +2198,12 @@ function FAQSection() {
                   <span
                     style={{
                       flex: 1,
-                      fontSize: "15px",
+                      fontSize: "14px",
                       fontWeight: 600,
                       color: "#1a1a1a",
                       lineHeight: 1.4,
                     }}
+                    className="sm:!text-[15px]"
                   >
                     {faq.q}
                   </span>
@@ -2287,10 +2244,11 @@ function FAQSection() {
                 >
                   <div
                     style={{
-                      paddingLeft: "56px",
-                      paddingBottom: "20px",
-                      paddingRight: "32px",
+                      paddingLeft: "50px",
+                      paddingBottom: "18px",
+                      paddingRight: "16px",
                     }}
+                    className="sm:!pl-14 sm:!pb-5 sm:!pr-8"
                   >
                     <p
                       style={{
@@ -2346,7 +2304,7 @@ const scaleIn = {
  function CTASection() {
   return (
     <section
-      className="relative overflow-hidden"
+      className="relative overflow-hidden rs-section-xl"
       style={{
         padding: "120px 0",
         fontFamily: "'DM Sans', sans-serif",
@@ -2365,22 +2323,13 @@ const scaleIn = {
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, margin: "-80px" }}
-        className="relative"
+        className="relative cta-wrap"
         style={{
           maxWidth: "1280px",
           margin: "0 auto",
-          padding: "0 48px",
         }}
       >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "80px",
-            alignItems: "center",
-          }}
-          className="lg:grid-cols-2 grid-cols-1"
-        >
+        <div className="cta-grid">
           {/* ── Left: Text Content ── */}
           <div>
             {/* Eyebrow */}
@@ -2390,7 +2339,7 @@ const scaleIn = {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "8px",
-                marginBottom: "28px",
+                marginBottom: "24px",
               }}
             >
               <div
@@ -2418,7 +2367,7 @@ const scaleIn = {
               custom={1}
               style={{
                 fontFamily: "Quicksand, sans-serif",
-                fontSize: "clamp(1.75rem, 3.5vw, 2.75rem)",
+                fontSize: "clamp(1.6rem, 7vw, 2.75rem)",
                 fontWeight: 700,
                 lineHeight: 1.15,
                 letterSpacing: "-0.02em",
@@ -2434,11 +2383,11 @@ const scaleIn = {
             <motion.p
               custom={2}
               style={{
-                fontSize: "16px",
+                fontSize: "15px",
                 lineHeight: 1.7,
                 color: "#666",
                 maxWidth: "440px",
-                margin: "0 0 40px 0",
+                margin: "0 0 36px 0",
               }}
             >
               Manage events with simplified set-up and streamlined
@@ -2450,8 +2399,8 @@ const scaleIn = {
               style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: "20px",
-                marginBottom: "48px",
+                gap: "18px",
+                marginBottom: "40px",
               }}
             >
               {ctaFeatures.map((feature, i) => (

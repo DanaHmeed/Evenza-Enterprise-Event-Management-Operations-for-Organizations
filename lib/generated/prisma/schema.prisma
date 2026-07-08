@@ -83,15 +83,17 @@ model Event {
   waitlistEntries      WaitlistEntry[]
   tags                 Tag[]           @relation("EventTags")
 
+  @@index([status, startDate(sort: Asc)])
+  @@index([categoryId, status, startDate(sort: Asc)])
+  @@index([eventType, status, startDate(sort: Asc)])
+  @@index([isOnline, status, startDate(sort: Asc)])
   @@index([slug])
   @@index([categoryId])
-  @@index([startDate])
-  @@index([city])
   @@index([eventType])
   @@index([status])
   @@index([organizerId])
-  @@index([isFeatured])
-  @@index([title])
+  @@index([isFeatured, status])
+  @@index([publishedAt(sort: Desc)])
 }
 
 model Category {

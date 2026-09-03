@@ -286,3 +286,27 @@ main {
   transform: translateY(0);
   box-shadow: 0 2px 8px rgba(230, 57, 70, 0.3);
 }
+
+/* Restrained editorial treatment for the shared public navigation. */
+.site-navbar {
+  font-family: var(--font-dm-sans), sans-serif;
+  background: rgba(247, 243, 235, 0.96);
+  border-color: rgba(25, 23, 19, 0.12);
+}
+
+.site-navbar--top { background: #f7f3eb; }
+
+.site-navbar--scrolled {
+  background: rgba(247, 243, 235, 0.92);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 30px rgba(25, 23, 19, 0.045);
+}
+
+.site-navbar a,
+.site-navbar button { font-family: var(--font-dm-sans), sans-serif; }
+
+.site-navbar [class*="rounded-full"] { border-radius: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .site-navbar *, .site-navbar *::before, .site-navbar *::after { transition-duration: 0.01ms !important; }
+}

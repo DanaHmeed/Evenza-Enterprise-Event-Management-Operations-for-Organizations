@@ -18,16 +18,16 @@ import Link from "next/link";
    Design tokens — synced across all pages
    ═══════════════════════════════════════════ */
 const t = {
-  bg: "#fafaf8",
-  surface: "#fff",
-  border: "#e5e5e0",
-  borderLight: "#f0f0ec",
-  text: "#020202",
+  bg: "#f7f3eb",
+  surface: "#eee8dc",
+  border: "#d8d0c3",
+  borderLight: "#e5ded2",
+  text: "#191713",
   textSecondary: "#555",
   textMuted: "#888",
   textFaint: "#aaa",
-  accent: "#e63946",
-  accentSoft: "rgba(230,57,70,0.07)",
+  accent: "#e85b2a",
+  accentSoft: "rgba(232,91,42,0.07)",
   green: "#2d6a4f",
   greenSoft: "rgba(45,106,79,0.08)",
   greenBorder: "rgba(45,106,79,0.15)",
@@ -154,16 +154,22 @@ export default function ContactPage() {
   };
 
   return (
-    <div style={{ background: t.bg, fontFamily: t.sans, minHeight: "100vh" }}>
+    <div className="editorial-page editorial-contact" style={{ background: t.bg, fontFamily: t.sans, minHeight: "100vh" }}>
       <style>{`
         .contact-input::placeholder { color: #777; }
+        .editorial-page > section { border-top: 1px solid rgba(25,23,19,.12); }
+        .editorial-page h1, .editorial-page h2, .editorial-page h3 { letter-spacing: -.035em !important; }
+        .editorial-contact [style*="border-radius: 6px"], .editorial-contact [style*="border-radius: 4px"] { border-radius: 2px !important; }
+        @media (max-width: 640px) {
+          .editorial-contact > section > div { padding-left: 20px !important; padding-right: 20px !important; }
+        }
       `}</style>
       {/* ─────────────────────────────────
           HERO — Split layout
           ───────────────────────────────── */}
       <section
         style={{
-          background: "#06060a",
+          background: "#080807",
           position: "relative",
           overflow: "hidden",
         }}
@@ -178,7 +184,7 @@ export default function ContactPage() {
             width: "700px",
             height: "700px",
             background:
-              "radial-gradient(circle, rgba(230,57,70,0.06) 0%, transparent 70%)",
+              "radial-gradient(circle, rgba(232,91,42,0.05) 0%, transparent 70%)",
             pointerEvents: "none",
           }}
         />

@@ -20,17 +20,17 @@ import {
 } from "lucide-react";
 
 const t = {
-  bg: "#fafaf8",
-  surface: "#fff",
-  border: "#e5e5e0",
-  borderLight: "#f0f0ec",
-  text: "#1a1a1a",
+  bg: "#f7f3eb",
+  surface: "#eee8dc",
+  border: "#d8d0c3",
+  borderLight: "#e5ded2",
+  text: "#191713",
   textSecondary: "#555",
   textMuted: "#888",
   textFaint: "#aaa",
-  accent: "#e63946",
-  accentSoft: "rgba(230,57,70,0.07)",
-  accentMid: "rgba(230,57,70,0.14)",
+  accent: "#e85b2a",
+  accentSoft: "rgba(232,91,42,0.07)",
+  accentMid: "rgba(232,91,42,0.14)",
   green: "#2d6a4f",
   serif: "'Playfair Display', Georgia, serif",
   sans: "'DM Sans', sans-serif",
@@ -312,14 +312,20 @@ function TechPill({ tech }: { tech: (typeof techStack)[0] }) {
 
 export default function AboutPage() {
   return (
-    <div style={{ background: t.bg, fontFamily: t.sans, minHeight: "100vh" }}>
+    <div className="editorial-page editorial-about" style={{ background: t.bg, fontFamily: t.sans, minHeight: "100vh" }}>
+      <style>{`
+        .editorial-page > section { border-top: 1px solid rgba(25,23,19,.12); }
+        .editorial-page h1, .editorial-page h2, .editorial-page h3 { letter-spacing: -.035em !important; }
+        .editorial-page [style*="border-radius: 20px"], .editorial-page [style*="border-radius: 10px"], .editorial-page [style*="border-radius: 8px"], .editorial-page [style*="border-radius: 6px"] { border-radius: 2px !important; }
+        @media (max-width: 640px) { .editorial-page > section { padding-left: 20px !important; padding-right: 20px !important; } }
+      `}</style>
 
       {/* ── HERO ─────────────────────────────── */}
       <section
         style={{
           position: "relative",
           overflow: "hidden",
-          background: "#06060a",
+          background: "#080807",
           padding: "130px 48px 0",
         }}
       >
@@ -345,7 +351,7 @@ export default function AboutPage() {
             width: "700px",
             height: "500px",
             background:
-              "radial-gradient(ellipse, rgba(230,57,70,0.10) 0%, transparent 65%)",
+              "radial-gradient(ellipse, rgba(232,91,42,0.08) 0%, transparent 65%)",
             pointerEvents: "none",
           }}
         />
@@ -358,7 +364,7 @@ export default function AboutPage() {
             width: "420px",
             height: "420px",
             background:
-              "radial-gradient(circle, rgba(99,91,255,0.06) 0%, transparent 70%)",
+              "radial-gradient(circle, rgba(232,91,42,0.025) 0%, transparent 70%)",
             pointerEvents: "none",
           }}
         />

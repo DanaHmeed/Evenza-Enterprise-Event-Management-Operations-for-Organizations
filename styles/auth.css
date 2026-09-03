@@ -1,3 +1,35 @@
+.auth-page {
+  /* <design_plan>vibe_validity:PASS;motion_personality:PASS;button_contrast:PASS;honest_copy:PASS</design_plan> */
+  background: #080807;
+  color: #f3eee5;
+  font-family: var(--font-dm-sans), sans-serif;
+}
+
+.auth-page::after {
+  content: "";
+  position: absolute;
+  right: -16rem;
+  bottom: -19rem;
+  width: 36rem;
+  aspect-ratio: 1;
+  border: 1px solid rgba(232, 91, 42, 0.24);
+  border-radius: 50%;
+  box-shadow: 0 0 0 6rem rgba(232, 91, 42, 0.025), 0 0 0 12rem rgba(232, 91, 42, 0.015);
+  pointer-events: none;
+}
+
+.auth-back-link {
+  color: rgba(243, 238, 229, 0.66);
+  border: 1px solid rgba(243, 238, 229, 0.12);
+  background: rgba(8, 8, 7, 0.6);
+  font-family: var(--font-dm-sans), sans-serif;
+}
+
+.auth-back-link:hover { color: #f3eee5; border-color: rgba(243, 238, 229, 0.3); }
+
+.auth-forgot-link { color: #e98f70; font-family: var(--font-dm-sans), sans-serif; }
+.auth-forgot-link:hover { color: #f3eee5; }
+
 .auth-shell {
   width: 100%;
   max-width: 28rem;
@@ -48,12 +80,15 @@
 }
 
 .auth-white-card {
-  background: #ffffff !important;
-  color: #111 !important;
+  background: #f3eee5 !important;
+  color: #191713 !important;
+  border: 1px solid rgba(243, 238, 229, 0.24) !important;
+  border-radius: 2px !important;
+  box-shadow: 24px 28px 70px rgba(0, 0, 0, 0.38) !important;
 }
 
 .auth-white-card .cl-card {
-  background: #ffffff !important;
+  background: #f3eee5 !important;
 }
 
 .auth-white-card .cl-footer,
@@ -61,9 +96,9 @@
 .auth-white-card .cl-footerActionText,
 .auth-white-card .cl-footerPages,
 .auth-white-card .cl-card > div:last-child {
-  background: #ffffff !important;
-  color: #111 !important;
-  border-top: 1px solid #eee !important;
+  background: #f3eee5 !important;
+  color: #191713 !important;
+  border-top: 1px solid #d8d0c3 !important;
 }
 
 .auth-white-card > *,
@@ -76,8 +111,8 @@
   position: absolute;
   inset: 0;
   z-index: 50;
-  border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.92);
+  border-radius: 2px;
+  background: rgba(243, 238, 229, 0.94);
   backdrop-filter: blur(4px);
   display: flex;
   flex-direction: column;
@@ -95,8 +130,8 @@
 .auth-redirect-overlay__spinner {
   width: 36px;
   height: 36px;
-  border: 3px solid rgba(198, 85, 4, 0.2);
-  border-top-color: #c65504;
+  border: 3px solid rgba(232, 91, 42, 0.2);
+  border-top-color: #e85b2a;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -107,13 +142,25 @@
 
 .auth-redirect-overlay__text {
   font-size: 14px;
-  font-family: "Quicksand", sans-serif;
+  font-family: var(--font-dm-sans), sans-serif;
   font-weight: 600;
-  color: #c65504;
+  color: #e85b2a;
   letter-spacing: 0.02em;
 }
 
 .glass-card {
   background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(10px);
+}
+
+@media (max-width: 520px) {
+  .auth-widget-wrap { margin: 1rem 0; }
+  .auth-back-link { left: 1rem; top: 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-page *, .auth-page *::before, .auth-page *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

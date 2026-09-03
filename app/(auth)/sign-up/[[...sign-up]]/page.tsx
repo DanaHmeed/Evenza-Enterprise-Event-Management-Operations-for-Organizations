@@ -4,13 +4,13 @@
 import { useAuth } from "@clerk/nextjs";
 import { SignUp } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import "@/styles/auth.css";
 
 export default function SignUpPage() {
   const { isSignedIn } = useAuth();
   const router = useRouter();
-  const [redirecting, setRedirecting] = useState(false);
+  const redirecting = Boolean(isSignedIn);
 
   useEffect(() => {
     router.prefetch("/");
@@ -34,11 +34,15 @@ export default function SignUpPage() {
         <SignUp
           appearance={{
             variables: {
-              colorPrimary: "#c65504",
+              colorPrimary: "#e85b2a",
+              colorBackground: "#f3eee5",
+              colorText: "#191713",
+              borderRadius: "2px",
+              fontFamily: "var(--font-dm-sans), sans-serif",
             },
             elements: {
               rootBox: "auth-root-box",
-              card: "auth-white-card rounded-xl shadow-xl",
+              card: "auth-white-card",
               formButtonPrimary: "transition-all duration-150",
             },
           }}

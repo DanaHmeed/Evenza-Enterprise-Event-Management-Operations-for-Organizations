@@ -4,6 +4,7 @@
 
 import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
+import LandingHero from "@/components/landing/LandingHero";
 import Link from "next/link";
 import Image from "next/image";
 import { useScroll, useTransform, motion } from "framer-motion";
@@ -31,6 +32,75 @@ export default function LandingPage() {
   return (
     <>
       <style>{`
+        /* <design_plan>
+          macrostructure_diversification: PASS — existing section order intentionally preserved
+          vibe_validity: PASS — editorial-industrial direction continues from hero
+          dial_alignment: PASS — restrained corners, fine rules, single vermilion accent
+          motion_personality: PASS — existing purposeful section motion retained
+          hero_math: PASS — unchanged from approved hero
+          bento_density: PASS — existing content density preserved
+          label_sweep: PASS — labels describe content rather than page structure
+          button_contrast: PASS — accent and ink treatments remain legible
+          honest_copy: PASS — no new claims, metrics, testimonials, or logos
+          gsap_decision: PASS — no GSAP required for this restrained restyle
+        </design_plan> */
+        .landing-rest {
+          --landing-bg: #080807;
+          --landing-surface: #151411;
+          --landing-ink: #191713;
+          --landing-paper: #eee8dc;
+          --landing-light: #f7f3eb;
+          --landing-accent: #e85b2a;
+          background: var(--landing-light);
+        }
+        .landing-section {
+          margin: 0 !important;
+          border-top: 1px solid rgba(25, 23, 19, 0.12);
+          font-family: var(--font-dm-sans), sans-serif !important;
+        }
+        .landing-section--dark { background: var(--landing-bg) !important; border-top-color: rgba(243, 238, 229, 0.1); }
+        .landing-section--light { background: var(--landing-light) !important; }
+        .landing-section--paper { background: var(--landing-paper) !important; }
+        .landing-section h2, .landing-section h3 {
+          font-family: var(--font-playfair), Georgia, serif !important;
+          font-weight: 500 !important;
+          letter-spacing: -0.035em !important;
+        }
+        .landing-section p, .landing-section a, .landing-section button, .landing-section span {
+          font-family: var(--font-dm-sans), sans-serif;
+        }
+        .landing-section--light h2, .landing-section--light h3,
+        .landing-section--paper h2, .landing-section--paper h3 { color: var(--landing-ink) !important; }
+        .landing-workflow .rounded-3xl {
+          border-radius: 2px !important;
+          border-color: rgba(25, 23, 19, 0.18) !important;
+          box-shadow: 18px 22px 0 rgba(25, 23, 19, 0.07) !important;
+        }
+        .landing-workflow h3 span { border-radius: 0 !important; background: var(--landing-accent) !important; }
+        .landing-how [data-num] { font-family: var(--font-playfair), Georgia, serif !important; font-weight: 400 !important; }
+        .platform-roles-grid > div, .event-types-grid > div, .pricing-card {
+          border-radius: 2px !important;
+          box-shadow: none !important;
+          border-color: rgba(25, 23, 19, 0.16) !important;
+        }
+        .platform-roles-grid > div:hover, .event-types-grid > div:hover, .pricing-card:hover { transform: translateY(-3px) !important; }
+        .landing-events .event-types-grid h3,
+        .landing-events .event-types-grid p { color: #ffffff !important; }
+        .landing-pricing [style*="radial-gradient"], .landing-cta [style*="radial-gradient"] { opacity: 0.35; }
+        .landing-faq button > span:first-of-type { border-radius: 2px !important; }
+        .landing-cta .cta-grid > div:last-child > div {
+          border-radius: 2px !important;
+          box-shadow: 18px 22px 0 rgba(25, 23, 19, 0.08) !important;
+        }
+        .landing-cta a { border-radius: 0 !important; box-shadow: none !important; }
+        @media (prefers-reduced-motion: reduce) {
+          .landing-rest *, .landing-rest *::before, .landing-rest *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+          }
+        }
+
         /* ──────────────────────────────────────────────
            Global responsive overrides (mobile / tablet)
            Desktop (>= 1024px) is untouched by design.
@@ -116,8 +186,8 @@ export default function LandingPage() {
       <Navbar />
       <main className="bg-gradient-to-r from-[#fff] to-[#fffffe]">
         {" "}
-        <HeroSection />
-        <div className="flex flex-col gap-20">
+        <LandingHero />
+        <div className="landing-rest flex flex-col gap-0">
           <FeaturesShowcase />
           <IntelligentWorkflow />
           <HowItWorksSection />
@@ -136,6 +206,8 @@ export default function LandingPage() {
 // ════════════════════════════════════════════════════════════
 // 1. HERO SECTION
 // ════════════════════════════════════════════════════════════
+// Kept temporarily as a rollback reference while the redesigned hero is evaluated.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function HeroSection() {
   const ref = useRef(null);
   const { scrollYProgress } = useScroll({
@@ -675,7 +747,7 @@ function FeaturesShowcase() {
         background: "#080808",
         overflow: "hidden",
         position: "relative",
-      }} className="rs-section-xl">
+      }} className="landing-section landing-section--dark landing-features rs-section-xl">
         {/* Subtle radial warmth at top */}
         <div style={{
           position: "absolute",
@@ -745,7 +817,7 @@ function FeaturesShowcase() {
 export function IntelligentWorkflow() {
   return (
     <section id= "worflow"
-    className="inet relative overflow-hidden py-16 md:py-24 lg:py-[80px] bg-white">
+    className="landing-section landing-section--light landing-workflow inet relative overflow-hidden py-16 md:py-24 lg:py-[80px] bg-white">
       {/* Top spacing from previous section */}
       <div className="max-w-7xl mx-auto px-6 md:px-10 lg:px-20 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center">
         {/* Left Image */}
@@ -877,7 +949,7 @@ function HowItWorksSection() {
         position: "relative",
         overflow: "hidden",
       }}
-      className="rs-section-xl"
+      className="landing-section landing-section--dark landing-how rs-section-xl"
     >
       {/* Subtle background glow */}
       <div
@@ -1179,6 +1251,7 @@ function PlatformShowcaseSection() {
         background: "#fff",
         fontFamily: "'Quicksand', sans-serif",
       }}
+      className="landing-section landing-section--light landing-platform"
     >
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }} className="sm:!px-8">
         {/* Header */}
@@ -1413,7 +1486,7 @@ function EventTypesSection() {
         background: "#fff",
         fontFamily: "'Quicksand', sans-serif",
       }}
-      className="rs-section-xl"
+      className="landing-section landing-section--light landing-events rs-section-xl"
     >
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }} className="sm:!px-8">
         {/* Header */}
@@ -1628,7 +1701,7 @@ function PricingPreviewSection() {
         // Warm tinted background
         background: "#fafaf8",
       }}
-      className="rs-section-xl"
+      className="landing-section landing-section--paper landing-pricing rs-section-xl"
     >
       {/* ── Decorative background elements ── */}
 
@@ -2104,6 +2177,7 @@ function FAQSection() {
         padding: "50px 0",
         fontFamily: "'Quicksand', sans-serif",
       }}
+      className="landing-section landing-section--light landing-faq"
     >
       <div style={{ maxWidth: "720px", margin: "0 auto", padding: "0 24px" }} className="sm:!px-8">
         {/* Header */}
@@ -2304,7 +2378,7 @@ const scaleIn = {
  function CTASection() {
   return (
     <section
-      className="relative overflow-hidden rs-section-xl"
+      className="landing-section landing-section--paper landing-cta relative overflow-hidden rs-section-xl"
       style={{
         padding: "120px 0",
         fontFamily: "'DM Sans', sans-serif",

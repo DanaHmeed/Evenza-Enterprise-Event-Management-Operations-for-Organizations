@@ -4,13 +4,13 @@ import { useAuth } from "@clerk/nextjs";
 import { SignIn } from "@clerk/nextjs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import "@/styles/auth.css";
 
 export default function SignInPage() {
   const { isSignedIn } = useAuth();
   const router = useRouter();
-  const [redirecting, setRedirecting] = useState(false);
+  const redirecting = Boolean(isSignedIn);
 
   useEffect(() => {
     router.prefetch("/");
@@ -18,7 +18,6 @@ export default function SignInPage() {
 
   useEffect(() => {
     if (!isSignedIn) return;
-    setRedirecting(true);
     router.replace("/");
   }, [isSignedIn, router]);
 
@@ -35,11 +34,15 @@ export default function SignInPage() {
         <SignIn
           appearance={{
             variables: {
-              colorPrimary: "#c65504",
+              colorPrimary: "#e85b2a",
+              colorBackground: "#f3eee5",
+              colorText: "#191713",
+              borderRadius: "2px",
+              fontFamily: "var(--font-dm-sans), sans-serif",
             },
             elements: {
               rootBox: "auth-root-box",
-              card: "auth-white-card rounded-xl shadow-xl",
+              card: "auth-white-card",
               formButtonPrimary: "transition-all duration-150",
               footerAction: "flex justify-center",
             },
@@ -52,7 +55,7 @@ export default function SignInPage() {
       <div className="auth-secondary-action">
         <Link
           href="/forgot-password"
-          className="text-sm text-orange-400 hover:text-orange-300 transition-colors font-quicksand"
+          className="auth-forgot-link text-sm transition-colors"
         >
           Forgot your password?
         </Link>
